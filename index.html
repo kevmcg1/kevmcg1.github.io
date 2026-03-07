@@ -149,6 +149,64 @@
       filter: drop-shadow(0 0 5px rgba(200,255,0,0.5));
     }
 
+    /* ─────────────── CONTACT BUTTON ─────────────── */
+    .contact-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.38rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: clamp(0.55rem, 1.8vw, 0.62rem);
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+      padding: 0.4rem 0.2rem;
+      -webkit-tap-highlight-color: transparent;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      position: relative;
+    }
+
+    .contact-btn:hover,
+    .contact-btn:focus-visible { color: var(--accent); outline: none; }
+
+    .contact-btn svg {
+      width: clamp(17px, 3.5vw, 20px);
+      height: clamp(17px, 3.5vw, 20px);
+      fill: currentColor;
+      transition: filter 0.2s;
+    }
+
+    .contact-btn:hover svg,
+    .contact-btn:focus-visible svg {
+      filter: drop-shadow(0 0 5px rgba(200,255,0,0.5));
+    }
+
+    /* ─────────────── EMAIL REVEAL ─────────────── */
+    .email-reveal {
+      opacity: 0;
+      pointer-events: none;
+      font-size: clamp(0.72rem, 2vw, 0.82rem);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      text-transform: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: opacity 1.2s ease;
+      white-space: nowrap;
+      /* subtle glow */
+      text-shadow: 0 0 12px rgba(200,255,0,0.35);
+    }
+
+    .email-reveal.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
     /* ─────────────── SEARCH ─────────────── */
     .search-wrap {
       width: 100%;
@@ -413,11 +471,16 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
         About
       </a>
-      <a href="mailto:k3v.mcg123@gmail.com" aria-label="Email">
+      <button class="contact-btn" id="contactBtn" aria-label="Show contact email">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
         Contact
-      </a>
+      </button>
     </nav>
+
+    <!-- Email reveal, sits just below the nav -->
+    <div id="emailReveal" class="email-reveal" aria-live="polite">
+      k3v.mcg123@gmail.com
+    </div>
   </header>
 
   <!-- SEARCH -->
@@ -493,6 +556,15 @@
 
   <!-- FOOTER -->
   <footer>KEVMCG1.GITHUB.IO</footer>
+
+  <script>
+    const btn = document.getElementById('contactBtn');
+    const reveal = document.getElementById('emailReveal');
+
+    btn.addEventListener('click', () => {
+      reveal.classList.add('visible');
+    });
+  </script>
 
 </body>
 </html>
