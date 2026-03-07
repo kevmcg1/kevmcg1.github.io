@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Registry</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@1,400;1,700;1,900&family=DM+Sans:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0c0f;
+      --panel: #111418;
+      --panel2: #0d1117;
+      --border: #1e2530;
+      --border2: #252e3d;
+      --accent: #00c8ff;
+      --accent2: #ff6b00;
+      --green: #39ff14;
+      --yellow: #ffd600;
+      --purple: #c084fc;
+      --pink: #f472b6;
+      --text: #ffffff;
+      --muted: #4a5568;
+      --muted2: #1e2530;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background-image:
+        linear-gradient(rgba(0,200,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events:none; z-index:0;
+    }
+    .page { display:flex; min-height:100vh; position:relative; z-index:1; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 250px; flex-shrink:0;
+      background: var(--panel2);
+      border-right: 1px solid var(--border);
+      padding: 28px 0;
+      position: sticky; top:0; height:100vh;
+      overflow-y:auto;
+      display:flex; flex-direction:column;
+    }
+    .sidebar::-webkit-scrollbar { width:3px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius:2px; }
+
+    .sidebar-logo {
+      padding: 0 22px 22px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom:4px;
+    }
+    .logo-tag {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:3px; color:var(--accent);
+      text-transform:uppercase; margin-bottom:6px;
+    }
+    .sidebar-logo h2 {
+      font-size:24px; font-weight:900;
+      text-transform:uppercase; letter-spacing:-0.5px; line-height:1.1;
+      font-family:'DM Sans',sans-serif;
+    }
+    .sidebar-logo h2 span { color:var(--accent); }
+
+    .filter-section {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-title {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:3px; color:var(--muted);
+      text-transform:uppercase; margin-bottom:10px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .filter-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    .chip-list { display:flex; flex-direction:column; gap:5px; }
+
+    .chip {
+      display:flex; align-items:center; gap:9px;
+      padding: 8px 11px;
+      border-radius:3px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family:'DM Sans',sans-serif;
+      font-size:14px; font-weight:600;
+      letter-spacing:0.8px; text-transform:uppercase;
+      cursor:pointer; text-align:left; width:100%;
+      transition: all 0.15s;
+      position:relative; overflow:hidden;
+    }
+    .chip:hover { border-color:var(--border2); color:var(--text); background:rgba(255,255,255,0.03); }
+    .chip.on { border-color:var(--chip-color,var(--accent)); color:var(--chip-color,var(--accent)); background:transparent; }
+    .chip.on::after { content:''; position:absolute; inset:0; background:var(--chip-color,var(--accent)); opacity:0.08; pointer-events:none; }
+
+    .chip-dot {
+      width:7px; height:7px; border-radius:50%;
+      background:var(--chip-color,var(--muted)); opacity:0.4; flex-shrink:0;
+      transition:opacity 0.15s;
+    }
+    .chip.on .chip-dot { opacity:1; }
+    .chip-label { flex:1; }
+    .chip-count {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; color:var(--muted);
+      background:var(--muted2); padding:1px 6px; border-radius:8px;
+      transition: all 0.15s;
+    }
+    .chip.on .chip-count { background:var(--chip-color,var(--accent)); color:#0a0c0f; }
+    .chip-check { font-size:11px; opacity:0; transition:opacity 0.15s; color:var(--chip-color,var(--accent)); }
+    .chip.on .chip-check { opacity:1; }
+
+    .clear-btn {
+      margin: 14px 22px 0;
+      padding:9px 14px;
+      background:transparent;
+      border:1px solid var(--border); border-radius:3px;
+      color:var(--muted);
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:2px; text-transform:uppercase;
+      cursor:pointer; width:calc(100% - 44px);
+      transition:all 0.15s;
+    }
+    .clear-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+
+    /* ── MAIN ── */
+    .main { flex:1; padding:38px 36px 60px; min-width:0; }
+
+    .main-header {
+      margin-bottom:28px;
+      opacity:0; animation: fadeUp 0.5s ease forwards 0.1s;
+    }
+    .main-header h1 {
+      font-size:clamp(34px,5vw,58px); font-weight:900;
+      text-transform:uppercase; letter-spacing:-1px; line-height:0.95;
+    }
+    .main-header h1 span { color:var(--accent); }
+    .header-meta {
+      display:flex; align-items:center; gap:16px; margin-top:10px; flex-wrap:wrap;
+    }
+    .meta-item {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+    }
+    .meta-div { width:1px; height:12px; background:var(--border); }
+
+    .tag-bar {
+      display:flex; flex-wrap:wrap; gap:6px;
+      min-height:24px; margin-bottom:16px;
+      opacity:0; animation: fadeUp 0.5s ease forwards 0.2s;
+    }
+    .atag {
+      font-family:'Roboto',sans-serif;font-style:italic; font-size:9px; letter-spacing:1px;
+      padding:3px 9px; border-radius:2px; text-transform:uppercase;
+      display:flex; align-items:center; gap:5px;
+      animation: pop 0.18s ease;
+    }
+    @keyframes pop { from{transform:scale(0.75);opacity:0} to{transform:scale(1);opacity:1} }
+    .atag-x { cursor:pointer; opacity:0.6; transition:opacity 0.1s; font-size:10px; }
+    .atag-x:hover { opacity:1; }
+
+    .result-count {
+      font-family:'Roboto',sans-serif;font-style:italic; font-size:9px;
+      color:var(--muted); letter-spacing:2px; text-transform:uppercase;
+      margin-bottom:10px;
+      opacity:0; animation: fadeUp 0.5s ease forwards 0.25s;
+    }
+    .result-count em { color:var(--accent); font-style:normal; }
+
+    /* ── PROJECT CARDS ── */
+    .cards-wrap {
+      opacity:0; animation: fadeUp 0.5s ease forwards 0.3s;
+    }
+
+    .project-card {
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:4px; margin-bottom:10px;
+      display:flex; align-items:stretch;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      overflow:hidden;
+      animation: fadeUp 0.35s ease both;
+    }
+    .project-card:hover {
+      border-color:var(--border2);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,200,255,0.08);
+    }
+    .project-card.hide { display:none; }
+
+    .card-accent-bar {
+      width:3px; flex-shrink:0;
+      background:var(--cat-color, var(--accent));
+    }
+
+    .card-body {
+      flex:1; padding:16px 20px;
+      display:flex; align-items:center; gap:20px; min-width:0;
+    }
+
+    .card-left { flex:1; min-width:0; }
+
+    .card-name {
+      font-size:17px; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.5px;
+      color:#ffffff; line-height:1.1;
+      font-family:'DM Sans',sans-serif;
+    }
+    .card-id {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; color:var(--muted); letter-spacing:2px; margin-top:3px;
+    }
+    .card-desc {
+      font-size:13px; font-weight:400; color:#ffffff;
+      margin-top:6px; line-height:1.5; letter-spacing:0.1px;
+      font-family:'DM Sans',sans-serif; opacity:0.85;
+    }
+
+    .card-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+
+    .card-updated {
+      display:flex; align-items:center; gap:5px;
+      margin-top:8px;
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:1.5px; text-transform:uppercase;
+      color:var(--muted);
+    }
+    .card-updated-dot {
+      width:5px; height:5px; border-radius:50%;
+      background:var(--muted); opacity:0.5; flex-shrink:0;
+    }
+    .tag-pill {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:8px; letter-spacing:1.5px; text-transform:uppercase;
+      padding:2px 8px; border-radius:2px;
+      border:1px solid; opacity:0.75;
+    }
+
+    .card-right {
+      display:flex; flex-direction:column; align-items:flex-end;
+      gap:8px; flex-shrink:0;
+    }
+
+    .cat-badge {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:2px; text-transform:uppercase;
+      padding:4px 10px; border-radius:2px;
+      border:1px solid var(--cat-color, var(--accent));
+      color:var(--cat-color, var(--accent));
+      background:transparent; white-space:nowrap;
+      position:relative; overflow:hidden;
+    }
+    .cat-badge::after {
+      content:'';position:absolute;inset:0;
+      background:var(--cat-color,var(--accent));opacity:0.08;
+    }
+
+    .status-dot {
+      width:8px; height:8px; border-radius:50%;
+      background:var(--status-color, var(--muted));
+      box-shadow:0 0 6px var(--status-color, transparent);
+    }
+
+    .status-row {
+      display:flex; align-items:center; gap:6px;
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:8px; letter-spacing:1.5px; text-transform:uppercase;
+      color:var(--muted);
+    }
+
+    /* Stats bar */
+    .stats {
+      display:flex; gap:0; margin-top:20px;
+      border:1px solid var(--border); border-radius:4px;
+      overflow:hidden; background:var(--panel);
+      opacity:0; animation: fadeUp 0.5s ease forwards 0.5s;
+    }
+    .stat {
+      flex:1; padding:14px 16px;
+      border-right:1px solid var(--border);
+      text-align:center;
+    }
+    .stat:last-child { border-right:none; }
+    .stat-n {
+      font-size:28px; font-weight:900;
+      color:var(--accent); line-height:1;
+      font-family:'Roboto',sans-serif;font-style:italic;
+    }
+    .stat-l {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:8px; letter-spacing:2px;
+      text-transform:uppercase; color:var(--muted); margin-top:3px;
+    }
+
+    /* Empty state */
+    .empty {
+      text-align:center; padding:60px 20px;
+      display:none;
+    }
+    .empty.show { display:block; }
+    .empty-icon { font-size:40px; margin-bottom:12px; opacity:0.2; }
+    .empty-title { font-size:20px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--muted); }
+    .empty-sub { font-family:'Roboto',sans-serif;font-style:italic; font-size:10px; color:var(--muted); margin-top:6px; letter-spacing:2px; }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── MOBILE TOP BAR ── */
+    .mobile-bar {
+      display:none;
+      position:sticky; top:0; z-index:100;
+      background:var(--panel2);
+      border-bottom:1px solid var(--border);
+      padding:14px 18px;
+      align-items:center; justify-content:space-between;
+    }
+    .mobile-logo {
+      font-family:'DM Sans',sans-serif;
+      font-size:16px; font-weight:900;
+      text-transform:uppercase; letter-spacing:-0.3px;
+    }
+    .mobile-logo span { color:var(--accent); }
+    .filter-toggle-btn {
+      display:flex; align-items:center; gap:7px;
+      padding:7px 14px;
+      background:transparent;
+      border:1px solid var(--border); border-radius:3px;
+      color:var(--muted);
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:2px; text-transform:uppercase;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .filter-toggle-btn.has-filters {
+      border-color:var(--accent); color:var(--accent);
+    }
+    .filter-toggle-btn .ftb-dot {
+      width:6px; height:6px; border-radius:50%;
+      background:var(--accent); display:none;
+    }
+    .filter-toggle-btn.has-filters .ftb-dot { display:block; }
+
+    /* ── MOBILE DRAWER OVERLAY ── */
+    .drawer-overlay {
+      display:none;
+      position:fixed; inset:0; z-index:200;
+      background:rgba(0,0,0,0.6);
+      backdrop-filter:blur(2px);
+    }
+    .drawer-overlay.open { display:block; }
+
+    .drawer {
+      position:fixed; bottom:0; left:0; right:0; z-index:201;
+      background:var(--panel2);
+      border-top:1px solid var(--border);
+      border-radius:14px 14px 0 0;
+      padding:0 0 env(safe-area-inset-bottom,16px);
+      max-height:85vh; overflow-y:auto;
+      transform:translateY(100%);
+      transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    }
+    .drawer.open { transform:translateY(0); }
+
+    .drawer-handle {
+      width:36px; height:4px; border-radius:2px;
+      background:var(--border2); margin:12px auto 0;
+    }
+    .drawer-header {
+      padding:14px 20px 10px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid var(--border);
+    }
+    .drawer-title {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:3px; text-transform:uppercase;
+      color:var(--accent);
+    }
+    .drawer-close {
+      background:transparent; border:none; color:var(--muted);
+      font-size:18px; cursor:pointer; padding:0 4px; line-height:1;
+    }
+    .drawer-body { padding:12px 20px 20px; }
+    .drawer-section { margin-bottom:18px; }
+    .drawer-section-title {
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:3px; text-transform:uppercase;
+      color:var(--muted); margin-bottom:10px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .drawer-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+    .drawer-chips { display:flex; flex-wrap:wrap; gap:7px; }
+    .drawer-chip {
+      padding:8px 14px; border-radius:3px;
+      border:1px solid var(--border);
+      background:transparent; color:var(--muted);
+      font-family:'DM Sans',sans-serif;
+      font-size:13px; font-weight:600;
+      letter-spacing:0.5px; text-transform:uppercase;
+      cursor:pointer; transition:all 0.15s;
+      position:relative; overflow:hidden;
+    }
+    .drawer-chip.on {
+      border-color:var(--chip-color,var(--accent));
+      color:var(--chip-color,var(--accent));
+    }
+    .drawer-chip.on::after {
+      content:''; position:absolute; inset:0;
+      background:var(--chip-color,var(--accent)); opacity:0.1;
+      pointer-events:none;
+    }
+    .drawer-clear {
+      width:100%; padding:11px; margin-top:6px;
+      background:transparent;
+      border:1px solid var(--border); border-radius:3px;
+      color:var(--muted);
+      font-family:'Roboto',sans-serif;font-style:italic;
+      font-size:9px; letter-spacing:2px; text-transform:uppercase;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .drawer-clear:hover { border-color:var(--accent2); color:var(--accent2); }
+
+    /* ── SMALL LAPTOP (≤1024px) ── */
+    @media (max-width: 1024px) {
+      .sidebar { width:210px; }
+      .main { padding:28px 24px 50px; }
+    }
+
+    /* ── TABLET / SMALL LAPTOP (≤768px) — sidebar collapses ── */
+    @media (max-width: 768px) {
+      .sidebar { display:none; }
+      .mobile-bar { display:flex; }
+      .page { flex-direction:column; }
+      .main { padding:20px 16px 60px; }
+      .main-header h1 { font-size:clamp(28px,8vw,44px); }
+      .stats { flex-wrap:wrap; }
+      .stat { min-width:calc(33.33% - 1px); border-bottom:1px solid var(--border); }
+      .card-body { flex-wrap:wrap; gap:12px; }
+      .card-right { flex-direction:row; align-items:center; width:100%; justify-content:flex-start; }
+    }
+
+    /* ── MOBILE (≤480px) ── */
+    @media (max-width: 480px) {
+      .main { padding:16px 12px 60px; }
+      .card-body { padding:14px 14px; }
+      .card-name { font-size:15px; }
+      .card-desc { font-size:12px; }
+      .stats { flex-wrap:wrap; }
+      .stat { min-width:50%; }
+      .header-meta { gap:10px; }
+      .meta-div { display:none; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- MOBILE TOP BAR -->
+  <div class="mobile-bar" id="mobileBar">
+    <div class="mobile-logo">Project <span>Registry</span></div>
+    <button class="filter-toggle-btn" id="filterToggleBtn" onclick="openDrawer()">
+      <span class="ftb-dot"></span>
+      Filters
+    </button>
+  </div>
+
+  <!-- FILTER DRAWER (mobile) -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="filterDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-header">
+      <span class="drawer-title">// Filters</span>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="drawer-section-title">Category</div>
+        <div class="drawer-chips">
+          <button class="drawer-chip" data-g="cat" data-v="game"       style="--chip-color:#c084fc" onclick="toggleDrawer(this)">Games</button>
+          <button class="drawer-chip" data-g="cat" data-v="machining"  style="--chip-color:#00c8ff" onclick="toggleDrawer(this)">Shop Work</button>
+          <button class="drawer-chip" data-g="cat" data-v="simulator"  style="--chip-color:#39ff14" onclick="toggleDrawer(this)">Simulators</button>
+          <button class="drawer-chip" data-g="cat" data-v="calculator" style="--chip-color:#ffd600" onclick="toggleDrawer(this)">Calculators</button>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Status</div>
+        <div class="drawer-chips">
+          <button class="drawer-chip" data-g="status" data-v="complete" style="--chip-color:#39ff14" onclick="toggleDrawer(this)">Complete</button>
+          <button class="drawer-chip" data-g="status" data-v="active"   style="--chip-color:#00c8ff" onclick="toggleDrawer(this)">Active</button>
+          <button class="drawer-chip" data-g="status" data-v="wip"      style="--chip-color:#ffd600" onclick="toggleDrawer(this)">In Progress</button>
+        </div>
+      </div>
+      <button class="drawer-clear" onclick="clearAll()">⟳ &nbsp;Clear All Filters</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-tag">// Portfolio</div>
+      <h2>Project<br><span>Registry</span></h2>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">Category</div>
+      <div class="chip-list">
+        <button class="chip" data-g="cat" data-v="game" style="--chip-color:#c084fc" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Games</span>
+          <span class="chip-check">✓</span>
+        </button>
+        <button class="chip" data-g="cat" data-v="machining" style="--chip-color:#00c8ff" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Shop Work</span>
+          <span class="chip-check">✓</span>
+        </button>
+        <button class="chip" data-g="cat" data-v="simulator" style="--chip-color:#39ff14" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Simulators</span>
+          <span class="chip-check">✓</span>
+        </button>
+        <button class="chip" data-g="cat" data-v="calculator" style="--chip-color:#ffd600" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Calculators</span>
+          <span class="chip-check">✓</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">Status</div>
+      <div class="chip-list">
+        <button class="chip" data-g="status" data-v="complete" style="--chip-color:#39ff14" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Complete</span>
+          <span class="chip-check">✓</span>
+        </button>
+        <button class="chip" data-g="status" data-v="active" style="--chip-color:#00c8ff" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Active</span>
+          <span class="chip-check">✓</span>
+        </button>
+        <button class="chip" data-g="status" data-v="wip" style="--chip-color:#ffd600" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">In Progress</span>
+          <span class="chip-check">✓</span>
+        </button>
+      </div>
+    </div>
+
+    <button class="clear-btn" onclick="clearAll()">⟳ &nbsp;Clear All Filters</button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="main-header">
+      <h1>All<br><span>Projects</span></h1>
+      <div class="header-meta">
+        <span class="meta-item">Personal Portfolio</span>
+        <div class="meta-div"></div>
+        <span class="meta-item" id="totalCount">0 Projects</span>
+        <div class="meta-div"></div>
+        <span class="meta-item" id="ds"></span>
+      </div>
+    </div>
+
+    <div class="tag-bar" id="tagBar"></div>
+    <div class="result-count" id="rc"><em id="vc">0</em> projects shown</div>
+
+    <div class="cards-wrap" id="cardsWrap"></div>
+
+    <div class="empty" id="empty">
+      <div class="empty-icon">◈</div>
+      <div class="empty-title">No Projects Found</div>
+      <div class="empty-sub">Adjust filters to see results</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="sTotal">0</div><div class="stat-l">Showing</div></div>
+      <div class="stat"><div class="stat-n" id="sGames">0</div><div class="stat-l">Games</div></div>
+      <div class="stat"><div class="stat-n" id="sMach">0</div><div class="stat-l">Shop Work</div></div>
+      <div class="stat"><div class="stat-n" id="sSim">0</div><div class="stat-l">Simulators</div></div>
+      <div class="stat"><div class="stat-n" id="sCalc">0</div><div class="stat-l">Calculators</div></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  document.getElementById('ds').textContent =
+    new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'}).toUpperCase();
+
+  const CAT_COLOR = {
+    game:      '#c084fc',
+    machining: '#00c8ff',
+    simulator: '#39ff14',
+    calculator:'#ffd600',
+  };
+  const CAT_LABEL = {
+    game:      'Game',
+    machining: 'Shop Work',
+    simulator: 'Simulator',
+    calculator:'Calculator',
+  };
+  const STATUS_COLOR = {
+    complete: '#39ff14',
+    active:   '#00c8ff',
+    wip:      '#ffd600',
+  };
+  const STATUS_LABEL = {
+    complete: 'Complete',
+    active:   'Active',
+    wip:      'In Progress',
+  };
+
+  // ── ADD YOUR PROJECTS HERE ──────────────────────────────────────────────────
+  const DATA = [
+    {
+      id: 'PROJ-001',
+      name: 'Thread Guide',
+      cat: 'machining',
+      status: 'complete',
+      desc: 'A step-by-step guide for cutting threads on an engine lathe — covering setup, tool selection, and cutting technique for manual machining.',
+      tags: ['Manual Machining', 'Lathe', 'Threading'],
+      updated: 'Mar 2026',
+    },
+    {
+      id: 'PROJ-002',
+      name: 'Feeds & Speeds Calc',
+      cat: 'calculator',
+      status: 'complete',
+      desc: 'Enter your material, tool, and machine parameters to get instant feed rate and spindle speed recommendations for CNC and manual turning and milling.',
+      tags: ['CNC', 'Manual', 'Turning', 'Milling'],
+      updated: 'Mar 2026',
+    },
+    {
+      id: 'PROJ-003',
+      name: 'Dial Caliper Simulator',
+      cat: 'simulator',
+      status: 'complete',
+      desc: 'An interactive dial caliper you can practice reading — ideal for students learning precision measurement before touching real tooling.',
+      tags: ['Measurement', 'Training', 'Interactive'],
+      updated: 'Mar 2026',
+    },
+    {
+      id: 'PROJ-004',
+      name: 'Tetris',
+      cat: 'game',
+      status: 'complete',
+      desc: 'A fully playable browser-based Tetris clone with keyboard controls, scoring, and level progression.',
+      tags: ['JavaScript', 'Canvas', 'Browser'],
+      updated: 'Mar 2026',
+    },
+    {
+      id: 'PROJ-005',
+      name: 'Pong',
+      cat: 'game',
+      status: 'complete',
+      desc: 'Classic two-player Pong built for the browser with smooth physics and score tracking.',
+      tags: ['JavaScript', 'Canvas', 'Browser'],
+      updated: 'Mar 2026',
+    },
+  ];
+  // ───────────────────────────────────────────────────────────────────────────
+
+  document.getElementById('totalCount').textContent = DATA.length + ' Projects';
+
+  const F = { cat: new Set(), status: new Set() };
+
+  const CHIP_BG = {
+    game:       'rgba(192,132,252,0.12)',
+    machining:  'rgba(0,200,255,0.12)',
+    simulator:  'rgba(57,255,20,0.12)',
+    calculator: 'rgba(255,214,0,0.12)',
+    complete:   'rgba(57,255,20,0.12)',
+    active:     'rgba(0,200,255,0.12)',
+    wip:        'rgba(255,214,0,0.12)',
+  };
+
+  function toggle(btn) {
+    const g = btn.dataset.g, v = btn.dataset.v;
+    if (F[g].has(v)) { F[g].delete(v); btn.classList.remove('on'); }
+    else             { F[g].add(v);    btn.classList.add('on'); }
+    apply();
+  }
+
+  function clearAll() {
+    Object.keys(F).forEach(g => F[g].clear());
+    document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+    document.querySelectorAll('.drawer-chip.on').forEach(c => c.classList.remove('on'));
+    apply();
+  }
+
+  function removeFilter(g, v) {
+    F[g].delete(v);
+    const btn = document.querySelector(`.chip[data-g="${g}"][data-v="${v}"]`);
+    if (btn) btn.classList.remove('on');
+    apply();
+  }
+
+  function apply() {
+    const cards = document.querySelectorAll('.project-card');
+    let vis=0, games=0, mach=0, sim=0, calc=0;
+
+    cards.forEach(c => {
+      const ok =
+        (F.cat.size===0    || F.cat.has(c.dataset.cat)) &&
+        (F.status.size===0 || F.status.has(c.dataset.status));
+      c.classList.toggle('hide', !ok);
+      if (ok) {
+        vis++;
+        if (c.dataset.cat==='game')       games++;
+        if (c.dataset.cat==='machining')  mach++;
+        if (c.dataset.cat==='simulator')  sim++;
+        if (c.dataset.cat==='calculator') calc++;
+      }
+    });
+
+    document.getElementById('vc').textContent      = vis;
+    document.getElementById('sTotal').textContent  = vis;
+    document.getElementById('sGames').textContent  = games;
+    document.getElementById('sMach').textContent   = mach;
+    document.getElementById('sSim').textContent    = sim;
+    document.getElementById('sCalc').textContent   = calc;
+    document.getElementById('empty').classList.toggle('show', vis===0);
+
+    const bar = document.getElementById('tagBar');
+    bar.innerHTML='';
+    const all = [
+      ...[...F.cat].map(v=>({g:'cat',v})),
+      ...[...F.status].map(v=>({g:'status',v})),
+    ];
+    all.forEach(({g,v})=>{
+      const color = CAT_COLOR[v] || STATUS_COLOR[v] || '#fff';
+      const t = document.createElement('div');
+      t.className='atag';
+      t.style.background = CHIP_BG[v]||'rgba(255,255,255,0.06)';
+      t.style.border = `1px solid ${color}55`;
+      t.style.color  = color;
+      t.innerHTML = `${(CAT_LABEL[v]||STATUS_LABEL[v]||v).toUpperCase()} <span class="atag-x" onclick="removeFilter('${g}','${v}')">✕</span>`;
+      bar.appendChild(t);
+    });
+    syncDrawerChips();
+  }
+
+  function openDrawer() {
+    document.getElementById('filterDrawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    document.getElementById('filterDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function toggleDrawer(btn) {
+    const g = btn.dataset.g, v = btn.dataset.v;
+    if (F[g].has(v)) { F[g].delete(v); btn.classList.remove('on'); }
+    else             { F[g].add(v);    btn.classList.add('on'); }
+    // sync sidebar chips too
+    const sideChip = document.querySelector(`.chip[data-g="${g}"][data-v="${v}"]`);
+    if (sideChip) sideChip.classList.toggle('on', F[g].has(v));
+    apply();
+  }
+  function syncDrawerChips() {
+    document.querySelectorAll('.drawer-chip').forEach(btn => {
+      btn.classList.toggle('on', F[btn.dataset.g].has(btn.dataset.v));
+    });
+    const hasAny = Object.values(F).some(s => s.size > 0);
+    const ftb = document.getElementById('filterToggleBtn');
+    if (ftb) ftb.classList.toggle('has-filters', hasAny);
+  }
+
+  (function buildCards(){
+    const wrap = document.getElementById('cardsWrap');
+    DATA.forEach((p, i) => {
+      const catColor    = CAT_COLOR[p.cat]    || '#fff';
+      const statusColor = STATUS_COLOR[p.status] || '#888';
+      const card = document.createElement('div');
+      card.className = 'project-card';
+      card.style.animationDelay = `${0.04*i + 0.35}s`;
+      card.style.setProperty('--cat-color', catColor);
+      card.dataset.cat    = p.cat;
+      card.dataset.status = p.status;
+
+      const tagPills = (p.tags||[]).map(t =>
+        `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`
+      ).join('');
+
+      card.innerHTML = `
+        <div class="card-accent-bar"></div>
+        <div class="card-body">
+          <div class="card-left">
+            <div class="card-name">${p.name}</div>
+            <div class="card-id">${p.id}</div>
+            <div class="card-desc">${p.desc}</div>
+            <div class="card-tags">${tagPills}</div>
+            <div class="card-updated">
+              <div class="card-updated-dot"></div>
+              Last updated: ${p.updated || '—'}
+            </div>
+          </div>
+          <div class="card-right">
+            <span class="cat-badge">${CAT_LABEL[p.cat] || p.cat.toUpperCase()}</span>
+            <div class="status-row">
+              <div class="status-dot" style="--status-color:${statusColor}"></div>
+              ${STATUS_LABEL[p.status]||p.status}
+            </div>
+          </div>
+        </div>
+      `;
+      wrap.appendChild(card);
+    });
+    apply();
+  })();
+</script>
+</body>
+</html>
