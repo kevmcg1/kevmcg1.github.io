@@ -1,0 +1,570 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insert Decoder & Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1a1a1a; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .tab-active { border-color: #4f46e5; color: #4f46e5; border-bottom-width: 2px; background-color: rgba(238,242,255,0.5); }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .table-wrapper {
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            background: white;
+            margin-bottom: 2rem;
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; }
+        thead th { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; padding: 1rem 1.5rem; background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1; }
+        tbody td { padding: 0.85rem 1.5rem; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; font-size: 0.9rem; color: #334155; background-color: #ffffff; transition: background-color 0.2s ease; }
+        tbody td:last-child, thead th:last-child { border-right: none; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background-color: #f8fafc; }
+
+        .section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+        .section-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <header class="bg-indigo-950 text-white pt-8 pb-12 px-4 shadow-xl">
+        <div class="max-w-5xl mx-auto text-center">
+            <h1 class="text-3xl font-black tracking-tight mb-2 uppercase italic">Insert Master</h1>
+            <p class="text-indigo-300 text-sm font-medium tracking-wide">ISO & ANSI Machining Standard Reference</p>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 -mt-8">
+        
+        <div class="flex bg-white rounded-t-xl shadow-sm border-b-2 border-slate-200 overflow-hidden">
+            <button onclick="switchMode('decoder')" id="tab-decoder" class="flex-1 py-4 font-bold text-xs uppercase tracking-widest transition-all border-b-2 border-transparent tab-active">Decoder</button>
+            <button onclick="switchMode('info')" id="tab-info" class="flex-1 py-4 font-bold text-xs uppercase tracking-widest transition-all border-b-2 border-transparent">Reference</button>
+            <button onclick="switchMode('builder')" id="tab-builder" class="flex-1 py-4 font-bold text-xs uppercase tracking-widest transition-all border-b-2 border-transparent">Builder</button>
+        </div>
+
+        <!-- Decoder Mode -->
+        <div id="mode-decoder" class="bg-white p-6 rounded-b-xl shadow-lg border-x border-b border-slate-200">
+            <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3 items-start">
+                <span class="text-amber-600 mt-0.5">⚠️</span>
+                <p class="text-[11px] text-amber-900 leading-relaxed font-medium">
+                    Supports standard 7- and 9-character Turning insert codes (ISO and ANSI). Decodes geometry, tolerance, edge condition, hand, and nominal sizing per global machining standards.
+                </p>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Input Specification Code</label>
+                <input type="text" id="decoder-input" placeholder="e.g. CNMG432 or CNMG120408RL"
+                       oninput="decode()"
+                       class="w-full border-2 border-slate-200 rounded-xl p-4 mono text-2xl focus:border-indigo-500 outline-none uppercase shadow-inner transition-colors">
+                
+                <div class="mt-4 flex flex-wrap gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] text-slate-400 font-black uppercase">ANSI:</span>
+                        <button onclick="loadSample('CNMG432')" class="text-[10px] text-indigo-600 hover:underline font-bold">CNMG432</button>
+                        <button onclick="loadSample('DNMG431')" class="text-[10px] text-indigo-600 hover:underline font-bold">DNMG431</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] text-slate-400 font-black uppercase">ISO:</span>
+                        <button onclick="loadSample('CNMG120408')" class="text-[10px] text-emerald-600 hover:underline font-bold">CNMG120408</button>
+                        <button onclick="loadSample('TNMG160404ER')" class="text-[10px] text-emerald-600 hover:underline font-bold">TNMG160404ER</button>
+                        <button onclick="loadSample('VNMG160408EL')" class="text-[10px] text-emerald-600 hover:underline font-bold">VNMG160408EL</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="decoder-results" class="hidden">
+                <h3 class="font-black text-slate-800 text-sm uppercase tracking-widest border-b-2 border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                    <span>Breakdown</span>
+                    <span id="standard-badge" class="text-[10px] px-2 py-0.5 rounded-md"></span>
+                </h3>
+                <div id="decode-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+            </div>
+        </div>
+
+        <!-- Info Mode -->
+        <div id="mode-info" class="hidden bg-white p-6 rounded-b-xl shadow-lg border-x border-b border-slate-200">
+            <div class="flex justify-between items-center mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
+                <div>
+                    <h3 class="font-bold text-slate-900">Standardized Reference Tables</h3>
+                    <p class="text-xs text-slate-500">Industry standard dimensions and geometry codes.</p>
+                </div>
+                <button onclick="toggleUnits()" id="unit-toggle-btn" class="bg-white border-2 border-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold text-xs shadow-sm hover:border-indigo-500 transition-all uppercase tracking-tighter">
+                    Units: ANSI (Inch)
+                </button>
+            </div>
+
+            <div class="space-y-12">
+                <section>
+                    <div class="section-header"><span class="section-dot bg-indigo-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">1. Shape Geometry</h4></div>
+                    <div class="table-wrapper"><table id="table-shape"><thead><tr><th class="w-32">Code</th><th>Description</th><th>Point Angle</th></tr></thead><tbody></tbody></table></div>
+                </section>
+
+                <section>
+                    <div class="section-header"><span class="section-dot bg-blue-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">2. Relief Angle</h4></div>
+                    <div class="table-wrapper"><table id="table-relief"><thead><tr><th class="w-32">Code</th><th>Angle</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+                </section>
+
+                <section>
+                    <div class="section-header"><span class="section-dot bg-emerald-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">3. Tolerance Class</h4></div>
+                    <div class="table-wrapper"><table id="table-tolerance"><thead><tr><th class="w-24">Code</th><th>I.C. Tol.</th><th>Thickness Tol.</th><th>Description</th></tr></thead><tbody></tbody></table></div>
+                </section>
+
+                <section>
+                    <div class="section-header"><span class="section-dot bg-orange-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">4. Insert Type / Fixing</h4></div>
+                    <div class="table-wrapper"><table id="table-type"><thead><tr><th class="w-32">Code</th><th>Features</th></tr></thead><tbody></tbody></table></div>
+                </section>
+
+                <section>
+                    <div class="section-header"><span class="section-dot bg-purple-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">6. Cutting Edge Condition</h4></div>
+                    <div class="table-wrapper"><table id="table-edge"><thead><tr><th class="w-32">Code</th><th>Description</th></tr></thead><tbody></tbody></table></div>
+                </section>
+
+                <section>
+                    <div class="section-header"><span class="section-dot bg-teal-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">7. Cutting Direction (Hand)</h4></div>
+                    <div class="table-wrapper"><table id="table-hand"><thead><tr><th class="w-32">Code</th><th>Description</th></tr></thead><tbody></tbody></table></div>
+                </section>
+                
+                <section>
+                    <div class="section-header"><span class="section-dot bg-rose-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">5. Dimension Mappings</h4></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 mb-3 uppercase ml-1">Size (I.C.)</p>
+                            <div class="table-wrapper"><table id="table-size"><thead><tr><th>ISO</th><th>ANSI</th><th class="unit-label text-right">Value</th></tr></thead><tbody></tbody></table></div>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 mb-3 uppercase ml-1">Thickness</p>
+                            <div class="table-wrapper"><table id="table-thick"><thead><tr><th>ISO</th><th>ANSI</th><th class="unit-label text-right">Value</th></tr></thead><tbody></tbody></table></div>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 mb-3 uppercase ml-1">Nose Radius (ISO)</p>
+                            <div class="table-wrapper"><table id="table-radius"><thead><tr><th>Code</th><th class="unit-label text-right">Value</th></tr></thead><tbody></tbody></table></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Builder Mode -->
+        <div id="mode-builder" class="hidden bg-white p-6 rounded-b-xl shadow-lg border-x border-b border-slate-200">
+            <div class="bg-indigo-950 rounded-xl p-8 mb-10 text-center shadow-xl">
+                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] block mb-2">Active Specification Code</span>
+                <div id="builder-output" class="mono text-4xl md:text-5xl text-white font-bold tracking-widest break-all">CNMG120408EN</div>
+            </div>
+
+            <div class="space-y-12">
+                <section>
+                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">1 — Shape Geometry</h3>
+                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-shape"></div>
+                    <p id="desc-shape" class="mt-3 text-xs font-bold text-indigo-600 bg-indigo-50 p-3 rounded-lg min-h-[2.5rem]"></p>
+                </section>
+
+                <section>
+                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">2 — Relief Angle</h3>
+                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-relief"></div>
+                    <p id="desc-relief" class="mt-3 text-xs font-bold text-blue-600 bg-blue-50 p-3 rounded-lg min-h-[2.5rem]"></p>
+                </section>
+
+                <section>
+                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">3 — Tolerance Class</h3>
+                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-tolerance"></div>
+                    <p id="desc-tolerance" class="mt-3 text-xs font-bold text-emerald-600 bg-emerald-50 p-3 rounded-lg min-h-[2.5rem]"></p>
+                </section>
+
+                <section>
+                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">4 — Insert Type / Fixing</h3>
+                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-hole"></div>
+                    <p id="desc-hole" class="mt-3 text-xs font-bold text-orange-600 bg-orange-50 p-3 rounded-lg min-h-[2.5rem]"></p>
+                </section>
+
+                <section>
+                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">5 — Nominal Dimensions (ISO)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-3">Size (I.C.)</label>
+                            <select id="build-size" class="w-full bg-white border-2 border-slate-200 p-3 rounded-xl font-bold outline-none focus:border-indigo-500" onchange="updateState('size', this.value)"></select>
+                        </div>
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-3">Thickness</label>
+                            <select id="build-thickness" class="w-full bg-white border-2 border-slate-200 p-3 rounded-xl font-bold outline-none focus:border-indigo-500" onchange="updateState('thick', this.value)"></select>
+                        </div>
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-3">Nose Radius</label>
+                            <select id="build-radius" class="w-full bg-white border-2 border-slate-200 p-3 rounded-xl font-bold outline-none focus:border-indigo-500" onchange="updateState('rad', this.value)"></select>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">6 — Cutting Edge Condition</h3>
+                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-edge"></div>
+                    <p id="desc-edge" class="mt-3 text-xs font-bold text-purple-600 bg-purple-50 p-3 rounded-lg min-h-[2.5rem]"></p>
+                </section>
+
+                <section>
+                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">7 — Cutting Direction (Hand)</h3>
+                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-hand"></div>
+                    <p id="desc-hand" class="mt-3 text-xs font-bold text-teal-600 bg-teal-50 p-3 rounded-lg min-h-[2.5rem]"></p>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const DATA = {
+            shape: {
+                'C': { desc: '80° Rhombic', angle: '80°' },
+                'D': { desc: '55° Rhombic', angle: '55°' },
+                'E': { desc: '75° Rhombic', angle: '75°' },
+                'H': { desc: 'Hexagonal', angle: '120°' },
+                'K': { desc: '55° Parallelogram', angle: '55°' },
+                'L': { desc: 'Rectangular', angle: '90°' },
+                'M': { desc: '86° Rhombic', angle: '86°' },
+                'O': { desc: 'Octagonal', angle: '135°' },
+                'P': { desc: 'Pentagonal', angle: '108°' },
+                'R': { desc: 'Round', angle: '—' },
+                'S': { desc: 'Square', angle: '90°' },
+                'T': { desc: 'Triangular', angle: '60°' },
+                'V': { desc: '35° Rhombic', angle: '35°' },
+                'W': { desc: 'Trigon (80°)', angle: '80°' },
+                'A': { desc: '85° Parallelogram', angle: '85°' },
+                'B': { desc: '82° Parallelogram', angle: '82°' }
+            },
+            relief: {
+                'N': { desc: '0° Negative', note: 'Double-sided use' },
+                'A': { desc: '3° Positive', note: 'Light positive' },
+                'B': { desc: '5° Positive', note: 'General positive' },
+                'C': { desc: '7° Positive', note: 'Standard positive' },
+                'D': { desc: '15° Positive', note: 'High positive' },
+                'E': { desc: '20° Positive', note: 'Very high positive' },
+                'F': { desc: '25° Positive', note: 'Ultra-high positive' },
+                'G': { desc: '30° Positive', note: 'Maximum positive' },
+                'P': { desc: '11° Positive', note: 'Medium positive' }
+            },
+            tolerance: {
+                'A': { ic: '±0.025 mm', th: '±0.025 mm', desc: 'High precision ground' },
+                'B': { ic: '±0.025 mm', th: '±0.025 mm', desc: 'Precision ground, restricted apex' },
+                'C': { ic: '±0.025 mm', th: '±0.013 mm', desc: 'Precision ground' },
+                'D': { ic: '±0.025 mm', th: '±0.025 mm', desc: 'Precision, restricted apex' },
+                'E': { ic: '±0.025 mm', th: '±0.025 mm', desc: 'Precision ground' },
+                'F': { ic: '±0.013 mm', th: '±0.025 mm', desc: 'Finish ground' },
+                'G': { ic: '±0.025 mm', th: '±0.13 mm',  desc: 'Finishing tolerance' },
+                'H': { ic: '±0.013 mm', th: '±0.013 mm', desc: 'Super precision' },
+                'J': { ic: '±0.05–0.15 mm', th: '±0.025 mm', desc: 'Precision, varies by size' },
+                'K': { ic: '±0.05–0.15 mm', th: '±0.013 mm', desc: 'Precision ground' },
+                'L': { ic: '±0.05–0.15 mm', th: '±0.025 mm', desc: 'Semi-precision' },
+                'M': { ic: '±0.05–0.15 mm', th: '±0.13 mm',  desc: 'Standard machining' },
+                'N': { ic: '±0.05–0.15 mm', th: '±0.025 mm', desc: 'Unground, standard' },
+                'R': { ic: '±0.05–0.15 mm', th: '±0.013 mm', desc: 'Unground, restricted' },
+                'U': { ic: '±0.13–0.38 mm', th: '±0.13 mm',  desc: 'Un-ground roughing' }
+            },
+            hole: {
+                'A': { desc: 'Plain cylindrical hole, no breaker' },
+                'F': { desc: 'Countersunk top + cylindrical hole, no breaker' },
+                'G': { desc: 'Double-sided, hole + chipbreaker both sides' },
+                'M': { desc: 'Standard hole + chipbreaker one side' },
+                'N': { desc: 'No hole (solid insert)' },
+                'Q': { desc: 'Double-sided cylindrical hole, no breaker' },
+                'R': { desc: 'Chipbreaker one side, no hole' },
+                'T': { desc: 'Countersunk hole, single-sided with chipbreaker' },
+                'W': { desc: 'Countersunk hole, no chipbreaker' },
+                'X': { desc: 'Special / non-standard configuration' },
+                'B': { desc: 'Single-sided hole + chipbreaker' }
+            },
+            edge: {
+                'E': { desc: 'Sharp (honed only, minimal)' },
+                'F': { desc: 'Sharp with protective land' },
+                'K': { desc: 'Double chamfer' },
+                'P': { desc: 'Chamfer + hone combination' },
+                'S': { desc: 'Honed edge (radius hone)' },
+                'T': { desc: 'Chamfer only' },
+                'Z': { desc: 'Special / manufacturer-defined' }
+            },
+            hand: {
+                'R': { desc: 'Right-hand cut' },
+                'L': { desc: 'Left-hand cut' },
+                'N': { desc: 'Neutral (both directions)' }
+            },
+            size: {
+                iso:  { '06': 6.35,  '08': 8.0,   '09': 9.52,  '12': 12.70, '16': 15.88, '19': 19.05, '25': 25.40 },
+                ansi: { '2': 6.35,   '2.5': 8.0,  '3': 9.52,   '4': 12.70,  '5': 15.88,  '6': 19.05,  '8': 25.40 }
+            },
+            thickness: {
+                iso:  { '03': 3.18,  'T3': 3.97, '04': 4.76, '06': 6.35, '07': 7.94, '09': 9.52 },
+                ansi: { '2': 3.18,   '2.5': 3.97, '3': 4.76, '4': 6.35, '5': 7.94,  '6': 9.52  }
+            },
+            radius: {
+                iso: { '00': 0, '04': 0.4, '08': 0.8, '12': 1.2, '16': 1.6, '20': 2.0, '24': 2.4 },
+                ansi: { '0': 0, '1': 0.40, '2': 0.79, '3': 1.19, '4': 1.59 }
+            }
+        };
+
+        let currentUnit = 'ansi';
+        let buildState = { shape: 'C', relief: 'N', tolerance: 'M', hole: 'G', size: '12', thick: '04', rad: '08', edge: 'E', hand: 'N' };
+
+        function switchMode(mode) {
+            ['decoder', 'info', 'builder'].forEach(m => {
+                document.getElementById(`mode-${m}`).classList.add('hidden');
+                document.getElementById(`tab-${m}`).classList.remove('tab-active');
+            });
+            document.getElementById(`mode-${mode}`).classList.remove('hidden');
+            document.getElementById(`tab-${mode}`).classList.add('tab-active');
+            if (mode === 'info') renderTables();
+        }
+
+        function toggleUnits() {
+            currentUnit = currentUnit === 'ansi' ? 'iso' : 'ansi';
+            document.getElementById('unit-toggle-btn').innerText = `Units: ${currentUnit === 'ansi' ? 'ANSI (Inch)' : 'ISO (Metric)'}`;
+            renderTables();
+        }
+
+        function renderTables() {
+            // Shape
+            const shapeTbody = document.querySelector('#table-shape tbody');
+            shapeTbody.innerHTML = '';
+            Object.entries(DATA.shape).forEach(([k, v]) => {
+                shapeTbody.innerHTML += `<tr><td class="mono font-bold text-indigo-700 bg-slate-50/50">${k}</td><td>${v.desc}</td><td class="text-slate-500">${v.angle}</td></tr>`;
+            });
+
+            // Relief
+            const reliefTbody = document.querySelector('#table-relief tbody');
+            reliefTbody.innerHTML = '';
+            Object.entries(DATA.relief).forEach(([k, v]) => {
+                reliefTbody.innerHTML += `<tr><td class="mono font-bold text-blue-700 bg-slate-50/50">${k}</td><td>${v.desc}</td><td class="text-slate-500 text-xs">${v.note}</td></tr>`;
+            });
+
+            // Tolerance
+            const tolTbody = document.querySelector('#table-tolerance tbody');
+            tolTbody.innerHTML = '';
+            Object.entries(DATA.tolerance).forEach(([k, v]) => {
+                tolTbody.innerHTML += `<tr><td class="mono font-bold text-emerald-700 bg-slate-50/50 text-center">${k}</td><td class="mono text-xs">${v.ic}</td><td class="mono text-xs">${v.th}</td><td class="text-xs">${v.desc}</td></tr>`;
+            });
+
+            // Hole/Type
+            const holeTbody = document.querySelector('#table-type tbody');
+            holeTbody.innerHTML = '';
+            Object.entries(DATA.hole).forEach(([k, v]) => {
+                holeTbody.innerHTML += `<tr><td class="mono font-bold text-orange-700 bg-slate-50/50">${k}</td><td>${v.desc}</td></tr>`;
+            });
+
+            // Edge
+            const edgeTbody = document.querySelector('#table-edge tbody');
+            edgeTbody.innerHTML = '';
+            Object.entries(DATA.edge).forEach(([k, v]) => {
+                edgeTbody.innerHTML += `<tr><td class="mono font-bold text-purple-700 bg-slate-50/50">${k}</td><td>${v.desc}</td></tr>`;
+            });
+
+            // Hand
+            const handTbody = document.querySelector('#table-hand tbody');
+            handTbody.innerHTML = '';
+            Object.entries(DATA.hand).forEach(([k, v]) => {
+                handTbody.innerHTML += `<tr><td class="mono font-bold text-teal-700 bg-slate-50/50">${k}</td><td>${v.desc}</td></tr>`;
+            });
+
+            // Dimensions
+            const renderDim = (id, data) => {
+                const tbody = document.querySelector(`#${id} tbody`);
+                document.querySelectorAll('.unit-label').forEach(el => el.innerText = currentUnit === 'ansi' ? 'Inch' : 'Metric');
+                tbody.innerHTML = '';
+                const isoKeys = Object.keys(data.iso);
+                const ansiKeys = Object.keys(data.ansi);
+                for (let i = 0; i < isoKeys.length; i++) {
+                    const mm = data.iso[isoKeys[i]];
+                    const displayVal = currentUnit === 'ansi' ? `${(mm / 25.4).toFixed(3)}"` : `${mm.toFixed(2)} mm`;
+                    tbody.innerHTML += `<tr>
+                        <td class="mono font-bold bg-slate-50/50">${isoKeys[i]}</td>
+                        <td class="mono font-bold bg-slate-50/50">${ansiKeys[i] || '—'}</td>
+                        <td class="font-bold text-slate-900 text-right">${displayVal}</td>
+                    </tr>`;
+                }
+            };
+            renderDim('table-size', DATA.size);
+            renderDim('table-thick', DATA.thickness);
+
+            // Nose radius table
+            const radTbody = document.querySelector('#table-radius tbody');
+            radTbody.innerHTML = '';
+            Object.entries(DATA.radius.iso).forEach(([k, v]) => {
+                const displayVal = currentUnit === 'ansi' ? `${(v / 25.4).toFixed(4)}"` : `${v.toFixed(1)} mm`;
+                radTbody.innerHTML += `<tr>
+                    <td class="mono font-bold bg-slate-50/50">${k}</td>
+                    <td class="font-bold text-slate-900 text-right">${displayVal}</td>
+                </tr>`;
+            });
+        }
+
+        function loadSample(code) {
+            document.getElementById('decoder-input').value = code;
+            decode();
+        }
+
+        function decode() {
+            const raw = document.getElementById('decoder-input').value.trim().toUpperCase();
+            const resDiv = document.getElementById('decoder-results');
+            const grid = document.getElementById('decode-grid');
+            const badge = document.getElementById('standard-badge');
+
+            if (raw === '') { resDiv.classList.add('hidden'); return; }
+            const cleaned = raw.replace(/[-\s]/g, '');
+
+            const isANSI7 = /^[A-Z]{4}[0-9]{3}$/.test(cleaned);
+            const isISO10 = /^[A-Z]{4}[0-9]{6}[A-Z]{2}$/.test(cleaned);
+            const isISO8  = /^[A-Z]{4}[0-9]{4}[A-Z]{2}$/.test(cleaned);
+            const isISO6  = /^[A-Z]{4}[0-9]{6}$/.test(cleaned);
+
+            resDiv.classList.remove('hidden');
+
+            if (!isANSI7 && !isISO10 && !isISO8 && !isISO6) {
+                badge.innerText = 'Invalid Format';
+                badge.className = 'text-[10px] px-2 py-0.5 rounded-md bg-red-100 text-red-600 font-bold';
+                grid.innerHTML = '<div class="col-span-full p-8 text-center text-slate-400 text-xs italic">Unsupported code structure. Try CNMG432, CNMG120408, or CNMG120408EN</div>';
+                return;
+            }
+
+            const isISO = !isANSI7;
+            badge.innerText = isISO ? 'Metric (ISO)' : 'Imperial (ANSI)';
+            badge.className = isISO
+                ? 'text-[10px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-600 font-bold'
+                : 'text-[10px] px-2 py-0.5 rounded-md bg-blue-100 text-blue-600 font-bold';
+
+            const shapeData = DATA.shape[cleaned[0]];
+            const reliefData = DATA.relief[cleaned[1]];
+            const tolData = DATA.tolerance[cleaned[2]];
+            const holeData = DATA.hole[cleaned[3]];
+
+            const parts = [
+                { label: 'Shape',     val: shapeData ? `${shapeData.desc} (${shapeData.angle})` : `Unknown (${cleaned[0]})`, color: 'bg-indigo-600' },
+                { label: 'Relief',    val: reliefData ? `${reliefData.desc} — ${reliefData.note}` : `Unknown (${cleaned[1]})`, color: 'bg-blue-600' },
+                { label: 'Tolerance', val: tolData ? `${tolData.desc} · IC: ${tolData.ic}` : `Unknown (${cleaned[2]})`, color: 'bg-emerald-600' },
+                { label: 'Type',      val: holeData ? holeData.desc : `Unknown (${cleaned[3]})`, color: 'bg-orange-600' }
+            ];
+
+            const num = cleaned.substring(4);
+
+            if (isISO) {
+                const s = num.substring(0, 2);
+                const t = num.substring(2, 4);
+                const r = num.substring(4, 6);
+                const mmSize  = DATA.size.iso[s]       !== undefined ? DATA.size.iso[s].toFixed(2)       : parseInt(s).toFixed(2);
+                const mmThick = DATA.thickness.iso[t]  !== undefined ? DATA.thickness.iso[t].toFixed(2)  : parseInt(t).toFixed(2);
+                const mmRad   = DATA.radius.iso[r]     !== undefined ? DATA.radius.iso[r].toFixed(1)     : (parseInt(r) / 10).toFixed(1);
+
+                parts.push({ label: 'Size (I.C.)',  val: `${mmSize} mm`,  color: 'bg-rose-600' });
+                parts.push({ label: 'Thickness',    val: `${mmThick} mm`, color: 'bg-amber-600' });
+                parts.push({ label: 'Nose Radius',  val: `${mmRad} mm`,   color: 'bg-cyan-600' });
+
+                // Optional positions 6+7
+                if (isISO10 || isISO8) {
+                    const extra = cleaned.slice(-2);
+                    const edgeCode = extra[0];
+                    const handCode = extra[1];
+                    const edgeData = DATA.edge[edgeCode];
+                    const handData = DATA.hand[handCode];
+                    parts.push({ label: 'Edge Condition', val: edgeData ? edgeData.desc : `Unknown (${edgeCode})`, color: 'bg-purple-600' });
+                    parts.push({ label: 'Cutting Hand',   val: handData ? handData.desc : `Unknown (${handCode})`, color: 'bg-teal-600' });
+                }
+            } else {
+                // ANSI
+                const s = parseInt(num[0]);
+                const t = parseInt(num[1]);
+                const r = parseInt(num[2]);
+                parts.push({ label: 'Size (I.C.)',  val: `${s}/8" (${(s * 25.4 / 8).toFixed(2)} mm)`,  color: 'bg-rose-600' });
+                parts.push({ label: 'Thickness',    val: `${t}/16" (${(t * 25.4 / 16).toFixed(2)} mm)`, color: 'bg-amber-600' });
+                parts.push({ label: 'Nose Radius',  val: `${r}/64" (${(r * 25.4 / 64).toFixed(2)} mm)`, color: 'bg-cyan-600' });
+            }
+
+            grid.innerHTML = parts.map(p => `
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-1.5 h-8 ${p.color} rounded-full flex-shrink-0"></div>
+                    <div>
+                        <span class="block text-[9px] uppercase font-black text-slate-400 tracking-widest">${p.label}</span>
+                        <span class="text-sm font-bold text-slate-800">${p.val}</span>
+                    </div>
+                </div>`).join('');
+        }
+
+        function getBtnClass(isActive) {
+            const base = "min-w-[50px] h-[50px] flex-shrink-0 rounded-xl font-mono font-bold text-lg border-2 transition-all ";
+            return isActive
+                ? base + "bg-indigo-600 border-indigo-600 text-white shadow-lg scale-105"
+                : base + "bg-white border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500";
+        }
+
+        function renderBtns(id, dataObj, stateKey, descId, color) {
+            const container = document.getElementById(id);
+            container.innerHTML = '';
+            Object.entries(dataObj).forEach(([k, v]) => {
+                const b = document.createElement('button');
+                b.innerText = k;
+                b.dataset.key = k;
+                b.title = typeof v === 'object' ? (v.desc || '') : v;
+                b.className = getBtnClass(buildState[stateKey] === k);
+                b.onclick = () => {
+                    const prev = buildState[stateKey];
+                    buildState[stateKey] = k;
+                    const prevBtn = container.querySelector(`[data-key="${prev}"]`);
+                    if (prevBtn) prevBtn.className = getBtnClass(false);
+                    b.className = getBtnClass(true);
+                    document.getElementById(descId).innerText = typeof v === 'object' ? (v.desc + (v.note ? ' — ' + v.note : '') + (v.ic ? ` · IC: ${v.ic}` : '')) : v;
+                    updateBuilderUI();
+                };
+                container.appendChild(b);
+            });
+            const currentVal = dataObj[buildState[stateKey]];
+            document.getElementById(descId).innerText = typeof currentVal === 'object'
+                ? (currentVal.desc + (currentVal.note ? ' — ' + currentVal.note : '') + (currentVal.ic ? ` · IC: ${currentVal.ic}` : ''))
+                : (currentVal || '');
+        }
+
+        function initBuilder() {
+            renderBtns('build-shape',     DATA.shape,     'shape',     'desc-shape');
+            renderBtns('build-relief',    DATA.relief,    'relief',    'desc-relief');
+            renderBtns('build-tolerance', DATA.tolerance, 'tolerance', 'desc-tolerance');
+            renderBtns('build-hole',      DATA.hole,      'hole',      'desc-hole');
+            renderBtns('build-edge',      DATA.edge,      'edge',      'desc-edge');
+            renderBtns('build-hand',      DATA.hand,      'hand',      'desc-hand');
+
+            const populateSelect = (id, obj, key) => {
+                const s = document.getElementById(id);
+                s.innerHTML = '';
+                Object.entries(obj).forEach(([k, v]) => {
+                    const opt = document.createElement('option');
+                    opt.value = k;
+                    opt.text = v === 0 ? `${k}: Sharp` : `${k}: ${v.toFixed(2)} mm`;
+                    s.appendChild(opt);
+                });
+                s.value = buildState[key];
+            };
+            populateSelect('build-size',      DATA.size.iso,      'size');
+            populateSelect('build-thickness', DATA.thickness.iso, 'thick');
+            populateSelect('build-radius',    DATA.radius.iso,    'rad');
+            updateBuilderUI();
+        }
+
+        function updateState(key, val) {
+            buildState[key] = val;
+            updateBuilderUI();
+        }
+
+        function updateBuilderUI() {
+            // ISO format: pos1-4 + size(2) + thick(2) + rad(2) + edge(1) + hand(1)
+            const code = `${buildState.shape}${buildState.relief}${buildState.tolerance}${buildState.hole}${buildState.size}${buildState.thick}${buildState.rad}${buildState.edge}${buildState.hand}`;
+            document.getElementById('builder-output').innerText = code;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initBuilder();
+            loadSample('CNMG120408EN');
+        });
+    </script>
+</body>
+</html>
