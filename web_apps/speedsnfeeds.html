@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool Specification Parser with Feeds & Speeds</title>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #1a1a1a;
+            --surface: #2d2d2d;
+            --primary: #4a8fe7;
+            --primary-dark: #3a7bc8;
+            --text: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border: #3d3d3d;
+            --highlight: #ffd700;
+            --error-red: #e74c4c;
+            --silver-gradient: linear-gradient(135deg, #c0c0c0, #e0e0e0, #a0a0a0);
+            --blue-gradient: linear-gradient(135deg, var(--primary), var(--primary-dark), #2a6ba9);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            margin: 0;
+            padding: 16px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 16px;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .main-title {
+            background: var(--blue-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            font-style: italic;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            line-height: 1.2;
+            padding: 5px 0;
+        }
+
+        .sub-title {
+            background: var(--silver-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
+            font-size: 4rem;
+            font-weight: 700;
+            font-style: italic;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+            line-height: 1;
+            padding: 5px 0;
+            margin-top: -5px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-section {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .input-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        label {
+            font-weight: 500;
+            color: var(--text);
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .load-sample-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .load-sample-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .load-sample-btn:active {
+            background: linear-gradient(135deg, var(--primary-dark), #2a6ba9);
+        }
+
+        #toolInput {
+            width: 100%;
+            min-height: 140px;
+            padding: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.875rem;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        #toolInput:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        #toolInput::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .hint {
+            margin-top: 8px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            line-height: 1.4;
+        }
+
+        .results {
+            padding: 16px 0;
+            min-height: 60px;
+        }
+
+        .results h3 {
+            margin: 0 0 16px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detected-count {
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .tool-container {
+            margin-bottom: 16px;
+            background: var(--surface);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .tool-header {
+            background: var(--border);
+            color: var(--text);
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .tool-specs {
+            padding: 16px;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .spec-item {
+            background: var(--bg);
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid var(--text-secondary);
+        }
+
+        .spec-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 2px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .spec-value {
+            color: var(--text);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .fpt-highlight {
+            border-left-color: #f59e0b !important;
+        }
+
+        .fpt-highlight .spec-value {
+            color: #fbbf24 !important;
+        }
+
+        .stepover-highlight {
+            border-left-color: #ec4899 !important;
+        }
+
+        .stepover-highlight .spec-value {
+            color: #f472b6 !important;
+        }
+
+        .doc-highlight {
+            border-left-color: #8b5cf6 !important;
+        }
+
+        .doc-highlight .spec-value {
+            color: #a78bfa !important;
+        }
+
+        .feeds-speeds-section {
+            background: rgba(74, 143, 231, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .feeds-speeds-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .feeds-speeds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+        }
+
+        .feeds-speeds-item {
+            background: var(--bg);
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .feeds-speeds-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 2px;
+            letter-spacing: 0.02em;
+        }
+
+        .feeds-speeds-value {
+            font-size: 0.8rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .adjustment-note {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid var(--highlight);
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: var(--highlight);
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .no-results {
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 24px 16px;
+            font-size: 0.875rem;
+        }
+
+        /* Dropdown styles */
+        .dropdown-container {
+            position: relative;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .dropdown-button {
+            background-color: var(--surface);
+            color: var(--text);
+            padding: 10px 12px;
+            font-size: 0.875rem;
+            font-weight: 400;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            width: 100%;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: inherit;
+        }
+
+        .dropdown-button:hover {
+            background-color: #333333;
+            border-color: var(--primary);
+        }
+
+        .dropdown-button:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .dropdown-arrow {
+            font-size: 12px;
+            transition: transform 0.2s ease;
+            font-weight: 300;
+        }
+
+        .dropdown-container.active .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-top: none;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-5px);
+            transition: all 0.2s ease;
+            padding: 12px;
+            width: 100%;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .dropdown-content.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .grid-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+
+        .grid-item {
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+            border-radius: 4px;
+        }
+
+        .grid-item:hover {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Large screens - apply maximum width */
+        @media (min-width: 1024px) {
+            body {
+                padding: 32px;
+            }
+
+            .container {
+                max-width: 800px;
+            }
+        }
+
+        /* Medium screens - tablets */
+        @media (max-width: 1023px) and (min-width: 481px) {
+            .container {
+                max-width: none;
+            }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                max-width: none;
+            }
+
+            .main-title {
+                font-size: 2rem;
+            }
+
+            .sub-title {
+                font-size: 3rem;
+            }
+
+            .input-section {
+                padding: 12px 0;
+            }
+
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .spec-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 6px;
+            }
+
+            .feeds-speeds-grid {
+                grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+                gap: 6px;
+            }
+
+            .tool-specs {
+                padding: 12px;
+            }
+
+            .feeds-speeds-section {
+                padding: 10px;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 320px) {
+            .spec-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .feeds-speeds-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="title-container">
+        <h1 class="main-title">Speeds n</h1>
+        <h2 class="sub-title">Feeds</h2>
+        <p class="subtitle">Auto-parsing calculator for milling machines</p>
+    </div>
+
+    <div class="container">
+        <div class="input-section">
+            <label for="toolInput">Choose Material:</label>
+            <div class="input-controls">
+                <div class="control-row">
+                    <div class="dropdown-container" id="materialDropdown">
+                        <button class="dropdown-button" id="materialDropdownButton">
+                            <span class="selected-value">Aluminum 6061</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+
+                        <div class="dropdown-content" id="materialDropdownContent">
+                            <div class="grid-options">
+                                <div class="grid-item" data-value="plain-carbon">Plain Carbon Steel 1018</div>
+                                <div class="grid-item" data-value="alloy">Alloy Steel 4140</div>
+                                <div class="grid-item" data-value="free-machine">Free Machine Steel 12L14</div>
+                                <div class="grid-item" data-value="stainless">Stainless Steel 304</div>
+                                <div class="grid-item" data-value="aluminum">Aluminum 6061</div>
+                                <div class="grid-item" data-value="brass">Brass C33200</div>
+                                <div class="grid-item" data-value="cast-iron">Cast Iron Class 20</div>
+                                <div class="grid-item" data-value="tool-steel">Tool Steel A2</div>
+                                <div class="grid-item" data-value="bronze">Bronze C00600</div>
+                                <div class="grid-item" data-value="plastic">Plastic Delrin</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="load-sample-btn" onclick="loadSample()">Load Sample Tools</button>
+                </div>
+            </div>
+            <textarea id="toolInput" placeholder="Enter one tool per line...
+
+Examples:
+T1, 1/2&quot;, 4 flute, hss, endmill, .001 fpt, 10% stepover, 20% doc
+Tool #5: 6mm carbide drill, .0005 fpt, 25% stepover, 100% doc
+3/8&quot; ball mill, 2 flute, roughing, HSS, .0015 fpt, 40% stepover, 30% doc"></textarea>
+            <div class="hint">Enter one tool per line. Separate specs with commas. Add custom FPT with ".001 fpt",
+                stepover with "10% stepover", and depth of cut with "20% doc".</div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="no-results">Enter tool specifications above to see parsed results...</div>
+        </div>
+    </div>
+
+    <script>
+        const toolInput = document.getElementById('toolInput');
+        const results = document.getElementById('results');
+
+        // Material dropdown functionality
+        const materialDropdown = document.getElementById('materialDropdown');
+        const materialDropdownButton = document.getElementById('materialDropdownButton');
+        const materialDropdownContent = document.getElementById('materialDropdownContent');
+        const materialSelectedValue = materialDropdownButton.querySelector('.selected-value');
+        const materialGridItems = document.querySelectorAll('#materialDropdown .grid-item');
+
+        let selectedMaterial = 'aluminum';
+
+        materialDropdownButton.addEventListener('click', function (e) {
+            e.stopPropagation();
+            materialDropdown.classList.toggle('active');
+            materialDropdownContent.classList.toggle('show');
+        });
+
+        materialGridItems.forEach(item => {
+            item.addEventListener('click', function () {
+                const value = this.getAttribute('data-value');
+                const text = this.textContent;
+
+                selectedMaterial = value;
+                materialSelectedValue.textContent = text;
+
+                materialDropdown.classList.remove('active');
+                materialDropdownContent.classList.remove('show');
+
+                handleInput();
+            });
+        });
+
+        document.addEventListener('click', function () {
+            materialDropdown.classList.remove('active');
+            materialDropdownContent.classList.remove('show');
+        });
+
+        materialDropdownContent.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        // Material data for feeds and speeds calculations
+        const materialData = {
+            'plain-carbon': {
+                name: 'Plain Carbon Steel 1018',
+                hss: { sfm: [70, 100], fpt: { small: [0.0004, 0.002], medium: [0.002, 0.003], large: [0.003, 0.006] } },
+                carbide: { sfm: [150, 250], fpt: { small: [0.0004, 0.002], medium: [0.002, 0.003], large: [0.003, 0.006] } }
+            },
+            'alloy': {
+                name: 'Alloy Steel 4140',
+                hss: { sfm: [40, 70], fpt: { small: [0.0003, 0.001], medium: [0.001, 0.002], large: [0.002, 0.004] } },
+                carbide: { sfm: [150, 250], fpt: { small: [0.0003, 0.001], medium: [0.001, 0.002], large: [0.002, 0.004] } }
+            },
+            'free-machine': {
+                name: 'Free Machine Steel 12L14',
+                hss: { sfm: [100, 150], fpt: { small: [0.0005, 0.003], medium: [0.003, 0.004], large: [0.004, 0.008] } },
+                carbide: { sfm: [400, 600], fpt: { small: [0.0005, 0.003], medium: [0.003, 0.004], large: [0.004, 0.008] } }
+            },
+            'stainless': {
+                name: 'Stainless Steel 304',
+                hss: { sfm: [30, 75], fpt: { small: [0.0002, 0.001], medium: [0.001, 0.002], large: [0.002, 0.005] } },
+                carbide: { sfm: [100, 300], fpt: { small: [0.0002, 0.001], medium: [0.001, 0.002], large: [0.002, 0.005] } }
+            },
+            'aluminum': {
+                name: 'Aluminum 6061',
+                hss: { sfm: [500, 1000], fpt: { small: [0.0002, 0.003], medium: [0.003, 0.006], large: [0.006, 0.009] } },
+                carbide: { sfm: [1000, 2000], fpt: { small: [0.0002, 0.003], medium: [0.003, 0.006], large: [0.006, 0.009] } }
+            },
+            'brass': {
+                name: 'Brass C33200',
+                hss: { sfm: [100, 200], fpt: { small: [0.001, 0.004], medium: [0.004, 0.006], large: [0.006, 0.01] } },
+                carbide: { sfm: [200, 400], fpt: { small: [0.001, 0.004], medium: [0.004, 0.006], large: [0.006, 0.01] } }
+            },
+            'cast-iron': {
+                name: 'Cast Iron Class 20',
+                hss: { sfm: [50, 80], fpt: { small: [0.0003, 0.001], medium: [0.001, 0.003], large: [0.003, 0.006] } },
+                carbide: { sfm: [125, 200], fpt: { small: [0.0003, 0.001], medium: [0.001, 0.003], large: [0.003, 0.006] } }
+            },
+            'tool-steel': {
+                name: 'Tool Steel A2',
+                hss: { sfm: [30, 50], fpt: { small: [0.0002, 0.001], medium: [0.001, 0.002], large: [0.002, 0.004] } },
+                carbide: { sfm: [80, 150], fpt: { small: [0.0002, 0.001], medium: [0.001, 0.002], large: [0.002, 0.004] } }
+            },
+            'bronze': {
+                name: 'Bronze C00600',
+                hss: { sfm: [80, 150], fpt: { small: [0.001, 0.003], medium: [0.003, 0.005], large: [0.005, 0.008] } },
+                carbide: { sfm: [150, 300], fpt: { small: [0.001, 0.003], medium: [0.003, 0.005], large: [0.005, 0.008] } }
+            },
+            'plastic': {
+                name: 'Plastic Delrin',
+                hss: { sfm: [300, 600], fpt: { small: [0.002, 0.008], medium: [0.008, 0.015], large: [0.015, 0.025] } },
+                carbide: { sfm: [500, 1000], fpt: { small: [0.002, 0.008], medium: [0.008, 0.015], large: [0.015, 0.025] } }
+            }
+        };
+
+        function loadSample() {
+            const sampleTools = `T1, 1/2", 4 flute, HSS, endmill, .001 fpt, 10% stepover, 20% doc, heavy roughing
+Tool #2: 6mm carbide drill, straight shank, .0005 fpt, 25% stepover, 100% doc, finishing
+T3 - 3/8" ball mill, 2 flute, light roughing, carbide, .0015 fpt, 40% stepover, 30% doc
+Position 4, 1/4" endmill, 4 flute, slotting, .0008 fpt, 15% stepover, 25% doc
+T5: 8mm tap, metric, HSS, finishing
+Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
+
+            toolInput.value = sampleTools;
+            handleInput();
+        }
+
+        function parseDiameter(sizeString) {
+            if (!sizeString) return null;
+
+            const fractionMatch = sizeString.match(/(\d+)\/(\d+)"/);
+            if (fractionMatch) {
+                return parseFloat(fractionMatch[1]) / parseFloat(fractionMatch[2]);
+            }
+
+            const decimalInchMatch = sizeString.match(/(\d*\.?\d+)"/);
+            if (decimalInchMatch) {
+                return parseFloat(decimalInchMatch[1]);
+            }
+
+            const mmMatch = sizeString.match(/(\d*\.?\d+)\s*mm/);
+            if (mmMatch) {
+                return parseFloat(mmMatch[1]) / 25.4;
+            }
+
+            return null;
+        }
+
+        function getSizeCategory(diameter) {
+            if (diameter <= 0.25) return 'small';
+            if (diameter <= 0.5) return 'medium';
+            return 'large';
+        }
+
+        function calculateStepoverAdjustment(stepoverPercent) {
+            const baseStepover = 50;
+            const ratio = stepoverPercent / baseStepover;
+
+            if (stepoverPercent > baseStepover) {
+                return Math.min(1 + (ratio - 1) * 0.4, 1.2);
+            } else {
+                return Math.max(0.7, ratio);
+            }
+        }
+
+        function calculateDocAdjustment(docPercent) {
+            const baseDoc = 50;
+            const ratio = docPercent / baseDoc;
+
+            if (docPercent > baseDoc) {
+                return Math.max(0.5, 1 / Math.sqrt(ratio));
+            } else {
+                return Math.min(1.5, 1 / Math.sqrt(ratio));
+            }
+        }
+
+        function hasValidOperation(tool) {
+            // Check if the original line contains any of the specific operation keywords
+            const originalLine = tool.originalLine.toLowerCase();
+            return originalLine.includes('heavy roughing') || 
+                   originalLine.includes('light roughing') || 
+                   originalLine.includes('slotting') || 
+                   originalLine.includes('finishing');
+        }
+
+        function calculateDepthOfCut(tool) {
+            const diameter = parseDiameter(tool.specs.size?.[0]);
+            if (!diameter || !hasValidOperation(tool)) return null;
+
+            // Determine operation type - check operation first, then check 'other' for operation keywords
+            let operation = 'finishing'; // default
+
+            // First check if we have explicit operation keywords
+            if (tool.specs.operation && tool.specs.operation.length > 0) {
+                const op = tool.specs.operation[0].toLowerCase();
+                if (op.includes('slotting') || op === 's') operation = 'slotting';
+                else if (op.includes('heavy') || op === 'hr') operation = 'heavy-roughing';
+                else if (op.includes('light') || op === 'lr') operation = 'light-roughing';
+                else if (op.includes('finishing') || op === 'f') operation = 'finishing';
+            }
+            // Check the 'other' field for operation-related keywords (since roughing pattern is commented out)
+            else if (tool.specs.other && tool.specs.other.length > 0) {
+                const otherText = tool.specs.other.join(' ').toLowerCase();
+                if (otherText.includes('slotting')) operation = 'slotting';
+                else if (otherText.includes('heavy roughing')) operation = 'heavy-roughing';
+                else if (otherText.includes('light roughing')) operation = 'light-roughing';
+                else if (otherText.includes('finishing')) operation = 'finishing';
+                else if (otherText.includes('roughing')) operation = 'heavy-roughing';
+            }
+            // If no operation found in parsed specs, check the original line directly
+            else {
+                const originalLine = tool.originalLine.toLowerCase();
+                if (originalLine.includes('slotting')) operation = 'slotting';
+                else if (originalLine.includes('heavy roughing')) operation = 'heavy-roughing';
+                else if (originalLine.includes('light roughing')) operation = 'light-roughing';
+                else if (originalLine.includes('finishing')) operation = 'finishing';
+            }
+
+            // Calculate depths based on operation
+            let axialDoc, radialDoc;
+            switch (operation) {
+                case 'slotting':
+                    axialDoc = diameter * 0.5;
+                    radialDoc = diameter * 1.0;
+                    break;
+                case 'heavy-roughing':
+                    axialDoc = diameter * 1.25;
+                    radialDoc = diameter * 0.5;
+                    break;
+                case 'light-roughing':
+                    axialDoc = diameter * 1.25;
+                    radialDoc = diameter * 0.2;
+                    break;
+                case 'finishing':
+                    axialDoc = diameter * 2.0;
+                    radialDoc = diameter * 0.05;
+                    break;
+                default:
+                    axialDoc = diameter * 1.0;
+                    radialDoc = diameter * 0.3;
+            }
+
+            return {
+                operation: operation,
+                axialDoc: axialDoc.toFixed(4),
+                radialDoc: radialDoc.toFixed(4),
+                diameter: diameter.toFixed(3)
+            };
+        }
+
+    function calculateFeedsAndSpeeds(tool) {
+    const diameter = parseDiameter(tool.specs.size?.[0]);
+    if (!diameter) return null;
+
+    const material = materialData[selectedMaterial];
+    const isCarbide = tool.specs.material?.some(m => m.toLowerCase().includes('carbide'));
+    const materialSpecs = isCarbide ? material.carbide : material.hss;
+
+    const sizeCategory = getSizeCategory(diameter);
+    const flutes = tool.specs.flutes ? parseInt(tool.specs.flutes[0]) : 2;
+
+    const stepoverPercent = tool.specs.stepover ? parseFloat(tool.specs.stepover[0]) : 50;
+    const docPercent = tool.specs.doc ? parseFloat(tool.specs.doc[0]) : 50;
+
+    const stepoverAdj = calculateStepoverAdjustment(stepoverPercent);
+    const docAdj = calculateDocAdjustment(docPercent);
+    const combinedAdj = stepoverAdj * docAdj;
+
+    let minRpm = Math.round((materialSpecs.sfm[0] * 3.82) / diameter);
+    let maxRpm = Math.round((materialSpecs.sfm[1] * 3.82) / diameter);
+
+    if (docPercent > 50) {
+        const rpmReduction = Math.max(0.7, 1 / Math.sqrt(docPercent / 50));
+        minRpm = Math.round(minRpm * rpmReduction);
+        maxRpm = Math.round(maxRpm * rpmReduction);
+    }
+
+        const customFpt = tool.specs.fpt ? parseFloat(tool.specs.fpt[0]) : null;
+
+        let fptRange, minIpm, maxIpm;
+
+        if (customFpt) {
+            const adjustedFpt = customFpt * combinedAdj;
+            fptRange = [adjustedFpt, adjustedFpt];
+            minIpm = Math.round(minRpm * flutes * adjustedFpt);
+            maxIpm = Math.round(maxRpm * flutes * adjustedFpt);
+        } else {
+            const baseFptRange = materialSpecs.fpt[sizeCategory];
+            fptRange = [
+                baseFptRange[0] * combinedAdj,
+                baseFptRange[1] * combinedAdj
+            ];
+            minIpm = Math.round(minRpm * flutes * fptRange[0]);
+            maxIpm = Math.round(maxRpm * flutes * fptRange[1]);
+        }
+
+        const isAdjusted = stepoverPercent !== 50 || docPercent !== 50;
+
+        return {
+            rpm: [minRpm, maxRpm],
+            ipm: [minIpm, maxIpm],
+            fpt: fptRange,
+            sfm: materialSpecs.sfm,
+            diameter: diameter.toFixed(3),
+            material: material.name,
+            toolMaterial: isCarbide ? 'Carbide' : 'HSS',
+            customFpt: customFpt !== null,
+            stepoverPercent: stepoverPercent,
+            docPercent: docPercent,
+            isAdjusted: isAdjusted,
+            adjustmentFactor: combinedAdj
+        };
+    }
+
+    function parseToolSpecs(input) {
+        const patterns = [
+            {
+                key: 'toolNumber',
+                regex: /(T\d+|tool\s*#?\s*\d+|position\s*\d+)/gi,
+                label: 'Tool Number'
+            },
+            {
+                key: 'size',
+                regex: /(\d+(?:\/\d+)?"|\d+\.?\d*\s*mm|\d+\.?\d*\s*inch|\d+\.?\d*")/gi,
+                label: 'Size/Diameter'
+            },
+            {
+                key: 'flutes',
+                regex: /(\d+)\s*flute[s]?/gi,
+                label: 'Flute Count'
+            },
+            {
+                key: 'material',
+                regex: /(hss|carbide|cobalt|ceramic|diamond|pcd|cbn|high speed steel|tungsten carbide)/gi,
+                label: 'Material'
+            },
+            {
+                key: 'toolType',
+                regex: /(end\s*mill|endmill|drill|tap|reamer|boring bar|face mill|ball mill|corner radius|chamfer|dovetail|t-slot|keyway|thread mill)/gi,
+                label: 'Tool Type'
+            },
+            {
+                key: 'coating',
+                regex: /(tin|ticn|tiain|altin|alcr|dlc|diamond|uncoated|black oxide|bright|steam tempered)/gi,
+                label: 'Coating'
+            },
+            {
+                key: 'shank',
+                regex: /(straight shank|tapered shank|morse taper|r8|bt\d+|cat\d+|hsk)/gi,
+                label: 'Shank Type'
+            },
+            {
+                key: 'operation',
+                regex: /(slotting|heavy\s+roughing|light\s+roughing|finishing|semi-finishing|hr|lr)(?!\w)/gi,
+                label: 'Operation'
+            },
+            {
+                key: 'fpt',
+                regex: /(\d*\.?\d+)\s*fpt/gi,
+                label: 'Feed Per Tooth'
+            },
+            {
+                key: 'stepover',
+                regex: /(\d*\.?\d+)%?\s*stepover/gi,
+                label: 'Stepover %'
+            },
+            {
+                key: 'doc',
+                regex: /(\d*\.?\d+)%?\s*doc/gi,
+                label: 'Depth of Cut %'
+            }
+        ];
+
+        const lines = input.split('\n').map(line => line.trim()).filter(line => line !== '');
+        const tools = [];
+
+        lines.forEach((line, index) => {
+            const specs = {};
+            const items = line.split(',').map(item => item.trim());
+
+            items.forEach(item => {
+                let matched = false;
+
+                patterns.forEach(pattern => {
+                    const matches = item.match(pattern.regex);
+                    if (matches) {
+                        if (!specs[pattern.key]) specs[pattern.key] = [];
+                        matches.forEach(match => {
+                            let valueToStore = match.trim();
+
+                            if (pattern.key === 'fpt') {
+                                const numberMatch = match.match(/(\d*\.?\d+)/);
+                                valueToStore = numberMatch ? numberMatch[1] : match.trim();
+                            } else if (pattern.key === 'stepover' || pattern.key === 'doc') {
+                                const numberMatch = match.match(/(\d*\.?\d+)/);
+                                valueToStore = numberMatch ? numberMatch[1] : match.trim();
+                            }
+
+                            const cleanMatch = valueToStore.toLowerCase();
+                            if (!specs[pattern.key].some(existing => existing.toLowerCase() === cleanMatch)) {
+                                specs[pattern.key].push(valueToStore);
+                            }
+                        });
+                        matched = true;
+                    }
+                });
+
+                if (!matched && item.trim() !== '') {
+                    if (!specs.other) specs.other = [];
+                    specs.other.push(item.trim());
+                }
+            });
+
+            if (Object.keys(specs).length > 0) {
+                tools.push({
+                    lineNumber: index + 1,
+                    originalLine: line,
+                    specs: specs
+                });
+            }
+        });
+
+        return tools;
+    }
+
+    function generateToolSummary(specs) {
+        let summary = '';
+
+        const parts = [];
+
+        if (specs.size && specs.size.length > 0) {
+            parts.push(`${specs.size[0]}`);
+        }
+
+        if (specs.flutes && specs.flutes.length > 0) {
+            parts.push(specs.flutes[0].toLowerCase());
+        }
+
+        if (specs.material && specs.material.length > 0) {
+            parts.push(specs.material[0].toUpperCase());
+        }
+
+        if (specs.coating && specs.coating.length > 0) {
+            parts.push(`${specs.coating[0].toUpperCase()} coated`);
+        }
+
+        if (specs.toolType && specs.toolType.length > 0) {
+            parts.push(specs.toolType[0].toLowerCase());
+        }
+
+        if (specs.fpt && specs.fpt.length > 0) {
+            parts.push(`@ ${specs.fpt[0]} FPT`);
+        }
+
+        if (specs.stepover && specs.stepover.length > 0) {
+            parts.push(`${specs.stepover[0]}% stepover`);
+        }
+
+        if (specs.doc && specs.doc.length > 0) {
+            parts.push(`${specs.doc[0]}% DOC`);
+        }
+
+        if (specs.roughing && specs.roughing.length > 0) {
+            parts.push(`for ${specs.roughing[0].toLowerCase()}`);
+        }
+
+        return parts.length > 0 ? parts.join(' ') : 'Tool specifications detected';
+    }
+
+    function handleInput() {
+        const input = toolInput.value.trim();
+
+        if (input === '') {
+            results.innerHTML = '<div class="no-results">Enter tool specifications above to see parsed results...</div>';
+            return;
+        }
+
+        const tools = parseToolSpecs(input);
+
+        if (tools.length === 0) {
+            results.innerHTML = '<div class="no-results">No tool specifications detected. Enter one tool per line with specifications separated by commas.</div>';
+            return;
+        }
+
+        const totalSpecs = tools.reduce((sum, tool) => sum + Object.values(tool.specs).reduce((toolSum, arr) => toolSum + arr.length, 0), 0);
+        let html = `<h3>Tools - ${materialData[selectedMaterial].name} <span class="detected-count">${tools.length} tools</span></h3>`;
+
+        const labelMap = {
+            toolNumber: 'Tool Number',
+            size: 'Size/Diameter',
+            flutes: 'Flute Count',
+            material: 'Material',
+            toolType: 'Tool Type',
+            coating: 'Coating',
+            shank: 'Shank Type',
+            roughing: 'Cut Type',
+            operation: 'Operation',
+            fpt: 'Feed Per Tooth',
+            stepover: 'Stepover %',
+            doc: 'Depth of Cut %',
+            other: 'Other'
+        };
+
+        tools.forEach((tool, index) => {
+            html += `<div class="tool-container">`;
+
+            const toolId = tool.specs.toolNumber && tool.specs.toolNumber.length > 0
+                ? tool.specs.toolNumber[0]
+                : `Tool ${index + 1}`;
+
+            const summary = generateToolSummary(tool.specs);
+            html += `<div class="tool-header">${toolId} - ${summary}</div>`;
+
+            html += `<div class="tool-specs">`;
+            html += `<div class="spec-grid">`;
+
+            Object.entries(tool.specs).forEach(([key, values]) => {
+                const label = labelMap[key] || 'Other';
+                values.forEach(value => {
+                    const isCustomFpt = key === 'fpt';
+                    const isStepover = key === 'stepover';
+                    const isDoc = key === 'doc';
+                    let highlightClass = '';
+
+                    if (isCustomFpt) highlightClass = 'fpt-highlight';
+                    else if (isStepover) highlightClass = 'stepover-highlight';
+                    else if (isDoc) highlightClass = 'doc-highlight';
+
+                    html += `
+                      <div class="spec-item ${highlightClass}">
+                          <span class="spec-label">${label}${isCustomFpt ? ' (Custom)' : ''}</span>
+                          <span class="spec-value">${value.toUpperCase()}${isStepover || isDoc ? '%' : ''}</span>
+                      </div>
+                  `;
+                });
+            });
+
+            html += `</div>`;
+
+            // Add feeds and speeds section
+            const feedsSpeedsData = calculateFeedsAndSpeeds(tool);
+            if (feedsSpeedsData) {
+                html += `
+    <div class="feeds-speeds-section">
+        <div class="feeds-speeds-title">Feeds & Speeds for ${feedsSpeedsData.material}</div>
+        <div class="feeds-speeds-grid">
+            <div class="feeds-speeds-item">
+                <div class="feeds-speeds-label">RPM Range</div>
+                <div class="feeds-speeds-value">${feedsSpeedsData.rpm[0]} - ${feedsSpeedsData.rpm[1]}</div>
+            </div>
+            <div class="feeds-speeds-item">
+                <div class="feeds-speeds-label">IPM Range</div>
+                <div class="feeds-speeds-value">${feedsSpeedsData.ipm[0]} - ${feedsSpeedsData.ipm[1]}</div>
+            </div>
+            <div class="feeds-speeds-item">
+                <div class="feeds-speeds-label">SFM Range</div>
+                <div class="feeds-speeds-value">${feedsSpeedsData.sfm[0]} - ${feedsSpeedsData.sfm[1]}</div>
+            </div>
+            <div class="feeds-speeds-item">
+                <div class="feeds-speeds-label">FPT ${feedsSpeedsData.customFpt ? '(Custom)' : 'Range'}</div>
+                <div class="feeds-speeds-value">${feedsSpeedsData.customFpt ? feedsSpeedsData.fpt[0].toFixed(4) : `${feedsSpeedsData.fpt[0].toFixed(4)} - ${feedsSpeedsData.fpt[1].toFixed(4)}`}</div>
+            </div>
+            <div class="feeds-speeds-item">
+                <div class="feeds-speeds-label">Stepover</div>
+                <div class="feeds-speeds-value">${feedsSpeedsData.stepoverPercent}%</div>
+            </div>
+            <div class="feeds-speeds-item">
+                <div class="feeds-speeds-label">Depth of Cut</div>
+                <div class="feeds-speeds-value">${feedsSpeedsData.docPercent}%</div>
+            </div>
+        </div>
+        
+        ${(() => {
+                        const docData = calculateDepthOfCut(tool);
+                        if (docData) {
+                            return `
+                    <div class="feeds-speeds-grid" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px;">
+                        <div class="feeds-speeds-item">
+                            <div class="feeds-speeds-label">Operation</div>
+                            <div class="feeds-speeds-value">${docData.operation.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()).toUpperCase()}</div>
+                        </div>
+                        <div class="feeds-speeds-item">
+                            <div class="feeds-speeds-label">Axial DOC (ap)</div>
+                            <div class="feeds-speeds-value">${docData.axialDoc}"</div>
+                        </div>
+                        <div class="feeds-speeds-item">
+                            <div class="feeds-speeds-label">Radial DOC (ae)</div>
+                            <div class="feeds-speeds-value">${docData.radialDoc}"</div>
+                        </div>
+                        <div class="feeds-speeds-item">
+                            <div class="feeds-speeds-label">Tool Diameter</div>
+                            <div class="feeds-speeds-value">${docData.diameter}"</div>
+                        </div>
+                    </div>
+                `;
+                        }
+                        return '';
+                    })()}
+                     
+                     ${feedsSpeedsData.isAdjusted ? `
+                         <div class="adjustment-note">
+                             Feeds & speeds adjusted for ${feedsSpeedsData.stepoverPercent}% stepover and ${feedsSpeedsData.docPercent}% DOC (adjustment factor: ${feedsSpeedsData.adjustmentFactor.toFixed(2)}x)
+                         </div>
+                     ` : ''}
+                 </div>
+             `;
+            }
+
+            html += `</div>`;
+            html += `</div>`;
+        });
+
+        results.innerHTML = html;
+    }
+
+    toolInput.addEventListener('input', handleInput);
+    toolInput.addEventListener('keyup', handleInput);
+
+    toolInput.focus();
+</script>
