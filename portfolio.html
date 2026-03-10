@@ -16,8 +16,6 @@
       --accent2: #ff6b00;
       --green: #39ff14;
       --yellow: #ffd600;
-      --purple: #c084fc;
-      --pink: #f472b6;
       --text: #ffffff;
       --muted: #4a5568;
       --muted2: #1e2530;
@@ -186,11 +184,19 @@
       border-radius:4px; margin-bottom:10px;
       display:flex; align-items:stretch;
       box-shadow: 0 2px 20px rgba(0,0,0,0.3);
-      transition: border-color 0.15s, box-shadow 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
       overflow:hidden;
       animation: fadeUp 0.35s ease both;
+      text-decoration: none;
+      color: inherit;
     }
-    .project-card:hover {
+    .project-card[href]:hover {
+      border-color:var(--border2);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,200,255,0.15);
+      transform: translateY(-1px);
+      cursor: pointer;
+    }
+    .project-card:not([href]):hover {
       border-color:var(--border2);
       box-shadow: 0 4px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,200,255,0.08);
     }
@@ -213,7 +219,14 @@
       text-transform:uppercase; letter-spacing:0.5px;
       color:#ffffff; line-height:1.1;
       font-family:'DM Sans',sans-serif;
+      display:flex; align-items:center; gap:8px;
     }
+    .card-link-icon {
+      font-size:11px; opacity:0.35;
+      transition: opacity 0.15s;
+    }
+    .project-card[href]:hover .card-link-icon { opacity:0.9; }
+
     .card-id {
       font-family:'Roboto',sans-serif;font-style:italic;
       font-size:9px; color:var(--muted); letter-spacing:2px; margin-top:3px;
@@ -340,28 +353,22 @@
       font-size:9px; letter-spacing:2px; text-transform:uppercase;
       cursor:pointer; transition:all 0.15s;
     }
-    .filter-toggle-btn.has-filters {
-      border-color:var(--accent); color:var(--accent);
-    }
+    .filter-toggle-btn.has-filters { border-color:var(--accent); color:var(--accent); }
     .filter-toggle-btn .ftb-dot {
       width:6px; height:6px; border-radius:50%;
       background:var(--accent); display:none;
     }
     .filter-toggle-btn.has-filters .ftb-dot { display:block; }
 
-    /* ── MOBILE DRAWER OVERLAY ── */
+    /* ── MOBILE DRAWER ── */
     .drawer-overlay {
-      display:none;
-      position:fixed; inset:0; z-index:200;
-      background:rgba(0,0,0,0.6);
-      backdrop-filter:blur(2px);
+      display:none; position:fixed; inset:0; z-index:200;
+      background:rgba(0,0,0,0.6); backdrop-filter:blur(2px);
     }
     .drawer-overlay.open { display:block; }
-
     .drawer {
       position:fixed; bottom:0; left:0; right:0; z-index:201;
-      background:var(--panel2);
-      border-top:1px solid var(--border);
+      background:var(--panel2); border-top:1px solid var(--border);
       border-radius:14px 14px 0 0;
       padding:0 0 env(safe-area-inset-bottom,16px);
       max-height:85vh; overflow-y:auto;
@@ -369,25 +376,14 @@
       transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);
     }
     .drawer.open { transform:translateY(0); }
-
-    .drawer-handle {
-      width:36px; height:4px; border-radius:2px;
-      background:var(--border2); margin:12px auto 0;
-    }
+    .drawer-handle { width:36px; height:4px; border-radius:2px; background:var(--border2); margin:12px auto 0; }
     .drawer-header {
       padding:14px 20px 10px;
       display:flex; align-items:center; justify-content:space-between;
       border-bottom:1px solid var(--border);
     }
-    .drawer-title {
-      font-family:'Roboto',sans-serif;font-style:italic;
-      font-size:9px; letter-spacing:3px; text-transform:uppercase;
-      color:var(--accent);
-    }
-    .drawer-close {
-      background:transparent; border:none; color:var(--muted);
-      font-size:18px; cursor:pointer; padding:0 4px; line-height:1;
-    }
+    .drawer-title { font-family:'Roboto',sans-serif;font-style:italic; font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--accent); }
+    .drawer-close { background:transparent; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:0 4px; line-height:1; }
     .drawer-body { padding:12px 20px 20px; }
     .drawer-section { margin-bottom:18px; }
     .drawer-section-title {
@@ -400,63 +396,37 @@
     .drawer-chips { display:flex; flex-wrap:wrap; gap:7px; }
     .drawer-chip {
       padding:8px 14px; border-radius:3px;
-      border:1px solid var(--border);
-      background:transparent; color:var(--muted);
-      font-family:'DM Sans',sans-serif;
-      font-size:13px; font-weight:600;
+      border:1px solid var(--border); background:transparent; color:var(--muted);
+      font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
       letter-spacing:0.5px; text-transform:uppercase;
-      cursor:pointer; transition:all 0.15s;
-      position:relative; overflow:hidden;
+      cursor:pointer; transition:all 0.15s; position:relative; overflow:hidden;
     }
-    .drawer-chip.on {
-      border-color:var(--chip-color,var(--accent));
-      color:var(--chip-color,var(--accent));
-    }
-    .drawer-chip.on::after {
-      content:''; position:absolute; inset:0;
-      background:var(--chip-color,var(--accent)); opacity:0.1;
-      pointer-events:none;
-    }
+    .drawer-chip.on { border-color:var(--chip-color,var(--accent)); color:var(--chip-color,var(--accent)); }
+    .drawer-chip.on::after { content:''; position:absolute; inset:0; background:var(--chip-color,var(--accent)); opacity:0.1; pointer-events:none; }
     .drawer-clear {
       width:100%; padding:11px; margin-top:6px;
-      background:transparent;
-      border:1px solid var(--border); border-radius:3px;
-      color:var(--muted);
-      font-family:'Roboto',sans-serif;font-style:italic;
+      background:transparent; border:1px solid var(--border); border-radius:3px;
+      color:var(--muted); font-family:'Roboto',sans-serif;font-style:italic;
       font-size:9px; letter-spacing:2px; text-transform:uppercase;
       cursor:pointer; transition:all 0.15s;
     }
     .drawer-clear:hover { border-color:var(--accent2); color:var(--accent2); }
 
-    /* ── SMALL LAPTOP (≤1024px) ── */
-    @media (max-width: 1024px) {
-      .sidebar { width:210px; }
-      .main { padding:28px 24px 50px; }
-    }
-
-    /* ── TABLET / SMALL LAPTOP (≤768px) — sidebar collapses ── */
+    @media (max-width: 1024px) { .sidebar { width:210px; } .main { padding:28px 24px 50px; } }
     @media (max-width: 768px) {
-      .sidebar { display:none; }
-      .mobile-bar { display:flex; }
-      .page { flex-direction:column; }
-      .main { padding:20px 16px 60px; }
+      .sidebar { display:none; } .mobile-bar { display:flex; }
+      .page { flex-direction:column; } .main { padding:20px 16px 60px; }
       .main-header h1 { font-size:clamp(28px,8vw,44px); }
       .stats { flex-wrap:wrap; }
       .stat { min-width:calc(33.33% - 1px); border-bottom:1px solid var(--border); }
       .card-body { flex-wrap:wrap; gap:12px; }
       .card-right { flex-direction:row; align-items:center; width:100%; justify-content:flex-start; }
     }
-
-    /* ── MOBILE (≤480px) ── */
     @media (max-width: 480px) {
-      .main { padding:16px 12px 60px; }
-      .card-body { padding:14px 14px; }
-      .card-name { font-size:15px; }
-      .card-desc { font-size:12px; }
-      .stats { flex-wrap:wrap; }
-      .stat { min-width:50%; }
-      .header-meta { gap:10px; }
-      .meta-div { display:none; }
+      .main { padding:16px 12px 60px; } .card-body { padding:14px 14px; }
+      .card-name { font-size:15px; } .card-desc { font-size:12px; }
+      .stats { flex-wrap:wrap; } .stat { min-width:50%; }
+      .header-meta { gap:10px; } .meta-div { display:none; }
     }
   </style>
 </head>
@@ -467,8 +437,7 @@
   <div class="mobile-bar" id="mobileBar">
     <div class="mobile-logo">Project <span>Registry</span></div>
     <button class="filter-toggle-btn" id="filterToggleBtn" onclick="openDrawer()">
-      <span class="ftb-dot"></span>
-      Filters
+      <span class="ftb-dot"></span>Filters
     </button>
   </div>
 
@@ -484,10 +453,8 @@
       <div class="drawer-section">
         <div class="drawer-section-title">Category</div>
         <div class="drawer-chips">
-          <button class="drawer-chip" data-g="cat" data-v="game"       style="--chip-color:#c084fc" onclick="toggleDrawer(this)">Games</button>
-          <button class="drawer-chip" data-g="cat" data-v="machining"  style="--chip-color:#00c8ff" onclick="toggleDrawer(this)">Shop Work</button>
-          <button class="drawer-chip" data-g="cat" data-v="simulator"  style="--chip-color:#39ff14" onclick="toggleDrawer(this)">Simulators</button>
-          <button class="drawer-chip" data-g="cat" data-v="calculator" style="--chip-color:#ffd600" onclick="toggleDrawer(this)">Calculators</button>
+          <button class="drawer-chip" data-g="cat" data-v="web_apps"   style="--chip-color:#00c8ff" onclick="toggleDrawer(this)">Web Apps</button>
+          <button class="drawer-chip" data-g="cat" data-v="shop_work"  style="--chip-color:#ff6b00" onclick="toggleDrawer(this)">Shop Work</button>
         </div>
       </div>
       <div class="drawer-section">
@@ -512,20 +479,12 @@
     <div class="filter-section">
       <div class="filter-title">Category</div>
       <div class="chip-list">
-        <button class="chip" data-g="cat" data-v="game" style="--chip-color:#c084fc" onclick="toggle(this)">
-          <span class="chip-dot"></span><span class="chip-label">Games</span>
+        <button class="chip" data-g="cat" data-v="web_apps" style="--chip-color:#00c8ff" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Web Apps</span>
           <span class="chip-check">✓</span>
         </button>
-        <button class="chip" data-g="cat" data-v="machining" style="--chip-color:#00c8ff" onclick="toggle(this)">
+        <button class="chip" data-g="cat" data-v="shop_work" style="--chip-color:#ff6b00" onclick="toggle(this)">
           <span class="chip-dot"></span><span class="chip-label">Shop Work</span>
-          <span class="chip-check">✓</span>
-        </button>
-        <button class="chip" data-g="cat" data-v="simulator" style="--chip-color:#39ff14" onclick="toggle(this)">
-          <span class="chip-dot"></span><span class="chip-label">Simulators</span>
-          <span class="chip-check">✓</span>
-        </button>
-        <button class="chip" data-g="cat" data-v="calculator" style="--chip-color:#ffd600" onclick="toggle(this)">
-          <span class="chip-dot"></span><span class="chip-label">Calculators</span>
           <span class="chip-check">✓</span>
         </button>
       </div>
@@ -578,10 +537,8 @@
 
     <div class="stats">
       <div class="stat"><div class="stat-n" id="sTotal">0</div><div class="stat-l">Showing</div></div>
-      <div class="stat"><div class="stat-n" id="sGames">0</div><div class="stat-l">Games</div></div>
-      <div class="stat"><div class="stat-n" id="sMach">0</div><div class="stat-l">Shop Work</div></div>
-      <div class="stat"><div class="stat-n" id="sSim">0</div><div class="stat-l">Simulators</div></div>
-      <div class="stat"><div class="stat-n" id="sCalc">0</div><div class="stat-l">Calculators</div></div>
+      <div class="stat"><div class="stat-n" id="sWebApps">0</div><div class="stat-l">Web Apps</div></div>
+      <div class="stat"><div class="stat-n" id="sShopWork">0</div><div class="stat-l">Shop Work</div></div>
     </div>
   </main>
 </div>
@@ -591,16 +548,12 @@
     new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'}).toUpperCase();
 
   const CAT_COLOR = {
-    game:      '#c084fc',
-    machining: '#00c8ff',
-    simulator: '#39ff14',
-    calculator:'#ffd600',
+    web_apps:  '#00c8ff',
+    shop_work: '#ff6b00',
   };
   const CAT_LABEL = {
-    game:      'Game',
-    machining: 'Shop Work',
-    simulator: 'Simulator',
-    calculator:'Calculator',
+    web_apps:  'Web App',
+    shop_work: 'Shop Work',
   };
   const STATUS_COLOR = {
     complete: '#39ff14',
@@ -614,50 +567,38 @@
   };
 
   // ── ADD YOUR PROJECTS HERE ──────────────────────────────────────────────────
+  // cat must be: "web_apps" or "shop_work"
+  // url: path to the file in your GitHub folder, e.g. "/web_apps/insert_master.html"
+  //      set url to null if the project doesn't have a page yet
   const DATA = [
     {
       id: 'PROJ-001',
-      name: 'Thread Guide',
-      cat: 'machining',
+      name: 'Insert Master',
+      cat: 'web_apps',
       status: 'complete',
-      desc: 'A step-by-step guide for cutting threads on an engine lathe — covering setup, tool selection, and cutting technique for manual machining.',
-      tags: ['Manual Machining', 'Lathe', 'Threading'],
+      url: '/web_apps/insert_master.html',
+      desc: 'Insert Decoder & Builder — a tool for working with machining inserts.',
+      tags: ['Web App', 'Tool'],
       updated: 'Mar 2026',
     },
     {
       id: 'PROJ-002',
-      name: 'Feeds & Speeds Calc',
-      cat: 'calculator',
+      name: 'Thread Guide',
+      cat: 'shop_work',
       status: 'complete',
-      desc: 'Enter your material, tool, and machine parameters to get instant feed rate and spindle speed recommendations for CNC and manual turning and milling.',
-      tags: ['CNC', 'Manual', 'Turning', 'Milling'],
+      url: '/shop_work/thread_guide.html',
+      desc: 'A step-by-step guide for cutting threads on an engine lathe — covering setup, tool selection, and cutting technique.',
+      tags: ['Lathe', 'Threading', 'Manual Machining'],
       updated: 'Mar 2026',
     },
     {
       id: 'PROJ-003',
-      name: 'Dial Caliper Simulator',
-      cat: 'simulator',
+      name: 'Feeds & Speeds Calc',
+      cat: 'web_apps',
       status: 'complete',
-      desc: 'An interactive dial caliper you can practice reading — ideal for students learning precision measurement before touching real tooling.',
-      tags: ['Measurement', 'Training', 'Interactive'],
-      updated: 'Mar 2026',
-    },
-    {
-      id: 'PROJ-004',
-      name: 'Tetris',
-      cat: 'game',
-      status: 'complete',
-      desc: 'A fully playable browser-based Tetris clone with keyboard controls, scoring, and level progression.',
-      tags: ['JavaScript', 'Canvas', 'Browser'],
-      updated: 'Mar 2026',
-    },
-    {
-      id: 'PROJ-005',
-      name: 'Pong',
-      cat: 'game',
-      status: 'complete',
-      desc: 'Classic two-player Pong built for the browser with smooth physics and score tracking.',
-      tags: ['JavaScript', 'Canvas', 'Browser'],
+      url: '/web_apps/feeds_speeds.html',
+      desc: 'Enter your material, tool, and machine parameters to get instant feed rate and spindle speed recommendations.',
+      tags: ['CNC', 'Calculator', 'Milling', 'Turning'],
       updated: 'Mar 2026',
     },
   ];
@@ -668,13 +609,11 @@
   const F = { cat: new Set(), status: new Set() };
 
   const CHIP_BG = {
-    game:       'rgba(192,132,252,0.12)',
-    machining:  'rgba(0,200,255,0.12)',
-    simulator:  'rgba(57,255,20,0.12)',
-    calculator: 'rgba(255,214,0,0.12)',
-    complete:   'rgba(57,255,20,0.12)',
-    active:     'rgba(0,200,255,0.12)',
-    wip:        'rgba(255,214,0,0.12)',
+    web_apps:  'rgba(0,200,255,0.12)',
+    shop_work: 'rgba(255,107,0,0.12)',
+    complete:  'rgba(57,255,20,0.12)',
+    active:    'rgba(0,200,255,0.12)',
+    wip:       'rgba(255,214,0,0.12)',
   };
 
   function toggle(btn) {
@@ -700,7 +639,7 @@
 
   function apply() {
     const cards = document.querySelectorAll('.project-card');
-    let vis=0, games=0, mach=0, sim=0, calc=0;
+    let vis=0, webApps=0, shopWork=0;
 
     cards.forEach(c => {
       const ok =
@@ -709,19 +648,15 @@
       c.classList.toggle('hide', !ok);
       if (ok) {
         vis++;
-        if (c.dataset.cat==='game')       games++;
-        if (c.dataset.cat==='machining')  mach++;
-        if (c.dataset.cat==='simulator')  sim++;
-        if (c.dataset.cat==='calculator') calc++;
+        if (c.dataset.cat==='web_apps')  webApps++;
+        if (c.dataset.cat==='shop_work') shopWork++;
       }
     });
 
-    document.getElementById('vc').textContent      = vis;
-    document.getElementById('sTotal').textContent  = vis;
-    document.getElementById('sGames').textContent  = games;
-    document.getElementById('sMach').textContent   = mach;
-    document.getElementById('sSim').textContent    = sim;
-    document.getElementById('sCalc').textContent   = calc;
+    document.getElementById('vc').textContent        = vis;
+    document.getElementById('sTotal').textContent    = vis;
+    document.getElementById('sWebApps').textContent  = webApps;
+    document.getElementById('sShopWork').textContent = shopWork;
     document.getElementById('empty').classList.toggle('show', vis===0);
 
     const bar = document.getElementById('tagBar');
@@ -732,12 +667,13 @@
     ];
     all.forEach(({g,v})=>{
       const color = CAT_COLOR[v] || STATUS_COLOR[v] || '#fff';
+      const label = CAT_LABEL[v] || STATUS_LABEL[v] || v;
       const t = document.createElement('div');
       t.className='atag';
       t.style.background = CHIP_BG[v]||'rgba(255,255,255,0.06)';
       t.style.border = `1px solid ${color}55`;
       t.style.color  = color;
-      t.innerHTML = `${(CAT_LABEL[v]||STATUS_LABEL[v]||v).toUpperCase()} <span class="atag-x" onclick="removeFilter('${g}','${v}')">✕</span>`;
+      t.innerHTML = `${label.toUpperCase()} <span class="atag-x" onclick="removeFilter('${g}','${v}')">✕</span>`;
       bar.appendChild(t);
     });
     syncDrawerChips();
@@ -757,7 +693,6 @@
     const g = btn.dataset.g, v = btn.dataset.v;
     if (F[g].has(v)) { F[g].delete(v); btn.classList.remove('on'); }
     else             { F[g].add(v);    btn.classList.add('on'); }
-    // sync sidebar chips too
     const sideChip = document.querySelector(`.chip[data-g="${g}"][data-v="${v}"]`);
     if (sideChip) sideChip.classList.toggle('on', F[g].has(v));
     apply();
@@ -774,10 +709,13 @@
   (function buildCards(){
     const wrap = document.getElementById('cardsWrap');
     DATA.forEach((p, i) => {
-      const catColor    = CAT_COLOR[p.cat]    || '#fff';
+      const catColor    = CAT_COLOR[p.cat]       || '#fff';
       const statusColor = STATUS_COLOR[p.status] || '#888';
-      const card = document.createElement('div');
+
+      // Use <a> tag if URL provided, otherwise <div>
+      const card = document.createElement(p.url ? 'a' : 'div');
       card.className = 'project-card';
+      if (p.url) card.href = p.url;
       card.style.animationDelay = `${0.04*i + 0.35}s`;
       card.style.setProperty('--cat-color', catColor);
       card.dataset.cat    = p.cat;
@@ -787,11 +725,13 @@
         `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`
       ).join('');
 
+      const linkIcon = p.url ? `<span class="card-link-icon">↗</span>` : '';
+
       card.innerHTML = `
         <div class="card-accent-bar"></div>
         <div class="card-body">
           <div class="card-left">
-            <div class="card-name">${p.name}</div>
+            <div class="card-name">${p.name}${linkIcon}</div>
             <div class="card-id">${p.id}</div>
             <div class="card-desc">${p.desc}</div>
             <div class="card-tags">${tagPills}</div>
@@ -801,7 +741,7 @@
             </div>
           </div>
           <div class="card-right">
-            <span class="cat-badge">${CAT_LABEL[p.cat] || p.cat.toUpperCase()}</span>
+            <span class="cat-badge">${CAT_LABEL[p.cat] || p.cat}</span>
             <div class="status-row">
               <div class="status-dot" style="--status-color:${statusColor}"></div>
               ${STATUS_LABEL[p.status]||p.status}
