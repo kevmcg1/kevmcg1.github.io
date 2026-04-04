@@ -1,222 +1,612 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insert Decoder & Builder</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Insert Master</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1a1a1a; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        
-        .tab-active { border-color: #4f46e5; color: #4f46e5; border-bottom-width: 2px; background-color: rgba(238,242,255,0.5); }
-        
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .table-wrapper {
-            border: 2px solid #cbd5e1;
-            border-radius: 12px;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-top:    #0d0d0f;
+            --bg-bottom: #080810;
+            --surface:   #111114;
+            --surface2:  #0e0e11;
+            --border:    #1e1e24;
+            --border2:   #2a2a34;
+            --text:      #e8e8e8;
+            --muted:     #8a8a9a;
+            --accent:    #c8ff00;
+            --card-hover:#17171c;
+            --tag-bg:    #1a1a22;
+            --radius:    10px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        /* ── HEADER ── */
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 2.5rem 1.5rem 3rem;
+            text-align: center;
+            animation: fadeUp 0.7s ease both;
+        }
+        .header-inner { max-width: 860px; margin: 0 auto; }
+
+        .header-label {
+            font-size: 0.6rem; letter-spacing: 0.18em;
+            text-transform: uppercase; color: var(--muted);
+            margin-bottom: 0.7rem;
+        }
+
+        header h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(2.4rem, 6vw, 3.8rem);
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            line-height: 0.88;
+            color: var(--text);
+        }
+        header h1 span {
+            display: block;
+            color: transparent;
+            -webkit-text-stroke: 1.5px var(--text);
+        }
+        .header-underline {
+            width: 100%; max-width: 300px;
+            height: 1.5px;
+            background: linear-gradient(90deg, var(--text) 0%, transparent 100%);
+            margin: 0.7rem auto 0;
+            opacity: 0.4;
+        }
+        .header-sub {
+            margin-top: 0.8rem;
+            font-size: 0.72rem; font-weight: 300;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* ── MAIN WRAP ── */
+        main {
+            max-width: 860px;
+            margin: -1.5rem auto 0;
+            padding: 0 1.2rem;
+            animation: fadeUp 0.7s 0.1s ease both;
+        }
+
+        /* ── TABS ── */
+        .tab-bar {
+            display: flex;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius) var(--radius) 0 0;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
-            background: white;
+        }
+        .tab-bar button {
+            flex: 1;
+            padding: 1rem 0.5rem;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.62rem; font-weight: 500;
+            letter-spacing: 0.16em; text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-bar button:hover { color: var(--text); background: var(--card-hover); }
+        .tab-active {
+            border-bottom-color: var(--accent) !important;
+            color: var(--accent) !important;
+            background: var(--card-hover) !important;
+        }
+
+        /* ── PANEL ── */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 var(--radius) var(--radius);
+            padding: 2rem;
+        }
+
+        /* ── NOTICE BOX ── */
+        .notice {
+            background: var(--tag-bg);
+            border: 1px solid var(--border2);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.8rem;
+            display: flex; gap: 0.8rem; align-items: flex-start;
+        }
+        .notice-icon { color: var(--accent); font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+        .notice p {
+            font-size: 0.72rem; font-weight: 300; line-height: 1.7;
+            color: #c8c8d8;
+        }
+
+        /* ── DECODER INPUT ── */
+        .input-label {
+            display: block;
+            font-size: 0.58rem; font-weight: 500;
+            letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 0.6rem;
+        }
+        .decoder-input {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.2rem;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem; letter-spacing: 0.12em;
+            color: var(--text);
+            outline: none;
+            text-transform: uppercase;
+            transition: border-color 0.2s;
+        }
+        .decoder-input:focus { border-color: var(--accent); }
+        .decoder-input::placeholder { color: var(--border2); }
+
+        .sample-row {
+            margin-top: 1rem;
+            display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+        }
+        .sample-group { display: flex; align-items: center; gap: 0.5rem; }
+        .sample-tag {
+            font-size: 0.55rem; font-weight: 500;
+            letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--muted);
+        }
+        .sample-btn {
+            background: transparent; border: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.72rem; font-weight: 500;
+            color: var(--accent); cursor: pointer;
+            padding: 0; transition: opacity 0.2s;
+            text-decoration: underline; text-underline-offset: 3px;
+        }
+        .sample-btn:hover { opacity: 0.7; }
+
+        /* ── SECTION HEADING ── */
+        .section-label {
+            font-size: 0.6rem; letter-spacing: 0.16em;
+            text-transform: uppercase; color: var(--muted);
+            margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* ── DECODE RESULTS ── */
+        .results-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.8rem; margin-bottom: 1.2rem;
+        }
+        .results-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.2rem; letter-spacing: 0.08em; color: var(--text);
+        }
+        .standard-badge {
+            font-size: 0.58rem; font-weight: 500;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            padding: 3px 10px; border-radius: 4px;
+        }
+        .badge-iso  { background: rgba(200,255,0,0.1); border: 1px solid rgba(200,255,0,0.4); color: var(--accent); }
+        .badge-ansi { background: rgba(232,232,232,0.08); border: 1px solid rgba(232,232,232,0.25); color: var(--text); }
+        .badge-err  { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.4); color: #ff8080; }
+
+        .decode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        @media (max-width: 580px) { .decode-grid { grid-template-columns: 1fr; } }
+
+        .decode-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.2rem;
+            display: flex; align-items: center; gap: 1rem;
+            position: relative; overflow: hidden;
+            transition: background 0.2s;
+        }
+        .decode-card::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, rgba(200,255,0,0.04) 0%, transparent 60%);
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        .decode-card:hover { background: var(--card-hover); }
+        .decode-card:hover::after { opacity: 1; }
+
+        .decode-bar {
+            width: 3px; height: 2rem; border-radius: 2px;
+            flex-shrink: 0; opacity: 0.8;
+        }
+        .decode-label {
+            display: block; font-size: 0.55rem; font-weight: 500;
+            letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 2px;
+        }
+        .decode-val {
+            font-size: 0.85rem; font-weight: 500; color: var(--text);
+        }
+        .decode-empty {
+            grid-column: 1 / -1;
+            text-align: center; padding: 3rem;
+            font-size: 0.75rem; color: var(--muted); font-style: italic;
+        }
+
+        /* ── TABLES ── */
+        .table-wrapper {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
             margin-bottom: 2rem;
+            background: var(--surface2);
         }
         table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; }
-        thead th { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; padding: 1rem 1.5rem; background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1; }
-        tbody td { padding: 0.85rem 1.5rem; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; font-size: 0.9rem; color: #334155; background-color: #ffffff; transition: background-color 0.2s ease; }
-        tbody td:last-child, thead th:last-child { border-right: none; }
+        thead th {
+            font-size: 0.58rem; font-weight: 500;
+            letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--muted); padding: 0.8rem 1.1rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+        thead th:last-child { border-right: none; }
+        tbody td {
+            padding: 0.75rem 1.1rem;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            font-size: 0.82rem; color: #c8c8d8;
+            background: var(--surface2);
+            transition: background 0.15s;
+            font-weight: 300;
+        }
+        tbody td:last-child { border-right: none; }
         tbody tr:last-child td { border-bottom: none; }
-        tbody tr:hover td { background-color: #f8fafc; }
+        tbody tr:hover td { background: var(--card-hover); }
+        .td-code {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.1rem; letter-spacing: 0.06em;
+            color: var(--accent) !important;
+            background: var(--surface) !important;
+            font-weight: 400;
+        }
+        .td-mono { font-family: 'DM Sans', sans-serif; font-weight: 500; color: var(--muted); font-size: 0.78rem; }
 
-        .section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
-        .section-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; }
+        /* info layout */
+        .info-topbar {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 1.4rem 1.6rem;
+            margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;
+        }
+        .info-topbar p { font-size: 0.78rem; font-weight: 300; color: var(--muted); margin-top: 4px; }
+        .info-topbar h3 { font-size: 0.9rem; font-weight: 500; color: var(--text); }
+
+        .unit-toggle {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            padding: 0.6rem 1.1rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.65rem; font-weight: 500;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .unit-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+        .info-section { margin-bottom: 2.5rem; }
+        .dim-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        @media (max-width: 600px) { .dim-grid { grid-template-columns: 1fr; } }
+        .dim-col-label {
+            font-size: 0.58rem; font-weight: 500;
+            letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 0.6rem; padding-left: 2px;
+        }
+
+        /* ── BUILDER ── */
+        .builder-display {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .builder-display::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(200,255,0,0.04) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .builder-display-label {
+            font-size: 0.58rem; font-weight: 500;
+            letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 0.8rem; display: block;
+        }
+        #builder-output {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(2.4rem, 8vw, 4rem);
+            letter-spacing: 0.12em; color: var(--accent);
+            line-height: 1; word-break: break-all;
+        }
+
+        .builder-section { margin-bottom: 2.2rem; }
+        .builder-section-title {
+            font-size: 0.58rem; font-weight: 500;
+            letter-spacing: 0.16em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 0.9rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .builder-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* builder btn row */
+        .btn-row {
+            display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px;
+        }
+        .btn-row::-webkit-scrollbar { height: 2px; }
+        .btn-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .build-btn {
+            min-width: 46px; height: 46px; flex-shrink: 0;
+            border-radius: var(--radius);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.2rem; letter-spacing: 0.06em;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--muted);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .build-btn:hover { border-color: var(--border2); color: var(--text); }
+        .build-btn-active {
+            background: transparent;
+            border-color: var(--accent) !important;
+            color: var(--accent) !important;
+            box-shadow: inset 0 0 0 1px rgba(200,255,0,0.15);
+        }
+
+        .desc-box {
+            margin-top: 0.7rem;
+            font-size: 0.78rem; font-weight: 300; color: #c8c8d8;
+            background: var(--tag-bg);
+            border: 1px solid var(--border);
+            border-left: 2px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 0.7rem 1rem;
+            min-height: 2.4rem;
+            line-height: 1.6;
+        }
+
+        /* builder dim selects */
+        .dim-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        @media (max-width: 560px) { .dim-select-grid { grid-template-columns: 1fr; } }
+
+        .dim-select-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.1rem;
+        }
+        .dim-select-label {
+            display: block;
+            font-size: 0.58rem; font-weight: 500;
+            letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 0.6rem;
+        }
+        .dim-select {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: calc(var(--radius) - 2px);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.82rem; font-weight: 500;
+            padding: 0.6rem 0.8rem;
+            outline: none; cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .dim-select:focus { border-color: var(--accent); }
+
+        .hidden { display: none !important; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::after { animation: none !important; transition: none !important; }
+        }
     </style>
 </head>
-<body class="min-h-screen pb-12">
+<body>
 
-    <header class="bg-indigo-950 text-white pt-8 pb-12 px-4 shadow-xl">
-        <div class="max-w-5xl mx-auto text-center">
-            <h1 class="text-3xl font-black tracking-tight mb-2 uppercase italic">Insert Master</h1>
-            <p class="text-indigo-300 text-sm font-medium tracking-wide">ISO & ANSI Machining Standard Reference</p>
+    <header>
+        <div class="header-inner">
+            <div class="header-label">— ISO & ANSI Machining Standard Reference</div>
+            <h1>Insert<br><span>Master</span></h1>
+            <div class="header-underline"></div>
+            <div class="header-sub">Decoder · Reference · Builder</div>
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-4 -mt-8">
-        
-        <div class="flex bg-white rounded-t-xl shadow-sm border-b-2 border-slate-200 overflow-hidden">
-            <button onclick="switchMode('decoder')" id="tab-decoder" class="flex-1 py-4 font-bold text-xs uppercase tracking-widest transition-all border-b-2 border-transparent tab-active">Decoder</button>
-            <button onclick="switchMode('info')" id="tab-info" class="flex-1 py-4 font-bold text-xs uppercase tracking-widest transition-all border-b-2 border-transparent">Reference</button>
-            <button onclick="switchMode('builder')" id="tab-builder" class="flex-1 py-4 font-bold text-xs uppercase tracking-widest transition-all border-b-2 border-transparent">Builder</button>
+    <main>
+
+        <!-- TABS -->
+        <div class="tab-bar">
+            <button onclick="switchMode('decoder')" id="tab-decoder" class="tab-active">Decoder</button>
+            <button onclick="switchMode('info')"    id="tab-info">Reference</button>
+            <button onclick="switchMode('builder')" id="tab-builder">Builder</button>
         </div>
 
-        <!-- Decoder Mode -->
-        <div id="mode-decoder" class="bg-white p-6 rounded-b-xl shadow-lg border-x border-b border-slate-200">
-            <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3 items-start">
-                <span class="text-amber-600 mt-0.5">⚠️</span>
-                <p class="text-[11px] text-amber-900 leading-relaxed font-medium">
-                    Supports standard 7- and 9-character Turning insert codes (ISO and ANSI). Decodes geometry, tolerance, edge condition, hand, and nominal sizing per global machining standards.
-                </p>
+        <!-- ── DECODER ── -->
+        <div id="mode-decoder" class="panel">
+            <div class="notice">
+                <span class="notice-icon">◈</span>
+                <p>Supports standard 7- and 9-character Turning insert codes (ISO and ANSI). Decodes geometry, tolerance, edge condition, hand, and nominal sizing per global machining standards.</p>
             </div>
 
-            <div class="mb-6">
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Input Specification Code</label>
+            <div style="margin-bottom: 1.6rem;">
+                <label class="input-label" for="decoder-input">Input Specification Code</label>
                 <input type="text" id="decoder-input" placeholder="e.g. CNMG432 or CNMG120408RL"
-                       oninput="decode()"
-                       class="w-full border-2 border-slate-200 rounded-xl p-4 mono text-2xl focus:border-indigo-500 outline-none uppercase shadow-inner transition-colors">
-                
-                <div class="mt-4 flex flex-wrap gap-4">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[9px] text-slate-400 font-black uppercase">ANSI:</span>
-                        <button onclick="loadSample('CNMG432')" class="text-[10px] text-indigo-600 hover:underline font-bold">CNMG432</button>
-                        <button onclick="loadSample('DNMG431')" class="text-[10px] text-indigo-600 hover:underline font-bold">DNMG431</button>
+                       oninput="decode()" class="decoder-input">
+
+                <div class="sample-row">
+                    <div class="sample-group">
+                        <span class="sample-tag">ANSI:</span>
+                        <button onclick="loadSample('CNMG432')"  class="sample-btn">CNMG432</button>
+                        <button onclick="loadSample('DNMG431')"  class="sample-btn">DNMG431</button>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[9px] text-slate-400 font-black uppercase">ISO:</span>
-                        <button onclick="loadSample('CNMG120408')" class="text-[10px] text-emerald-600 hover:underline font-bold">CNMG120408</button>
-                        <button onclick="loadSample('TNMG160404ER')" class="text-[10px] text-emerald-600 hover:underline font-bold">TNMG160404ER</button>
-                        <button onclick="loadSample('VNMG160408EL')" class="text-[10px] text-emerald-600 hover:underline font-bold">VNMG160408EL</button>
+                    <div class="sample-group">
+                        <span class="sample-tag">ISO:</span>
+                        <button onclick="loadSample('CNMG120408')"   class="sample-btn">CNMG120408</button>
+                        <button onclick="loadSample('TNMG160404ER')" class="sample-btn">TNMG160404ER</button>
+                        <button onclick="loadSample('VNMG160408EL')" class="sample-btn">VNMG160408EL</button>
                     </div>
                 </div>
             </div>
 
             <div id="decoder-results" class="hidden">
-                <h3 class="font-black text-slate-800 text-sm uppercase tracking-widest border-b-2 border-slate-100 pb-3 mb-4 flex justify-between items-center">
-                    <span>Breakdown</span>
-                    <span id="standard-badge" class="text-[10px] px-2 py-0.5 rounded-md"></span>
-                </h3>
-                <div id="decode-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-            </div>
-        </div>
-
-        <!-- Info Mode -->
-        <div id="mode-info" class="hidden bg-white p-6 rounded-b-xl shadow-lg border-x border-b border-slate-200">
-            <div class="flex justify-between items-center mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
-                <div>
-                    <h3 class="font-bold text-slate-900">Standardized Reference Tables</h3>
-                    <p class="text-xs text-slate-500">Industry standard dimensions and geometry codes.</p>
+                <div class="results-header">
+                    <span class="results-title">Breakdown</span>
+                    <span id="standard-badge" class="standard-badge"></span>
                 </div>
-                <button onclick="toggleUnits()" id="unit-toggle-btn" class="bg-white border-2 border-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold text-xs shadow-sm hover:border-indigo-500 transition-all uppercase tracking-tighter">
-                    Units: ANSI (Inch)
-                </button>
-            </div>
-
-            <div class="space-y-12">
-                <section>
-                    <div class="section-header"><span class="section-dot bg-indigo-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">1. Shape Geometry</h4></div>
-                    <div class="table-wrapper"><table id="table-shape"><thead><tr><th class="w-32">Code</th><th>Description</th><th>Point Angle</th></tr></thead><tbody></tbody></table></div>
-                </section>
-
-                <section>
-                    <div class="section-header"><span class="section-dot bg-blue-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">2. Relief Angle</h4></div>
-                    <div class="table-wrapper"><table id="table-relief"><thead><tr><th class="w-32">Code</th><th>Angle</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
-                </section>
-
-                <section>
-                    <div class="section-header"><span class="section-dot bg-emerald-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">3. Tolerance Class</h4></div>
-                    <div class="table-wrapper"><table id="table-tolerance"><thead><tr><th class="w-24">Code</th><th>I.C. Tol.</th><th>Thickness Tol.</th><th>Description</th></tr></thead><tbody></tbody></table></div>
-                </section>
-
-                <section>
-                    <div class="section-header"><span class="section-dot bg-orange-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">4. Insert Type / Fixing</h4></div>
-                    <div class="table-wrapper"><table id="table-type"><thead><tr><th class="w-32">Code</th><th>Features</th></tr></thead><tbody></tbody></table></div>
-                </section>
-
-                <section>
-                    <div class="section-header"><span class="section-dot bg-purple-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">6. Cutting Edge Condition</h4></div>
-                    <div class="table-wrapper"><table id="table-edge"><thead><tr><th class="w-32">Code</th><th>Description</th></tr></thead><tbody></tbody></table></div>
-                </section>
-
-                <section>
-                    <div class="section-header"><span class="section-dot bg-teal-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">7. Cutting Direction (Hand)</h4></div>
-                    <div class="table-wrapper"><table id="table-hand"><thead><tr><th class="w-32">Code</th><th>Description</th></tr></thead><tbody></tbody></table></div>
-                </section>
-                
-                <section>
-                    <div class="section-header"><span class="section-dot bg-rose-500"></span><h4 class="text-xs font-black text-slate-500 uppercase tracking-widest">5. Dimension Mappings</h4></div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 mb-3 uppercase ml-1">Size (I.C.)</p>
-                            <div class="table-wrapper"><table id="table-size"><thead><tr><th>ISO</th><th>ANSI</th><th class="unit-label text-right">Value</th></tr></thead><tbody></tbody></table></div>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 mb-3 uppercase ml-1">Thickness</p>
-                            <div class="table-wrapper"><table id="table-thick"><thead><tr><th>ISO</th><th>ANSI</th><th class="unit-label text-right">Value</th></tr></thead><tbody></tbody></table></div>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 mb-3 uppercase ml-1">Nose Radius (ISO)</p>
-                            <div class="table-wrapper"><table id="table-radius"><thead><tr><th>Code</th><th class="unit-label text-right">Value</th></tr></thead><tbody></tbody></table></div>
-                        </div>
-                    </div>
-                </section>
+                <div id="decode-grid" class="decode-grid"></div>
             </div>
         </div>
 
-        <!-- Builder Mode -->
-        <div id="mode-builder" class="hidden bg-white p-6 rounded-b-xl shadow-lg border-x border-b border-slate-200">
-            <div class="bg-indigo-950 rounded-xl p-8 mb-10 text-center shadow-xl">
-                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] block mb-2">Active Specification Code</span>
-                <div id="builder-output" class="mono text-4xl md:text-5xl text-white font-bold tracking-widest break-all">CNMG120408EN</div>
+        <!-- ── INFO ── -->
+        <div id="mode-info" class="panel hidden">
+
+            <div class="info-topbar">
+                <div>
+                    <h3>Standardized Reference Tables</h3>
+                    <p>Industry standard dimensions and geometry codes.</p>
+                </div>
+                <button onclick="toggleUnits()" id="unit-toggle-btn" class="unit-toggle">Units: ANSI (Inch)</button>
             </div>
 
-            <div class="space-y-12">
-                <section>
-                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">1 — Shape Geometry</h3>
-                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-shape"></div>
-                    <p id="desc-shape" class="mt-3 text-xs font-bold text-indigo-600 bg-indigo-50 p-3 rounded-lg min-h-[2.5rem]"></p>
-                </section>
-
-                <section>
-                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">2 — Relief Angle</h3>
-                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-relief"></div>
-                    <p id="desc-relief" class="mt-3 text-xs font-bold text-blue-600 bg-blue-50 p-3 rounded-lg min-h-[2.5rem]"></p>
-                </section>
-
-                <section>
-                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">3 — Tolerance Class</h3>
-                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-tolerance"></div>
-                    <p id="desc-tolerance" class="mt-3 text-xs font-bold text-emerald-600 bg-emerald-50 p-3 rounded-lg min-h-[2.5rem]"></p>
-                </section>
-
-                <section>
-                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">4 — Insert Type / Fixing</h3>
-                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-hole"></div>
-                    <p id="desc-hole" class="mt-3 text-xs font-bold text-orange-600 bg-orange-50 p-3 rounded-lg min-h-[2.5rem]"></p>
-                </section>
-
-                <section>
-                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">5 — Nominal Dimensions (ISO)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-3">Size (I.C.)</label>
-                            <select id="build-size" class="w-full bg-white border-2 border-slate-200 p-3 rounded-xl font-bold outline-none focus:border-indigo-500" onchange="updateState('size', this.value)"></select>
-                        </div>
-                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-3">Thickness</label>
-                            <select id="build-thickness" class="w-full bg-white border-2 border-slate-200 p-3 rounded-xl font-bold outline-none focus:border-indigo-500" onchange="updateState('thick', this.value)"></select>
-                        </div>
-                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-3">Nose Radius</label>
-                            <select id="build-radius" class="w-full bg-white border-2 border-slate-200 p-3 rounded-xl font-bold outline-none focus:border-indigo-500" onchange="updateState('rad', this.value)"></select>
-                        </div>
+            <div class="info-section">
+                <div class="section-label">1 — Shape Geometry</div>
+                <div class="table-wrapper"><table id="table-shape"><thead><tr><th style="width:80px">Code</th><th>Description</th><th>Point Angle</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="info-section">
+                <div class="section-label">2 — Relief Angle</div>
+                <div class="table-wrapper"><table id="table-relief"><thead><tr><th style="width:80px">Code</th><th>Angle</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="info-section">
+                <div class="section-label">3 — Tolerance Class</div>
+                <div class="table-wrapper"><table id="table-tolerance"><thead><tr><th style="width:70px">Code</th><th>I.C. Tol.</th><th>Thickness Tol.</th><th>Description</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="info-section">
+                <div class="section-label">4 — Insert Type / Fixing</div>
+                <div class="table-wrapper"><table id="table-type"><thead><tr><th style="width:80px">Code</th><th>Features</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="info-section">
+                <div class="section-label">6 — Cutting Edge Condition</div>
+                <div class="table-wrapper"><table id="table-edge"><thead><tr><th style="width:80px">Code</th><th>Description</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="info-section">
+                <div class="section-label">7 — Cutting Direction (Hand)</div>
+                <div class="table-wrapper"><table id="table-hand"><thead><tr><th style="width:80px">Code</th><th>Description</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="info-section">
+                <div class="section-label">5 — Dimension Mappings</div>
+                <div class="dim-grid">
+                    <div>
+                        <div class="dim-col-label">Size (I.C.)</div>
+                        <div class="table-wrapper"><table id="table-size"><thead><tr><th>ISO</th><th>ANSI</th><th class="unit-label" style="text-align:right">Value</th></tr></thead><tbody></tbody></table></div>
                     </div>
-                </section>
-
-                <section>
-                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">6 — Cutting Edge Condition</h3>
-                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-edge"></div>
-                    <p id="desc-edge" class="mt-3 text-xs font-bold text-purple-600 bg-purple-50 p-3 rounded-lg min-h-[2.5rem]"></p>
-                </section>
-
-                <section>
-                    <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest mb-4">7 — Cutting Direction (Hand)</h3>
-                    <div class="flex overflow-x-auto gap-2 py-2 hide-scrollbar" id="build-hand"></div>
-                    <p id="desc-hand" class="mt-3 text-xs font-bold text-teal-600 bg-teal-50 p-3 rounded-lg min-h-[2.5rem]"></p>
-                </section>
+                    <div>
+                        <div class="dim-col-label">Thickness</div>
+                        <div class="table-wrapper"><table id="table-thick"><thead><tr><th>ISO</th><th>ANSI</th><th class="unit-label" style="text-align:right">Value</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                    <div>
+                        <div class="dim-col-label">Nose Radius (ISO)</div>
+                        <div class="table-wrapper"><table id="table-radius"><thead><tr><th>Code</th><th class="unit-label" style="text-align:right">Value</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- ── BUILDER ── -->
+        <div id="mode-builder" class="panel hidden">
+
+            <div class="builder-display">
+                <span class="builder-display-label">— Active Specification Code</span>
+                <div id="builder-output">CNMG120408EN</div>
+            </div>
+
+            <div class="builder-section">
+                <div class="builder-section-title">1 — Shape Geometry</div>
+                <div class="btn-row" id="build-shape"></div>
+                <div class="desc-box" id="desc-shape"></div>
+            </div>
+            <div class="builder-section">
+                <div class="builder-section-title">2 — Relief Angle</div>
+                <div class="btn-row" id="build-relief"></div>
+                <div class="desc-box" id="desc-relief"></div>
+            </div>
+            <div class="builder-section">
+                <div class="builder-section-title">3 — Tolerance Class</div>
+                <div class="btn-row" id="build-tolerance"></div>
+                <div class="desc-box" id="desc-tolerance"></div>
+            </div>
+            <div class="builder-section">
+                <div class="builder-section-title">4 — Insert Type / Fixing</div>
+                <div class="btn-row" id="build-hole"></div>
+                <div class="desc-box" id="desc-hole"></div>
+            </div>
+
+            <div class="builder-section">
+                <div class="builder-section-title">5 — Nominal Dimensions (ISO)</div>
+                <div class="dim-select-grid">
+                    <div class="dim-select-card">
+                        <label class="dim-select-label">Size (I.C.)</label>
+                        <select id="build-size" class="dim-select" onchange="updateState('size', this.value)"></select>
+                    </div>
+                    <div class="dim-select-card">
+                        <label class="dim-select-label">Thickness</label>
+                        <select id="build-thickness" class="dim-select" onchange="updateState('thick', this.value)"></select>
+                    </div>
+                    <div class="dim-select-card">
+                        <label class="dim-select-label">Nose Radius</label>
+                        <select id="build-radius" class="dim-select" onchange="updateState('rad', this.value)"></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="builder-section">
+                <div class="builder-section-title">6 — Cutting Edge Condition</div>
+                <div class="btn-row" id="build-edge"></div>
+                <div class="desc-box" id="desc-edge"></div>
+            </div>
+            <div class="builder-section">
+                <div class="builder-section-title">7 — Cutting Direction (Hand)</div>
+                <div class="btn-row" id="build-hand"></div>
+                <div class="desc-box" id="desc-hand"></div>
+            </div>
+        </div>
+
     </main>
 
     <script>
@@ -295,15 +685,15 @@
                 'N': { desc: 'Neutral (both directions)' }
             },
             size: {
-                iso:  { '06': 6.35,  '08': 8.0,   '09': 9.52,  '12': 12.70, '16': 15.88, '19': 19.05, '25': 25.40 },
-                ansi: { '2': 6.35,   '2.5': 8.0,  '3': 9.52,   '4': 12.70,  '5': 15.88,  '6': 19.05,  '8': 25.40 }
+                iso:  { '06': 6.35, '08': 8.0, '09': 9.52, '12': 12.70, '16': 15.88, '19': 19.05, '25': 25.40 },
+                ansi: { '2': 6.35, '2.5': 8.0, '3': 9.52, '4': 12.70, '5': 15.88, '6': 19.05, '8': 25.40 }
             },
             thickness: {
-                iso:  { '03': 3.18,  'T3': 3.97, '04': 4.76, '06': 6.35, '07': 7.94, '09': 9.52 },
-                ansi: { '2': 3.18,   '2.5': 3.97, '3': 4.76, '4': 6.35, '5': 7.94,  '6': 9.52  }
+                iso:  { '03': 3.18, 'T3': 3.97, '04': 4.76, '06': 6.35, '07': 7.94, '09': 9.52 },
+                ansi: { '2': 3.18, '2.5': 3.97, '3': 4.76, '4': 6.35, '5': 7.94, '6': 9.52 }
             },
             radius: {
-                iso: { '00': 0, '04': 0.4, '08': 0.8, '12': 1.2, '16': 1.6, '20': 2.0, '24': 2.4 },
+                iso:  { '00': 0, '04': 0.4, '08': 0.8, '12': 1.2, '16': 1.6, '20': 2.0, '24': 2.4 },
                 ansi: { '0': 0, '1': 0.40, '2': 0.79, '3': 1.19, '4': 1.59 }
             }
         };
@@ -311,10 +701,14 @@
         let currentUnit = 'ansi';
         let buildState = { shape: 'C', relief: 'N', tolerance: 'M', hole: 'G', size: '12', thick: '04', rad: '08', edge: 'E', hand: 'N' };
 
+        // bar colors keyed to decode position
+        const BAR_COLORS = ['#c8ff00','#e8e8e8','#c8ff00','#8a8a9a','#c8ff00','#e8e8e8','#8a8a9a','#c8ff00','#e8e8e8'];
+
         function switchMode(mode) {
             ['decoder', 'info', 'builder'].forEach(m => {
                 document.getElementById(`mode-${m}`).classList.add('hidden');
-                document.getElementById(`tab-${m}`).classList.remove('tab-active');
+                const t = document.getElementById(`tab-${m}`);
+                t.classList.remove('tab-active');
             });
             document.getElementById(`mode-${mode}`).classList.remove('hidden');
             document.getElementById(`tab-${mode}`).classList.add('tab-active');
@@ -328,78 +722,50 @@
         }
 
         function renderTables() {
-            // Shape
-            const shapeTbody = document.querySelector('#table-shape tbody');
-            shapeTbody.innerHTML = '';
-            Object.entries(DATA.shape).forEach(([k, v]) => {
-                shapeTbody.innerHTML += `<tr><td class="mono font-bold text-indigo-700 bg-slate-50/50">${k}</td><td>${v.desc}</td><td class="text-slate-500">${v.angle}</td></tr>`;
-            });
+            const row = (code, colorClass, cells) =>
+                `<tr><td class="td-code ${colorClass}">${code}</td>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
 
-            // Relief
-            const reliefTbody = document.querySelector('#table-relief tbody');
-            reliefTbody.innerHTML = '';
-            Object.entries(DATA.relief).forEach(([k, v]) => {
-                reliefTbody.innerHTML += `<tr><td class="mono font-bold text-blue-700 bg-slate-50/50">${k}</td><td>${v.desc}</td><td class="text-slate-500 text-xs">${v.note}</td></tr>`;
-            });
+            const fill = (id, data, mapper) => {
+                document.querySelector(`#${id} tbody`).innerHTML =
+                    Object.entries(data).map(([k, v]) => mapper(k, v)).join('');
+            };
 
-            // Tolerance
-            const tolTbody = document.querySelector('#table-tolerance tbody');
-            tolTbody.innerHTML = '';
-            Object.entries(DATA.tolerance).forEach(([k, v]) => {
-                tolTbody.innerHTML += `<tr><td class="mono font-bold text-emerald-700 bg-slate-50/50 text-center">${k}</td><td class="mono text-xs">${v.ic}</td><td class="mono text-xs">${v.th}</td><td class="text-xs">${v.desc}</td></tr>`;
-            });
+            fill('table-shape',   DATA.shape,     (k,v) => row(k,'',[ v.desc, `<span style="color:var(--muted)">${v.angle}</span>` ]));
+            fill('table-relief',  DATA.relief,    (k,v) => row(k,'',[ v.desc, `<span style="color:var(--muted);font-size:0.75rem">${v.note}</span>` ]));
+            fill('table-tolerance', DATA.tolerance,(k,v) => row(k,'',[ `<span class="td-mono">${v.ic}</span>`, `<span class="td-mono">${v.th}</span>`, v.desc ]));
+            fill('table-type',    DATA.hole,      (k,v) => row(k,'',[ v.desc ]));
+            fill('table-edge',    DATA.edge,      (k,v) => row(k,'',[ v.desc ]));
+            fill('table-hand',    DATA.hand,      (k,v) => row(k,'',[ v.desc ]));
 
-            // Hole/Type
-            const holeTbody = document.querySelector('#table-type tbody');
-            holeTbody.innerHTML = '';
-            Object.entries(DATA.hole).forEach(([k, v]) => {
-                holeTbody.innerHTML += `<tr><td class="mono font-bold text-orange-700 bg-slate-50/50">${k}</td><td>${v.desc}</td></tr>`;
-            });
+            document.querySelectorAll('.unit-label').forEach(el =>
+                el.innerText = currentUnit === 'ansi' ? 'Inch' : 'Metric'
+            );
 
-            // Edge
-            const edgeTbody = document.querySelector('#table-edge tbody');
-            edgeTbody.innerHTML = '';
-            Object.entries(DATA.edge).forEach(([k, v]) => {
-                edgeTbody.innerHTML += `<tr><td class="mono font-bold text-purple-700 bg-slate-50/50">${k}</td><td>${v.desc}</td></tr>`;
-            });
-
-            // Hand
-            const handTbody = document.querySelector('#table-hand tbody');
-            handTbody.innerHTML = '';
-            Object.entries(DATA.hand).forEach(([k, v]) => {
-                handTbody.innerHTML += `<tr><td class="mono font-bold text-teal-700 bg-slate-50/50">${k}</td><td>${v.desc}</td></tr>`;
-            });
-
-            // Dimensions
             const renderDim = (id, data) => {
                 const tbody = document.querySelector(`#${id} tbody`);
-                document.querySelectorAll('.unit-label').forEach(el => el.innerText = currentUnit === 'ansi' ? 'Inch' : 'Metric');
-                tbody.innerHTML = '';
-                const isoKeys = Object.keys(data.iso);
+                const isoKeys  = Object.keys(data.iso);
                 const ansiKeys = Object.keys(data.ansi);
-                for (let i = 0; i < isoKeys.length; i++) {
-                    const mm = data.iso[isoKeys[i]];
-                    const displayVal = currentUnit === 'ansi' ? `${(mm / 25.4).toFixed(3)}"` : `${mm.toFixed(2)} mm`;
-                    tbody.innerHTML += `<tr>
-                        <td class="mono font-bold bg-slate-50/50">${isoKeys[i]}</td>
-                        <td class="mono font-bold bg-slate-50/50">${ansiKeys[i] || '—'}</td>
-                        <td class="font-bold text-slate-900 text-right">${displayVal}</td>
+                tbody.innerHTML = isoKeys.map((k, i) => {
+                    const mm = data.iso[k];
+                    const val = currentUnit === 'ansi' ? `${(mm / 25.4).toFixed(3)}"` : `${mm.toFixed(2)} mm`;
+                    return `<tr>
+                        <td class="td-code">${k}</td>
+                        <td class="td-mono">${ansiKeys[i] || '—'}</td>
+                        <td style="text-align:right;font-weight:500;color:var(--text)">${val}</td>
                     </tr>`;
-                }
+                }).join('');
             };
-            renderDim('table-size', DATA.size);
+            renderDim('table-size',  DATA.size);
             renderDim('table-thick', DATA.thickness);
 
-            // Nose radius table
             const radTbody = document.querySelector('#table-radius tbody');
-            radTbody.innerHTML = '';
-            Object.entries(DATA.radius.iso).forEach(([k, v]) => {
-                const displayVal = currentUnit === 'ansi' ? `${(v / 25.4).toFixed(4)}"` : `${v.toFixed(1)} mm`;
-                radTbody.innerHTML += `<tr>
-                    <td class="mono font-bold bg-slate-50/50">${k}</td>
-                    <td class="font-bold text-slate-900 text-right">${displayVal}</td>
+            radTbody.innerHTML = Object.entries(DATA.radius.iso).map(([k, v]) => {
+                const val = currentUnit === 'ansi' ? `${(v / 25.4).toFixed(4)}"` : `${v.toFixed(1)} mm`;
+                return `<tr>
+                    <td class="td-code">${k}</td>
+                    <td style="text-align:right;font-weight:500;color:var(--text)">${val}</td>
                 </tr>`;
-            });
+            }).join('');
         }
 
         function loadSample(code) {
@@ -410,8 +776,8 @@
         function decode() {
             const raw = document.getElementById('decoder-input').value.trim().toUpperCase();
             const resDiv = document.getElementById('decoder-results');
-            const grid = document.getElementById('decode-grid');
-            const badge = document.getElementById('standard-badge');
+            const grid   = document.getElementById('decode-grid');
+            const badge  = document.getElementById('standard-badge');
 
             if (raw === '') { resDiv.classList.add('hidden'); return; }
             const cleaned = raw.replace(/[-\s]/g, '');
@@ -425,16 +791,14 @@
 
             if (!isANSI7 && !isISO10 && !isISO8 && !isISO6) {
                 badge.innerText = 'Invalid Format';
-                badge.className = 'text-[10px] px-2 py-0.5 rounded-md bg-red-100 text-red-600 font-bold';
-                grid.innerHTML = '<div class="col-span-full p-8 text-center text-slate-400 text-xs italic">Unsupported code structure. Try CNMG432, CNMG120408, or CNMG120408EN</div>';
+                badge.className = 'standard-badge badge-err';
+                grid.innerHTML = `<div class="decode-empty">Unsupported code structure. Try CNMG432, CNMG120408, or CNMG120408EN</div>`;
                 return;
             }
 
             const isISO = !isANSI7;
             badge.innerText = isISO ? 'Metric (ISO)' : 'Imperial (ANSI)';
-            badge.className = isISO
-                ? 'text-[10px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-600 font-bold'
-                : 'text-[10px] px-2 py-0.5 rounded-md bg-blue-100 text-blue-600 font-bold';
+            badge.className = `standard-badge ${isISO ? 'badge-iso' : 'badge-ansi'}`;
 
             const shapeData = DATA.shape[cleaned[0]];
             const reliefData = DATA.relief[cleaned[1]];
@@ -442,64 +806,50 @@
             const holeData = DATA.hole[cleaned[3]];
 
             const parts = [
-                { label: 'Shape',     val: shapeData ? `${shapeData.desc} (${shapeData.angle})` : `Unknown (${cleaned[0]})`, color: 'bg-indigo-600' },
-                { label: 'Relief',    val: reliefData ? `${reliefData.desc} — ${reliefData.note}` : `Unknown (${cleaned[1]})`, color: 'bg-blue-600' },
-                { label: 'Tolerance', val: tolData ? `${tolData.desc} · IC: ${tolData.ic}` : `Unknown (${cleaned[2]})`, color: 'bg-emerald-600' },
-                { label: 'Type',      val: holeData ? holeData.desc : `Unknown (${cleaned[3]})`, color: 'bg-orange-600' }
+                { label: 'Shape',     val: shapeData   ? `${shapeData.desc} (${shapeData.angle})`    : `Unknown (${cleaned[0]})` },
+                { label: 'Relief',    val: reliefData  ? `${reliefData.desc} — ${reliefData.note}`   : `Unknown (${cleaned[1]})` },
+                { label: 'Tolerance', val: tolData     ? `${tolData.desc} · IC: ${tolData.ic}`        : `Unknown (${cleaned[2]})` },
+                { label: 'Type',      val: holeData    ? holeData.desc                                : `Unknown (${cleaned[3]})` }
             ];
 
             const num = cleaned.substring(4);
 
             if (isISO) {
-                const s = num.substring(0, 2);
-                const t = num.substring(2, 4);
-                const r = num.substring(4, 6);
-                const mmSize  = DATA.size.iso[s]       !== undefined ? DATA.size.iso[s].toFixed(2)       : parseInt(s).toFixed(2);
-                const mmThick = DATA.thickness.iso[t]  !== undefined ? DATA.thickness.iso[t].toFixed(2)  : parseInt(t).toFixed(2);
-                const mmRad   = DATA.radius.iso[r]     !== undefined ? DATA.radius.iso[r].toFixed(1)     : (parseInt(r) / 10).toFixed(1);
-
-                parts.push({ label: 'Size (I.C.)',  val: `${mmSize} mm`,  color: 'bg-rose-600' });
-                parts.push({ label: 'Thickness',    val: `${mmThick} mm`, color: 'bg-amber-600' });
-                parts.push({ label: 'Nose Radius',  val: `${mmRad} mm`,   color: 'bg-cyan-600' });
-
-                // Optional positions 6+7
+                const s = num.substring(0,2), t = num.substring(2,4), r = num.substring(4,6);
+                const mmSize  = DATA.size.iso[s]      !== undefined ? DATA.size.iso[s].toFixed(2)      : parseInt(s).toFixed(2);
+                const mmThick = DATA.thickness.iso[t] !== undefined ? DATA.thickness.iso[t].toFixed(2) : parseInt(t).toFixed(2);
+                const mmRad   = DATA.radius.iso[r]    !== undefined ? DATA.radius.iso[r].toFixed(1)    : (parseInt(r)/10).toFixed(1);
+                parts.push({ label: 'Size (I.C.)', val: `${mmSize} mm` });
+                parts.push({ label: 'Thickness',   val: `${mmThick} mm` });
+                parts.push({ label: 'Nose Radius', val: `${mmRad} mm` });
                 if (isISO10 || isISO8) {
                     const extra = cleaned.slice(-2);
-                    const edgeCode = extra[0];
-                    const handCode = extra[1];
-                    const edgeData = DATA.edge[edgeCode];
-                    const handData = DATA.hand[handCode];
-                    parts.push({ label: 'Edge Condition', val: edgeData ? edgeData.desc : `Unknown (${edgeCode})`, color: 'bg-purple-600' });
-                    parts.push({ label: 'Cutting Hand',   val: handData ? handData.desc : `Unknown (${handCode})`, color: 'bg-teal-600' });
+                    const edgeData = DATA.edge[extra[0]], handData = DATA.hand[extra[1]];
+                    parts.push({ label: 'Edge Condition', val: edgeData ? edgeData.desc : `Unknown (${extra[0]})` });
+                    parts.push({ label: 'Cutting Hand',   val: handData ? handData.desc : `Unknown (${extra[1]})` });
                 }
             } else {
-                // ANSI
-                const s = parseInt(num[0]);
-                const t = parseInt(num[1]);
-                const r = parseInt(num[2]);
-                parts.push({ label: 'Size (I.C.)',  val: `${s}/8" (${(s * 25.4 / 8).toFixed(2)} mm)`,  color: 'bg-rose-600' });
-                parts.push({ label: 'Thickness',    val: `${t}/16" (${(t * 25.4 / 16).toFixed(2)} mm)`, color: 'bg-amber-600' });
-                parts.push({ label: 'Nose Radius',  val: `${r}/64" (${(r * 25.4 / 64).toFixed(2)} mm)`, color: 'bg-cyan-600' });
+                const s = parseInt(num[0]), t = parseInt(num[1]), r = parseInt(num[2]);
+                parts.push({ label: 'Size (I.C.)', val: `${s}/8" (${(s*25.4/8).toFixed(2)} mm)` });
+                parts.push({ label: 'Thickness',   val: `${t}/16" (${(t*25.4/16).toFixed(2)} mm)` });
+                parts.push({ label: 'Nose Radius', val: `${r}/64" (${(r*25.4/64).toFixed(2)} mm)` });
             }
 
-            grid.innerHTML = parts.map(p => `
-                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div class="w-1.5 h-8 ${p.color} rounded-full flex-shrink-0"></div>
+            grid.innerHTML = parts.map((p, i) => `
+                <div class="decode-card">
+                    <div class="decode-bar" style="background:${BAR_COLORS[i % BAR_COLORS.length]}"></div>
                     <div>
-                        <span class="block text-[9px] uppercase font-black text-slate-400 tracking-widest">${p.label}</span>
-                        <span class="text-sm font-bold text-slate-800">${p.val}</span>
+                        <span class="decode-label">${p.label}</span>
+                        <span class="decode-val">${p.val}</span>
                     </div>
                 </div>`).join('');
         }
 
         function getBtnClass(isActive) {
-            const base = "min-w-[50px] h-[50px] flex-shrink-0 rounded-xl font-mono font-bold text-lg border-2 transition-all ";
-            return isActive
-                ? base + "bg-indigo-600 border-indigo-600 text-white shadow-lg scale-105"
-                : base + "bg-white border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500";
+            return 'build-btn' + (isActive ? ' build-btn-active' : '');
         }
 
-        function renderBtns(id, dataObj, stateKey, descId, color) {
+        function renderBtns(id, dataObj, stateKey, descId) {
             const container = document.getElementById(id);
             container.innerHTML = '';
             Object.entries(dataObj).forEach(([k, v]) => {
@@ -514,15 +864,17 @@
                     const prevBtn = container.querySelector(`[data-key="${prev}"]`);
                     if (prevBtn) prevBtn.className = getBtnClass(false);
                     b.className = getBtnClass(true);
-                    document.getElementById(descId).innerText = typeof v === 'object' ? (v.desc + (v.note ? ' — ' + v.note : '') + (v.ic ? ` · IC: ${v.ic}` : '')) : v;
+                    document.getElementById(descId).innerText = typeof v === 'object'
+                        ? (v.desc + (v.note ? ' — ' + v.note : '') + (v.ic ? ` · IC: ${v.ic}` : ''))
+                        : v;
                     updateBuilderUI();
                 };
                 container.appendChild(b);
             });
-            const currentVal = dataObj[buildState[stateKey]];
-            document.getElementById(descId).innerText = typeof currentVal === 'object'
-                ? (currentVal.desc + (currentVal.note ? ' — ' + currentVal.note : '') + (currentVal.ic ? ` · IC: ${currentVal.ic}` : ''))
-                : (currentVal || '');
+            const cv = dataObj[buildState[stateKey]];
+            document.getElementById(descId).innerText = typeof cv === 'object'
+                ? (cv.desc + (cv.note ? ' — ' + cv.note : '') + (cv.ic ? ` · IC: ${cv.ic}` : ''))
+                : (cv || '');
         }
 
         function initBuilder() {
@@ -556,12 +908,11 @@
         }
 
         function updateBuilderUI() {
-            // ISO format: pos1-4 + size(2) + thick(2) + rad(2) + edge(1) + hand(1)
             const code = `${buildState.shape}${buildState.relief}${buildState.tolerance}${buildState.hole}${buildState.size}${buildState.thick}${buildState.rad}${buildState.edge}${buildState.hand}`;
             document.getElementById('builder-output').innerText = code;
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener('DOMContentLoaded', () => {
             initBuilder();
             loadSample('CNMG120408EN');
         });
