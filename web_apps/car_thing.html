@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>car sim thing</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@1,700;1,900&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #121212;
+            font-family: 'Roboto', sans-serif;
+            text-transform: uppercase;
+            font-style: italic;
+        }
+
+        #header {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            color: white;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            pointer-events: none;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        #footer {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #back-button {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            height: 50px;
+            padding: 0 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 20;
+            backdrop-filter: blur(5px);
+            color: white;
+            font-weight: 900;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-decoration: none;
+        }
+
+        #back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #4facfe;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header">car sim thing</div>
+    <div id="footer">TEST_ENV_CHECKERED</div>
+
+    <a id="back-button" href="https://thiswebsite.github.io">
+        BACK TO MAIN PAGE
+    </a>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        let scene, camera, renderer, vehicleGroup, carBodyGroup, floor, sunLight;
+        const wheels = []; 
+        const frontWheelGroups = []; 
+        const pushables = []; 
+        
+        const zoom = 15; 
+        const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
+        
+        // Time Scale (0.2 = 80% decrease in speed)
+        const TIME_SCALE = 0.2;
+
+        let speed = 0;
+        // Increased maxSpeed and acceleration by 20%
+        const maxSpeed = (0.22 * 1.2) * TIME_SCALE;       
+        const acceleration = (0.006 * 1.2) * TIME_SCALE;  
+        const friction = 1.0 - (0.04 * TIME_SCALE);      
+        
+        let rotationAngle = 0;       
+        let steeringInput = 0;       
+        const maxSteering = 0.05 * TIME_SCALE;   
+        const steeringSens = 0.004 * TIME_SCALE;  
+        
+        let steeringVisualAngle = 0; 
+        let currentPitch = 0;
+        let currentRoll = 0;
+
+        const GRAVITY = -0.015 * TIME_SCALE * TIME_SCALE; 
+        const FLOOR_Y = 0.75; 
+
+        function createCheckerTexture() {
+            const size = 1024;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            const checkers = 4; 
+            const step = size / checkers;
+            const gutter = 16; 
+
+            ctx.fillStyle = '#0a0a0a'; 
+            ctx.fillRect(0, 0, size, size);
+
+            for (let i = 0; i < checkers; i++) {
+                for (let j = 0; j < checkers; j++) {
+                    ctx.fillStyle = (i + j) % 2 === 0 ? '#181818' : '#202020';
+                    ctx.fillRect(i * step + gutter/2, j * step + gutter/2, step - gutter, step - gutter);
+                }
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(100, 100); 
+            texture.anisotropy = 16;
+            return texture;
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            const aspect = window.innerWidth / window.innerHeight;
+            camera = new THREE.OrthographicCamera(-zoom * aspect, zoom * aspect, zoom, -zoom, 0.1, 1000);
+            
+            const radius = 100;
+            camera.position.set(radius, radius, radius);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambientLight);
+
+            sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            sunLight.position.set(40, 100, 20); 
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.left = -60;
+            sunLight.shadow.camera.right = 60;
+            sunLight.shadow.camera.top = 60;
+            sunLight.shadow.camera.bottom = -60;
+            scene.add(sunLight);
+
+            const floorGeom = new THREE.PlaneGeometry(2000, 2000);
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                map: createCheckerTexture(),
+                roughness: 0.7, 
+                metalness: 0.05 
+            });
+            floor = new THREE.Mesh(floorGeom, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            createCar();
+            createPushables();
+
+            window.addEventListener('keydown', (e) => { const k = e.key.toLowerCase(); if (k in keys) keys[k] = true; });
+            window.addEventListener('keyup', (e) => { const k = e.key.toLowerCase(); if (k in keys) keys[k] = false; });
+            window.addEventListener('resize', onWindowResize, false);
+
+            animate();
+        }
+
+        function createPushables() {
+            const cubeGeom = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+            const colors = [0xcccccc, 0xaaaaaa, 0x4facfe];
+            
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const stackHeight = Math.random() > 0.7 ? 2 : 1;
+                    
+                    for (let h = 0; h < stackHeight; h++) {
+                        const mat = new THREE.MeshStandardMaterial({ 
+                            color: colors[Math.floor(Math.random() * colors.length)], 
+                            roughness: 0.6 
+                        });
+                        const cube = new THREE.Mesh(cubeGeom, mat);
+                        
+                        const x = i * 4 - 14 + (Math.random() - 0.5);
+                        const z = j * 4 + 15 + (Math.random() - 0.5);
+                        const y = FLOOR_Y + (h * 1.51); 
+
+                        cube.position.set(x, y, z);
+                        cube.castShadow = true;
+                        cube.receiveShadow = true;
+                        
+                        cube.userData = {
+                            velocity: new THREE.Vector3(0, 0, 0),
+                            rotVel: new THREE.Vector3(0, 0, 0),
+                            mass: 0.8
+                        };
+                        
+                        scene.add(cube);
+                        pushables.push(cube);
+                    }
+                }
+            }
+        }
+
+        function createCar() {
+            vehicleGroup = new THREE.Group();
+            scene.add(vehicleGroup);
+
+            carBodyGroup = new THREE.Group();
+            vehicleGroup.add(carBodyGroup);
+
+            const paintMat = new THREE.MeshStandardMaterial({ color: 0x4facfe, roughness: 0.1, metalness: 0.8 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.0, metalness: 1.0, transparent: true, opacity: 0.8 });
+            const trimMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.5, metalness: 0.2 });
+
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 3.5), paintMat);
+            chassis.position.y = 0.7;
+            chassis.castShadow = true;
+            chassis.receiveShadow = true;
+            carBodyGroup.add(chassis);
+
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 1.8), paintMat);
+            cabin.position.set(0, 1.35, -0.2);
+            cabin.castShadow = true;
+            carBodyGroup.add(cabin);
+
+            const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.6, 0.1), glassMat);
+            windshield.position.set(0, 1.35, 0.71);
+            windshield.rotation.x = -Math.PI * 0.12;
+            carBodyGroup.add(windshield);
+
+            const wheelGeom = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 32);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+            
+            const wheelPositions = [
+                { x: -1.15, y: 0.5, z: 1.25, isFront: true },  
+                { x: 1.15, y: 0.5, z: 1.25, isFront: true },   
+                { x: -1.15, y: 0.5, z: -1.25, isFront: false }, 
+                { x: 1.15, y: 0.5, z: -1.25, isFront: false }   
+            ];
+
+            wheelPositions.forEach(pos => {
+                const pivot = new THREE.Group();
+                pivot.position.set(pos.x, pos.y, pos.z);
+                vehicleGroup.add(pivot);
+
+                const wheel = new THREE.Mesh(wheelGeom, wheelMat);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.castShadow = true;
+                pivot.add(wheel);
+
+                wheels.push(wheel);
+                if (pos.isFront) {
+                    frontWheelGroups.push(pivot);
+                }
+            });
+        }
+
+        function handleMovement() {
+            const fwd = keys.w || keys.arrowup;
+            const bwd = keys.s || keys.arrowdown;
+            const left = keys.a || keys.arrowleft;
+            const right = keys.d || keys.arrowright;
+
+            if (left) steeringInput += steeringSens;
+            else if (right) steeringInput -= steeringSens;
+            else steeringInput *= (1.0 - (0.15 * TIME_SCALE));
+            
+            steeringInput = Math.max(-maxSteering, Math.min(maxSteering, steeringInput));
+            
+            const turningEffectiveness = Math.abs(speed) / (maxSpeed || 0.001);
+            rotationAngle += steeringInput * turningEffectiveness;
+
+            const targetVisualSteering = (steeringInput / (maxSteering || 0.001)) * 0.5;
+            steeringVisualAngle += (targetVisualSteering - steeringVisualAngle) * (0.15 * TIME_SCALE);
+
+            let accelerationForce = 0;
+            if (fwd) {
+                accelerationForce = acceleration;
+                speed += accelerationForce;
+            } else if (bwd) {
+                accelerationForce = -acceleration;
+                speed += accelerationForce;
+            } else {
+                const prevSpeed = speed;
+                speed *= friction;
+                accelerationForce = speed - prevSpeed;
+            }
+
+            speed = Math.max(-maxSpeed / 2, Math.min(maxSpeed, speed));
+            if (Math.abs(speed) < 0.0001 * TIME_SCALE) speed = 0;
+
+            vehicleGroup.rotation.y = rotationAngle;
+            vehicleGroup.position.x += Math.sin(rotationAngle) * speed;
+            vehicleGroup.position.z += Math.cos(rotationAngle) * speed;
+
+            const carPos = vehicleGroup.position.clone();
+            const carRadius = 2.0;
+
+            pushables.forEach(cube => {
+                const dist = carPos.distanceTo(cube.position);
+                if (dist < carRadius + 0.75) {
+                    const diff = cube.position.clone().sub(carPos).normalize();
+                    const impact = Math.abs(speed) * 2.5;
+                    cube.userData.velocity.add(diff.multiplyScalar(impact));
+                    cube.userData.velocity.y += impact * 0.5;
+                    cube.userData.rotVel.set(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(impact * 2);
+                }
+
+                if (cube.position.y > FLOOR_Y) {
+                    cube.userData.velocity.y += GRAVITY;
+                } else if (cube.position.y < FLOOR_Y) {
+                    cube.position.y = FLOOR_Y;
+                    cube.userData.velocity.y *= -0.3; 
+                    cube.userData.velocity.x *= friction; 
+                    cube.userData.velocity.z *= friction; 
+                    cube.userData.rotVel.multiplyScalar(0.9); 
+                }
+
+                cube.position.add(cube.userData.velocity);
+                cube.rotation.x += cube.userData.rotVel.x;
+                cube.rotation.y += cube.userData.rotVel.y;
+                cube.rotation.z += cube.userData.rotVel.z;
+
+                const damping = 1.0 - (0.02 * TIME_SCALE);
+                cube.userData.velocity.multiplyScalar(damping);
+                cube.userData.rotVel.multiplyScalar(damping);
+            });
+
+            const camOffset = new THREE.Vector3(80, 80, 80); 
+            camera.position.copy(vehicleGroup.position).add(camOffset);
+            sunLight.target = vehicleGroup;
+            sunLight.position.copy(vehicleGroup.position).add(new THREE.Vector3(40, 100, 20));
+
+            const targetPitch = -accelerationForce * (25 / TIME_SCALE); 
+            currentPitch += (targetPitch - currentPitch) * (0.05 * TIME_SCALE);
+            const targetRoll = (steeringInput / (maxSteering || 0.001)) * Math.abs(speed) * (1.8 / TIME_SCALE);
+            currentRoll += (targetRoll - currentRoll) * (0.05 * TIME_SCALE);
+
+            carBodyGroup.rotation.x = currentPitch;
+            carBodyGroup.rotation.z = currentRoll;
+
+            wheels.forEach(wheel => { wheel.rotation.x += speed * (5 / TIME_SCALE); });
+            frontWheelGroups.forEach(group => { group.rotation.y = steeringVisualAngle; });
+        }
+
+        function onWindowResize() {
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.left = -zoom * aspect; camera.right = zoom * aspect;
+            camera.top = zoom; camera.bottom = -zoom;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            handleMovement();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
