@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Speed Programmer for HAAS 3-Axis Mill</title>
-<!-- Google Fonts: Roboto (regular, italic, bold) -->
+<title>HAAS SPEED CODER</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,227 +28,188 @@
     --syn-percent: #858fa8;
     --syn-nl:      #e8eaf0;
   }
-  html, body {
-    height: 100%; background: var(--bg); color: var(--text);
-    font-family: var(--font-ui); overflow: hidden;
-  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); overflow: hidden; }
   #app { display: flex; flex-direction: column; height: 100vh; }
-
-  /* ── Beta banner ── */
-  #beta-banner {
-    background: repeating-linear-gradient(45deg,#2a1a00,#2a1a00 10px,#1f1300 10px,#1f1300 20px);
-    border-bottom: 1px solid #e5c07b55;
-    padding: 5px 12px;
-    display: flex; align-items: flex-start; gap: 8px;
-    font-family: var(--font-ui); font-size: 11px;
-    color: #e5c07b; letter-spacing: 0.5px; flex-shrink: 0;
-  }
-  #beta-banner .beta-tag {
-    font-weight: 700; font-size: 10px; letter-spacing: 2px;
-    border: 1px solid #e5c07b; border-radius: 3px;
-    padding: 1px 6px; text-transform: uppercase; white-space: nowrap;
-    font-style: italic; margin-top: 1px; flex-shrink: 0;
-  }
-  #beta-banner .beta-msg { opacity: 0.8; font-style: italic; line-height: 1.5; }
-
-  /* ── Topbar ── */
   #topbar {
-    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
     background: var(--surface); border-bottom: 1px solid var(--border);
-    flex-shrink: 0; user-select: none; flex-wrap: wrap; row-gap: 5px;
+    flex-shrink: 0; user-select: none;
+    display: flex; flex-direction: column;
+    padding: 6px 14px;
+    gap: 6px;
   }
-  .logo {
-    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
-    color: var(--accent); text-transform: uppercase; font-style: italic;
-    flex-shrink: 1; min-width: 0;
+  .top-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
-  .sep { width: 1px; height: 14px; background: var(--border); margin: 0 1px; flex-shrink: 0; }
-  .hint {
-    font-size: 10px; color: var(--text-dim); white-space: nowrap;
-    text-transform: uppercase; font-style: italic;
-  }
-  .hint kbd {
-    background: #1c2230; border: 1px solid var(--border); border-radius: 3px;
-    padding: 1px 4px; font-family: var(--font-mono); font-size: 9px; color: var(--text);
-    text-transform: none; font-style: normal;
-  }
-  #units-badge {
-    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px;
-    border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 1px;
-    transition: all 0.3s; text-transform: uppercase; font-style: italic; white-space: nowrap;
-  }
-  #units-badge.inch   { border-color: #e5c07b; color: #e5c07b; }
+  .logo { font-size: 12px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); text-transform: uppercase; font-style: italic; }
+  .sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }
+  #units-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 1px; transition: all 0.3s; text-transform: uppercase; font-style: italic; }
+  #units-badge.inch { border-color: #e5c07b; color: #e5c07b; }
   #units-badge.metric { border-color: #56b6c2; color: #56b6c2; }
-  #status-pill {
-    font-size: 10px; padding: 2px 8px; border-radius: 20px;
-    background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent);
-    opacity: 0; transition: opacity 0.3s; white-space: nowrap;
-  }
+  #status-pill { margin-left: auto; font-size: 11px; padding: 2px 10px; border-radius: 20px; background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
   #status-pill.show { opacity: 1; }
-  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-
-  /* ── Editor ── */
-  #editor-wrap { flex: 1; display: flex; overflow: hidden; position: relative; min-height: 0; }
-  #line-numbers {
-    width: 40px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
-    padding: 10px 8px 10px 0; font-family: var(--font-mono); font-size: 12px; line-height: 20px;
-    color: var(--text-dim); text-align: right; overflow: hidden; user-select: none; font-style: italic;
+  button {
+    background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent);
+    font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer;
+    font-family: var(--font-ui); text-transform: uppercase; font-style: italic;
+    transition: 0.2s;
   }
+  button:hover { background: var(--accent); color: var(--bg); }
+  .auto-btn-active {
+    background: var(--accent); color: var(--bg); border-color: var(--accent);
+  }
+  .hint-row {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-style: italic;
+    letter-spacing: 0.3px;
+    border-top: 1px solid var(--border);
+    padding-top: 5px;
+    margin-top: 2px;
+  }
+  #editor-wrap { flex: 1; display: flex; overflow: hidden; position: relative; }
+  #line-numbers { width: 52px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 10px 12px 0; font-family: var(--font-mono); font-size: 13px; line-height: 22px; color: var(--text-dim); text-align: right; overflow: hidden; user-select: none; font-style: italic; }
   #editor-inner { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
-  #highlight {
-    position: absolute; inset: 0;
-    font-family: var(--font-mono); font-size: 13px; line-height: 20px;
-    padding: 10px 12px; white-space: pre; overflow: hidden; pointer-events: none;
-    font-style: italic; text-transform: uppercase; color: transparent;
-  }
-  #editor {
-    position: absolute; inset: 0;
-    background: transparent; color: transparent; caret-color: #ffffff99;
-    font-family: var(--font-mono); font-size: 13px; line-height: 20px;
-    padding: 10px 12px; border: none; outline: none;
-    resize: none; overflow-y: scroll; overflow-x: auto; white-space: pre; tab-size: 4;
-    font-style: italic; text-transform: uppercase;
-    -webkit-text-fill-color: transparent;
-    /* Better touch behaviour */
-    -webkit-overflow-scrolling: touch;
-  }
+  #highlight { position: absolute; inset: 0; font-family: var(--font-mono); font-size: 13px; line-height: 22px; padding: 12px 16px; white-space: pre; overflow: hidden; pointer-events: none; font-style: italic; text-transform: uppercase; color: transparent; }
+  #editor { position: absolute; inset: 0; background: transparent; color: transparent; caret-color: #ffffff99; font-family: var(--font-mono); font-size: 13px; line-height: 22px; padding: 12px 16px; border: none; outline: none; resize: none; overflow-y: scroll; overflow-x: auto; white-space: pre; tab-size: 4; font-style: italic; text-transform: uppercase; -webkit-text-fill-color: transparent; }
   #editor::selection { background: #56b6c240; -webkit-text-fill-color: transparent; }
-  #editor::-webkit-scrollbar { width: 6px; height: 6px; }
+  #editor::-webkit-scrollbar { width: 8px; height: 8px; }
   #editor::-webkit-scrollbar-track { background: var(--bg); }
   #editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  /* syntax colours */
-  .t-g  { color: var(--syn-gcode);   }
-  .t-m  { color: var(--syn-mcode);   }
-  .t-ax { color: var(--syn-axis);    }
-  .t-n  { color: var(--syn-num);     }
-  .t-f  { color: var(--syn-feed);    }
-  .t-tl { color: var(--syn-tool);    }
+  .t-g { color: var(--syn-gcode); }
+  .t-m { color: var(--syn-mcode); }
+  .t-ax { color: var(--syn-axis); }
+  .t-n { color: var(--syn-num); }
+  .t-f { color: var(--syn-feed); }
+  .t-tl { color: var(--syn-tool); }
   .t-cm { color: var(--syn-comment); }
-  .t-ow { color: var(--syn-oword);   }
+  .t-ow { color: var(--syn-oword); }
   .t-pc { color: var(--syn-percent); }
-  .t-nl { color: var(--syn-nl);      }
-
-  /* ── Buttons ── */
-  .topbar-btn {
-    background: none; border: 1px solid var(--border); border-radius: 3px;
-    color: var(--text-dim); font-family: var(--font-ui); font-size: 11px;
-    padding: 3px 9px; cursor: pointer; text-transform: uppercase;
-    letter-spacing: 1px; font-style: italic; transition: color 0.2s, border-color 0.2s;
-    white-space: nowrap; touch-action: manipulation;
+  .t-nl { color: var(--syn-nl); }
+  #autocomplete {
+    position: absolute; background: var(--surface); border: 1px solid var(--accent);
+    border-radius: 6px; box-shadow: 0 8px 28px rgba(0,0,0,0.7);
+    min-width: 340px; max-width: 500px; max-height: 240px; overflow-y: auto;
+    z-index: 100; display: none; font-family: var(--font-mono); font-size: 12px;
   }
-  .topbar-btn:hover { color: var(--accent); border-color: var(--accent); }
-
-  #copy-btn {
-    position: absolute; top: 7px; right: 10px; z-index: 10;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
-    color: var(--text-dim); font-family: var(--font-ui); font-size: 10px;
-    padding: 3px 8px; cursor: pointer; text-transform: uppercase;
-    letter-spacing: 1px; font-style: italic; transition: color 0.2s, border-color 0.2s;
-    touch-action: manipulation;
-  }
-  #copy-btn:hover { color: var(--accent); border-color: var(--accent); }
-  #copy-btn.copied { color: #98c379; border-color: #98c379; }
-
-  /* ── Footer ── */
-  #footer {
-    flex-shrink: 0; background: var(--surface); border-top: 1px solid var(--border);
-    padding: 5px 14px; text-align: center;
-    font-family: var(--font-ui); font-size: 10px; font-weight: 700;
-    letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase;
-    font-style: italic; user-select: none;
-  }
-
-  /* ── Toast ── */
-  #toast {
-    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
-    background: var(--surface); border: 1px solid var(--accent); color: var(--accent);
-    font-size: 12px; font-family: var(--font-mono); padding: 7px 16px;
-    border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.2s;
-    white-space: nowrap; z-index: 200; font-style: italic; text-transform: uppercase;
-  }
+  .ac-section { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-style: italic; color: var(--text-dim); padding: 5px 12px 2px; border-top: 1px solid var(--border); font-family: var(--font-ui); opacity: 0.7; }
+  .ac-section:first-child { border-top: none; }
+  .ac-item { display: flex; align-items: baseline; gap: 10px; padding: 5px 12px; cursor: pointer; border-bottom: 1px solid #ffffff05; }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:hover, .ac-item.selected { background: var(--accent-dim); }
+  .ac-code { color: var(--syn-gcode); font-weight: 700; min-width: 90px; font-style: italic; text-transform: uppercase; }
+  .ac-item:hover .ac-code, .ac-item.selected .ac-code { color: var(--accent); }
+  .ac-desc { color: var(--text-dim); font-size: 11px; font-family: var(--font-ui); }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-size: 12px; font-family: var(--font-mono); padding: 7px 16px; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.2s; white-space: nowrap; z-index: 200; font-style: italic; text-transform: uppercase; }
   #toast.show { opacity: 1; }
 
-  /* ── Help modal ── */
-  #help-overlay {
-    display: none; position: fixed; inset: 0; z-index: 300;
-    background: rgba(0,0,0,0.75); align-items: center; justify-content: center;
-    padding: 12px;
+  #cheat-sheet-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; visibility: hidden; opacity: 0; transition: 0.2s;
   }
-  #help-overlay.show { display: flex; }
-  #help-modal {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto;
-    font-family: var(--font-ui); color: var(--text);
+  #cheat-sheet-modal.visible { visibility: visible; opacity: 1; }
+  .cheat-sheet-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    width: 85%; max-width: 1000px; height: 80%; display: flex; flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
   }
-  #help-modal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; background: var(--surface); z-index: 1;
+  .cheat-sheet-header {
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 2px;
   }
-  #help-modal-header h2 {
-    font-size: 12px; font-weight: 700; letter-spacing: 2px;
-    text-transform: uppercase; font-style: italic; color: var(--accent); margin: 0;
+  .cheat-sheet-header button {
+    background: none; border: none; color: var(--accent); font-size: 24px;
+    cursor: pointer; line-height: 1; padding: 0 8px;
   }
-  #help-close {
-    background: none; border: none; color: var(--text-dim); font-size: 20px;
-    cursor: pointer; line-height: 1; padding: 2px 6px; touch-action: manipulation;
+  .cheat-sheet-content {
+    flex: 1; overflow-y: auto; padding: 16px 20px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
   }
-  #help-close:hover { color: var(--accent); }
-  #help-modal-body { padding: 14px 16px; font-size: 12px; line-height: 1.7; }
-  .help-section { margin-bottom: 18px; }
-  .help-section h3 {
-    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--accent); margin-bottom: 6px; font-style: italic;
-    border-bottom: 1px solid var(--border); padding-bottom: 4px;
+  .cheat-category {
+    grid-column: 1 / -1; font-size: 14px; font-weight: bold; margin-top: 12px;
+    padding: 6px 12px; background: var(--accent-dim); border-radius: 4px;
+    color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
   }
-  .help-row {
-    display: flex; flex-wrap: wrap; gap: 6px; padding: 5px 0;
-    border-bottom: 1px solid #ffffff06;
+  .cheat-item {
+    background: var(--bg); border-radius: 6px; padding: 8px 12px;
+    border-left: 3px solid var(--accent); display: flex;
+    justify-content: space-between; align-items: baseline; gap: 12px;
+    font-family: var(--font-mono); font-size: 12px;
   }
-  .help-row:last-child { border-bottom: none; }
-  .help-input {
-    color: #56b6c2; font-family: var(--font-mono); font-size: 11px;
-    font-style: italic; flex-shrink: 0;
-  }
-  .help-arrow { color: var(--text-dim); flex-shrink: 0; }
-  .help-output {
-    color: var(--text-dim); font-family: var(--font-mono); font-size: 11px;
-    font-style: italic;
-  }
+  .cheat-item.quick-setup { border-left-color: #e5c07b; background: #1e232c; }
+  .cheat-code { color: var(--syn-gcode); font-weight: 600; min-width: 140px; }
+  .cheat-desc { color: var(--text-dim); text-align: right; font-style: italic; }
 
-  /* ── Mobile overrides ── */
-  @media (max-width: 600px) {
-    #beta-banner { font-size: 10px; padding: 5px 10px; }
-    .logo { font-size: 10px; letter-spacing: 1px; }
-    .hint { display: none; }
-    .sep { display: none; }
-    #units-badge { font-size: 9px; }
-    #line-numbers { width: 32px; font-size: 11px; padding: 8px 6px 8px 0; }
-    #highlight, #editor {
-      font-size: 12px; line-height: 19px; padding: 8px 10px;
-    }
-    #line-numbers { line-height: 19px; }
-    #help-modal-body { padding: 12px; }
-    .help-input { min-width: unset; }
+  /* Debug modal */
+  #debug-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; visibility: hidden; opacity: 0; transition: 0.2s;
   }
+  #debug-modal.visible { visibility: visible; opacity: 1; }
+  .debug-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    width: 90%; max-width: 860px; height: 85%; display: flex; flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  }
+  .debug-header {
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+  }
+  .debug-header-left { display: flex; align-items: center; gap: 14px; }
+  .debug-title { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
+  .debug-summary { font-size: 11px; color: var(--text-dim); font-style: italic; }
+  .debug-summary .pass { color: #98c379; }
+  .debug-summary .fail { color: var(--accent); }
+  .debug-header button { background: none; border: none; color: var(--accent); font-size: 22px; cursor: pointer; padding: 0 6px; }
+  .debug-body { flex: 1; overflow-y: auto; padding: 10px 16px; }
+  .debug-category {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-style: italic;
+    color: var(--accent); padding: 14px 0 4px; border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+  }
+  .debug-row {
+    display: grid; grid-template-columns: 42px 1fr 1fr; gap: 0;
+    align-items: center; padding: 4px 6px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 12px; border-bottom: 1px solid #ffffff04;
+  }
+  .debug-row:hover { background: #ffffff05; }
+  .debug-check { font-size: 11px; font-weight: 600; }
+  .debug-row.ok .debug-check  { color: #98c379; }
+  .debug-row.fail .debug-check { color: var(--accent); }
+  .debug-row.info .debug-check { color: var(--text-dim); }
+  .debug-row.info .debug-output { color: var(--text-dim); font-style: italic; }
+  .debug-input { color: var(--text); font-style: italic; text-transform: uppercase; padding-right: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .debug-output { color: var(--text-dim); font-style: italic; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .debug-row.ok .debug-output { color: var(--syn-gcode); }
+  .debug-row.fail .debug-output { color: var(--accent); font-style: italic; }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="beta-banner">
-    <span class="beta-tag">&#9651; Beta</span>
-    <span class="beta-msg">This tool is in beta testing — output has not been verified and is <strong>not recommended for official or educational use</strong>. Always review generated G-code before running on a machine.</span>
-  </div>
   <div id="topbar">
-    <span class="logo">Speed Programmer for HAAS 3-Axis Mill</span>
-    <div class="sep"></div>
-    <span id="units-badge">UNITS ?</span>
-    <div class="sep"></div>
-    <span class="hint"><kbd>Enter</kbd> convert &nbsp;<kbd>Esc</kbd> dismiss</span>
-    <div class="topbar-right">
-      <span id="status-pill">✓ Converted</span>
-      <button class="topbar-btn" id="help-btn">? Help</button>
+    <div class="top-row">
+      <span class="logo">HAAS SPEED CODER</span>
+      <div class="sep"></div>
+      <span id="units-badge">UNITS ?</span>
+      <div class="sep"></div>
+      <button id="cheat-sheet-btn">Cheat Sheet</button>
+      <button id="auto-semicolon-btn">Auto ; OFF</button>
+      <button id="add-semicolons-btn">Add ;</button>
+      <button id="remove-semicolons-btn">Remove ;</button>
+      <button id="debug-btn">Debug</button>
+      <span id="status-pill">Converted</span>
+    </div>
+    <div class="hint-row">
+      Type anything and press Enter to convert to G-code
     </div>
   </div>
   <div id="editor-wrap">
@@ -257,777 +217,648 @@
     <div id="editor-inner">
       <div id="highlight" aria-hidden="true"></div>
       <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
-      <button id="copy-btn">&#10697; Copy</button>
+      <div id="autocomplete"></div>
     </div>
   </div>
-  <div id="footer">KEVMCG1.GITHUB.IO</div>
 </div>
 <div id="toast"></div>
-
-<div id="help-overlay">
-  <div id="help-modal">
-    <div id="help-modal-header">
-      <h2>&#9658; Speed Programmer — Help</h2>
-      <button id="help-close">&#10005;</button>
+<div id="cheat-sheet-modal">
+  <div class="cheat-sheet-panel">
+    <div class="cheat-sheet-header">
+      <span>Conversion Cheat Sheet</span>
+      <button id="close-cheat-sheet">X</button>
     </div>
-    <div id="help-modal-body">
-
-      <div class="help-section">
-        <h3>How it works</h3>
-        <p style="color:var(--text-dim);font-size:12px;margin-bottom:8px;">
-          Type a natural-language phrase or G-code on any line, then press <strong style="color:var(--text)">Enter</strong> to convert it.
-          If your cursor is at the end of the line a new line is created; if mid-line the text is converted in place.
-          Lines that are already valid G-code are left unchanged.
-        </p>
-      </div>
-
-      <div class="help-section">
-        <h3>Quick Setup</h3>
-        <div class="help-row"><span class="help-input">quick setup mill T1 H1</span><span class="help-arrow">→</span><span class="help-output">T01 M06; G00 G90 … M08;</span></div>
-        <div class="help-row"><span class="help-input">quick setup mill T2 H2 3000 RPM</span><span class="help-arrow">→</span><span class="help-output">T02 M06; … S3000 M03; …</span></div>
-        <div class="help-row"><span class="help-input">qsm T3 H3 4500</span><span class="help-arrow">→</span><span class="help-output">short alias, RPM optional</span></div>
-      </div>
-
-      <div class="help-section">
-        <h3>Motion</h3>
-        <div class="help-row"><span class="help-input">rapid to X1 Y2 Z0.1</span><span class="help-arrow">→</span><span class="help-output">G00 X1 Y2 Z0.1</span></div>
-        <div class="help-row"><span class="help-input">feed to X5 Y3 at 20</span><span class="help-arrow">→</span><span class="help-output">G01 X5 Y3 F20</span></div>
-        <div class="help-row"><span class="help-input">go to X1 Y1 Z0.5</span><span class="help-arrow">→</span><span class="help-output">G00/G01 (inherits last modal)</span></div>
-        <div class="help-row"><span class="help-input">arc clockwise to X1 Y1 R1</span><span class="help-arrow">→</span><span class="help-output">G02 X1 Y1 R1</span></div>
-        <div class="help-row"><span class="help-input">arc counterclockwise to X1 Y1 R1</span><span class="help-arrow">→</span><span class="help-output">G03 X1 Y1 R1</span></div>
-      </div>
-
-      <div class="help-section">
-        <h3>Drill Cycle</h3>
-        <div class="help-row"><span class="help-input">drill cycle R0.1 Z-1.0 F10 X0Y0 X1Y0 X1Y1 X0Y1</span><span class="help-arrow">→</span><span class="help-output">G81 … then X Y pairs, G80</span></div>
-        <div class="help-row"><span class="help-input">drill at X1 Y2 Z-0.5 R0.1 F15</span><span class="help-arrow">→</span><span class="help-output">G81 G99 …</span></div>
-        <div class="help-row"><span class="help-input">peck drill X1 Y2 Z-1 Q0.1 R0.1 F10</span><span class="help-arrow">→</span><span class="help-output">G83 G99 …</span></div>
-        <div class="help-row"><span class="help-input">cancel cycle</span><span class="help-arrow">→</span><span class="help-output">G80</span></div>
-      </div>
-
-      <div class="help-section">
-        <h3>Spindle &amp; Coolant</h3>
-        <div class="help-row"><span class="help-input">spindle on 5000</span><span class="help-arrow">→</span><span class="help-output">S5000 M03</span></div>
-        <div class="help-row"><span class="help-input">spindle off</span><span class="help-arrow">→</span><span class="help-output">M05</span></div>
-        <div class="help-row"><span class="help-input">CSS 800 sfm max 6000 rpm</span><span class="help-arrow">→</span><span class="help-output">G96 S800 M03 / G50 S6000</span></div>
-        <div class="help-row"><span class="help-input">coolant on</span><span class="help-arrow">→</span><span class="help-output">M08</span></div>
-        <div class="help-row"><span class="help-input">coolant off</span><span class="help-arrow">→</span><span class="help-output">M09</span></div>
-      </div>
-
-      <div class="help-section">
-        <h3>Tool &amp; Offsets</h3>
-        <div class="help-row"><span class="help-input">change tool to T3</span><span class="help-arrow">→</span><span class="help-output">T03 M06</span></div>
-        <div class="help-row"><span class="help-input">enable tool comp H01</span><span class="help-arrow">→</span><span class="help-output">G43 H01</span></div>
-        <div class="help-row"><span class="help-input">cancel tool comp</span><span class="help-arrow">→</span><span class="help-output">G49</span></div>
-        <div class="help-row"><span class="help-input">cutter comp left</span><span class="help-arrow">→</span><span class="help-output">G41 D</span></div>
-        <div class="help-row"><span class="help-input">cancel cutter comp</span><span class="help-arrow">→</span><span class="help-output">G40</span></div>
-      </div>
-
-      <div class="help-section">
-        <h3>Safety &amp; Program Flow</h3>
-        <div class="help-row"><span class="help-input">safety line inch</span><span class="help-arrow">→</span><span class="help-output">G00 G17 G20 G40 G49 G80 G90</span></div>
-        <div class="help-row"><span class="help-input">home z</span><span class="help-arrow">→</span><span class="help-output">G28 G91 Z0. / G90</span></div>
-        <div class="help-row"><span class="help-input">home all</span><span class="help-arrow">→</span><span class="help-output">G28 Z then XY</span></div>
-        <div class="help-row"><span class="help-input">end block</span><span class="help-arrow">→</span><span class="help-output">M05 M09 G28 … M30 %</span></div>
-        <div class="help-row"><span class="help-input">end program</span><span class="help-arrow">→</span><span class="help-output">M30 %</span></div>
-      </div>
-
-    </div>
+    <div class="cheat-sheet-content" id="cheat-sheet-content"></div>
   </div>
 </div>
 
+<div id="debug-modal">
+  <div class="debug-panel">
+    <div class="debug-header">
+      <div class="debug-header-left">
+        <span class="debug-title">Conversion Debug</span>
+        <span class="debug-summary" id="debug-summary"></span>
+      </div>
+      <button id="close-debug">X</button>
+    </div>
+    <div class="debug-body" id="debug-body"></div>
+  </div>
+</div>
+
+<script src="haas-rules.js"></script>
 <script>
-// ════════════════════════════════════════════
-// UNIT DETECTION
-// ════════════════════════════════════════════
-let currentUnits = null;
+  // ============================================================
+  // UI CODE  (converter logic lives in haas-rules.js)
+  // ============================================================
+  const editor = document.getElementById('editor');
+  const highlight = document.getElementById('highlight');
+  const lineNums = document.getElementById('line-numbers');
+  const acDropdown = document.getElementById('autocomplete');
+  const statusPill = document.getElementById('status-pill');
+  let acItems = [], acIndex = -1, acVisible = false;
+  let currentUnits = null;
+  let autoSemicolon = false;
+  const autoSemicolonBtn = document.getElementById('auto-semicolon-btn');
+  const addSemicolonsBtn = document.getElementById('add-semicolons-btn');
+  const removeSemicolonsBtn = document.getElementById('remove-semicolons-btn');
 
-function detectUnits(text) {
-  let u = null;
-  for (const line of text.split('\n')) {
-    const t = line.replace(/\(.*?\)/g,'').toUpperCase();
-    if (/\bG20\b/.test(t)) u = 'inch';
-    if (/\bG21\b/.test(t)) u = 'metric';
+  function shouldAddSemicolon(line) {
+    const trimmed = line.trimRight();
+    if (trimmed === '') return false;
+    if (trimmed.startsWith('(')) return false;
+    if (trimmed.startsWith('O') && /^O\d+/.test(trimmed)) return false;
+    if (trimmed.startsWith('%')) return false;
+    if (trimmed.endsWith(';')) return false;
+    return true;
   }
-  return u;
-}
 
-function updateUnitsBadge() {
-  currentUnits = detectUnits(editor.value);
-  const b = document.getElementById('units-badge');
-  if      (currentUnits === 'inch')   { b.textContent = 'INCH (G20)';   b.className = 'inch'; }
-  else if (currentUnits === 'metric') { b.textContent = 'METRIC (G21)'; b.className = 'metric'; }
-  else                                { b.textContent = 'UNITS ?';      b.className = ''; }
-}
+  function addSemicolonToLine(line) {
+    if (shouldAddSemicolon(line)) {
+      return line.replace(/\s*$/, ';');
+    }
+    return line;
+  }
 
-// ════════════════════════════════════════════
-// COORDINATE FORMATTING
-// HAAS style: always include decimal, drop trailing zeros
-// X1.500 → X1.5  |  X2.0 → X2.  |  X3 → X3.
-// ════════════════════════════════════════════
-function fmtNum(numStr) {
-  const n = parseFloat(numStr);
-  if (isNaN(n)) return numStr;
-  if (Number.isInteger(n)) return n + '.';
-  let s = n.toString();
-  s = s.replace(/(\.\d*[1-9])0+$/, '$1');
-  if (s.endsWith('.')) return s;
-  return s;
-}
+  function isHaasCodeLine(line) {
+    const trimmed = line.trim();
+    if (trimmed === '') return false;
+    if (trimmed.startsWith('(')) return false;
+    if (trimmed.startsWith('O') && /^O\d+/.test(trimmed)) return false;
+    if (trimmed.startsWith('%')) return false;
+    if (HaasConverter.tryConvertLine(trimmed, {}) !== null) return false;
+    if (/\bG\d+|\bM\d+|\b[XYZUVW]\s*-?\d/.test(trimmed)) return true;
+    if (/\bT\d+|\bS\d+|\bF\d+/.test(trimmed)) return true;
+    return false;
+  }
 
-function formatCoords(str) {
-  return str.replace(/([XYZABCIJKRQPUVW])(-?\d+\.?\d*)/gi,
-    (_, axis, val) => axis.toUpperCase() + fmtNum(val));
-}
-
-function applyUnitFormat(str) {
-  if (!currentUnits) return str;
-  return formatCoords(str);
-}
-
-// ════════════════════════════════════════════
-// MODAL MOTION DETECTION
-// ════════════════════════════════════════════
-function getLastMotionModal(textBefore) {
-  const lines = textBefore.split('\n');
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i].trim();
-    if (!line || line.startsWith('(')) continue; // ignore comments and empty lines
-    const match = line.match(/\bG(?:0?0|0?1|0?2|0?3)\b/);
-    if (match) {
-      const code = match[0].toUpperCase();
-      // normalize to two-digit form if needed
-      if (code === 'G0') return 'G00';
-      if (code === 'G1') return 'G01';
-      if (code === 'G2') return 'G02';
-      if (code === 'G3') return 'G03';
-      return code; // already G00, G01, etc.
+  function addSemicolonsToHaasLinesOnly() {
+    const lines = editor.value.split('\n');
+    let modified = false;
+    const newLines = lines.map(line => {
+      if (isHaasCodeLine(line)) {
+        const newLine = addSemicolonToLine(line);
+        if (newLine !== line) modified = true;
+        return newLine;
+      }
+      return line;
+    });
+    if (modified) {
+      editor.value = newLines.join('\n');
+      updateLineNumbers();
+      showStatus('Added missing semicolons to G-code lines');
+    } else {
+      showStatus('No G-code lines need semicolons');
     }
   }
-  return null;
-}
 
-// ════════════════════════════════════════════
-// SHORTCUTS (full-line snippet replacements)
-// ════════════════════════════════════════════
-const SHORTCUTS = [
-
-  // Safety lines
-  { pattern: /^(?:safety\s+line(?:\s+for\s+mill)?|mill\s+safety|safe\s+start|init\s+line)$/i,
-    desc: 'Mill safety line',
-    convert: () => 'G00 G17 G40 G49 G80 G90' },
-  { pattern: /^(?:safety\s+line\s+inch|inch\s+safety|safe\s+start\s+inch)$/i,
-    desc: 'Safety line (inch)',
-    convert: () => 'G00 G17 G20 G40 G49 G80 G90' },
-  { pattern: /^(?:safety\s+line\s+metric|metric\s+safety|safe\s+start\s+metric)$/i,
-    desc: 'Safety line (metric)',
-    convert: () => 'G00 G17 G21 G40 G49 G80 G90' },
-
-  // Program header
-  { pattern: /^(?:program\s+header|new\s+program|start\s+program)$/i,
-    desc: 'New program header block',
-    convert: () => `%\nO0001 (PART NAME)\n(DATE: ${new Date().toLocaleDateString()})\n(PROGRAMMER: )\n(MATERIAL: )\n(MACHINE: HAAS VF-2)` },
-
-  // Home moves
-  { pattern: /^(?:home\s+z|z\s+home|retract\s+z)$/i,
-    desc: 'Home Z (G28)',
-    convert: () => 'G28 G91 Z0.\nG90' },
-  { pattern: /^(?:home\s+all|home\s+xy|home\s+xyz|return\s+home|go\s+home)$/i,
-    desc: 'Home Z then XY',
-    convert: () => 'G28 G91 Z0.\nG28 X0. Y0.\nG90' },
-
-  // Tool change block
-  { pattern: /^(?:tool\s+change\s+block|tc\s+block)$/i,
-    desc: 'Full tool change sequence',
-    convert: () => 'M05\nM09\nG28 G91 Z0.\nG90\nT__ M06\nG43 H__ S____ M03\nG54\nM08' },
-
-  // Quick setup mill: "quick setup mill T1 H1" or "quick setup mill T2 H2 3000 RPM"
-  { pattern: /^(?:quick\s+setup\s+mill|qsm|mill\s+setup)\s+T(\d+)\s+H(\d+)(?:\s+(\d+)\s*(?:rpm)?)?$/i,
-    desc: 'Quick mill setup block',
-    convert: m => {
-      const t = String(parseInt(m[1])).padStart(2, '0');
-      const h = String(parseInt(m[2])).padStart(2, '0');
-      const rpm = m[3] ? m[3] : '1234';
-      return `T${t} M06;\nG00 G90 G40 G49 G54;\nG00 G54 X0 Y0;\nS${rpm} M03;\nG43 H${h} Z1.0;\nM08;`;
-    }
-  },
-
-  // Start / end blocks
-  { pattern: /^(?:spindle\s+start\s+block|start\s+cut|begin\s+cut)$/i,
-    desc: 'Spindle + coolant start',
-    convert: () => 'S____ M03\nG54\nM08' },
-  { pattern: /^(?:end\s+block|program\s+end\s+block|safe\s+end)$/i,
-    desc: 'Safe end-of-program block',
-    convert: () => 'M05\nM09\nG28 G91 Z0.\nG28 X0. Y0.\nG90\nM30\n%' },
-
-  // CSS blocks
-  { pattern: /^(?:css\s+block|constant\s+surface\s+speed\s+block|surface\s+speed\s+block)$/i,
-    desc: 'CSS block with RPM clamp',
-    convert: () => 'G96 S___ M03\nG50 S____' },
-  { pattern: /^(?:css\s+off\s+block|end\s+css\s+block|rpm\s+mode\s+block)$/i,
-    desc: 'Cancel CSS back to RPM',
-    convert: () => 'G97 S____ M03' },
-
-  // Canned cycle blocks
-  { pattern: /^(?:drill\s+block|drilling\s+block)$/i,
-    desc: 'G81 drill cycle template',
-    convert: () => 'G81 G99 X__. Y__. Z-__. R__. F__.\nG80' },
-  { pattern: /^(?:peck\s+(?:drill\s+)?block|peck\s+drilling\s+block)$/i,
-    desc: 'G83 peck drill template',
-    convert: () => 'G83 G99 X__. Y__. Z-__. Q__. R__. F__.\nG80' },
-  { pattern: /^(?:tap\s+block|tapping\s+block|rigid\s+tap\s+block)$/i,
-    desc: 'M29 + G84 rigid tap template',
-    convert: () => 'M29 S____\nG84 G99 X__. Y__. Z-__. R__. F__.\nG80' },
-  { pattern: /^(?:bore\s+block|boring\s+block)$/i,
-    desc: 'G85 boring cycle template',
-    convert: () => 'G85 G99 X__. Y__. Z-__. R__. F__.\nG80' },
-  { pattern: /^(?:chip\s+break\s+block)$/i,
-    desc: 'G73 chip break cycle template',
-    convert: () => 'G73 G99 X__. Y__. Z-__. Q__. R__. F__.\nG80' },
-  { pattern: /^(?:fine\s+bore\s+block)$/i,
-    desc: 'G76 fine boring template',
-    convert: () => 'G76 G99 X__. Y__. Z-__. R__. Q__. P__ F__.\nG80' },
-
-  // Coordinate blocks
-  { pattern: /^(?:part\s+zero|go\s+to\s+zero|xyz\s+zero|move\s+to\s+zero)$/i,
-    desc: 'Rapid to part zero in G54',
-    convert: () => 'G90 G00 G54 X0. Y0.' },
-  { pattern: /^(?:clear\s+z|z\s+clear|z\s+safe|safe\s+z)$/i,
-    desc: 'G00 Z to safe height',
-    convert: () => 'G90 G00 Z1.' },
-
-  // WCS set
-  { pattern: /^(?:wcs\s+block|work\s+coord\s+block|set\s+wcs)$/i,
-    desc: 'G10 work coord set',
-    convert: () => 'G10 L2 P1 X__. Y__. Z__.' },
-
-  // Subroutine template
-  { pattern: /^(?:sub\s+block|subroutine\s+block|macro\s+block)$/i,
-    desc: 'Subroutine template',
-    convert: () => 'O____ (SUBROUTINE NAME)\n\nM99' },
-
-  // Stops
-  { pattern: /^(?:op\s+stop|optional\s+stop)$/i,
-    desc: 'Optional stop (M01)',
-    convert: () => 'M01' },
-  { pattern: /^(?:program\s+stop|hard\s+stop)$/i,
-    desc: 'Program stop (M00)',
-    convert: () => 'M00' },
-
-  // Coolant shortcuts
-  { pattern: /^(?:mist\s+on|mist\s+coolant\s+on)$/i,
-    desc: 'Mist coolant on',
-    convert: () => 'M07' },
-  { pattern: /^(?:tsc\s+on|through\s+spindle\s+coolant|high\s+pressure\s+coolant)$/i,
-    desc: 'Through-spindle coolant',
-    convert: () => 'M88' },
-  { pattern: /^(?:tsc\s+off)$/i,
-    desc: 'TSC off',
-    convert: () => 'M89' },
-
-  // Air blast
-  { pattern: /^(?:air\s+(?:blast\s+)?on)$/i,  desc: 'Air blast on (M12)',  convert: () => 'M12' },
-  { pattern: /^(?:air\s+(?:blast\s+)?off)$/i, desc: 'Air blast off (M13)', convert: () => 'M13' },
-
-  // Chip conveyor
-  { pattern: /^(?:conveyor\s+on|chip\s+conveyor\s+on)$/i,  desc: 'Chip conveyor on (M31)',  convert: () => 'M31' },
-  { pattern: /^(?:conveyor\s+off|chip\s+conveyor\s+off)$/i, desc: 'Chip conveyor off (M33)', convert: () => 'M33' },
-
-  // Probe stub
-  { pattern: /^(?:probe\s+block|probe\s+wcs)$/i,
-    desc: 'Renishaw probe stub',
-    convert: () => '(PROBE - SET WCS)\nG65 P9810 Z__. F__.\nG65 P9811 X__. D__. Z__.' },
-
-  // B-axis index
-  { pattern: /^(?:b\s+axis\s+index|index\s+b)$/i,
-    desc: 'B-axis index stub',
-    convert: () => 'G00 G90 B__.\nM19' },
-
-  // Max spindle speed shortcut (as G97 S... M03)
-  { pattern: /^(?:max\s+spindle\s+speed)\s+(\d+)$/i,
-    desc: 'Max spindle speed (G97 S... M03)',
-    convert: m => `G97 S${m[1]} M03` },
-
-  // Spindle clamp shortcut (G50)
-  { pattern: /^(?:spindle\s+(?:clamp|max|limit))\s+(\d+)$/i,
-    desc: 'Max spindle clamp (G50)',
-    convert: m => `G50 S${m[1]}` },
-];
-
-// ════════════════════════════════════════════
-// G/M CODE DATABASE
-// ════════════════════════════════════════════
-const GCODES = {
-  'G00':'Rapid','G01':'Linear feed','G02':'Arc CW','G03':'Arc CCW','G04':'Dwell',
-  'G10':'Set offset data','G12':'Circular pocket CW','G13':'Circular pocket CCW',
-  'G17':'XY plane','G18':'XZ plane','G19':'YZ plane',
-  'G20':'Inch','G21':'Metric',
-  'G28':'Machine home','G29':'Return from ref',
-  'G40':'Cancel cutter comp','G41':'Cutter comp left','G42':'Cutter comp right',
-  'G43':'Tool length comp +','G44':'Tool length comp -','G49':'Cancel TLC',
-  'G50':'Max spindle clamp','G51':'Scaling','G52':'Local coord offset',
-  'G53':'Machine coord','G54':'Work offset 1','G55':'Work offset 2',
-  'G56':'Work offset 3','G57':'Work offset 4','G58':'Work offset 5','G59':'Work offset 6',
-  'G65':'Macro call','G68':'Coord rotation','G69':'Cancel rotation',
-  'G73':'Chip break drill','G74':'Left-hand tap','G76':'Fine boring',
-  'G80':'Cancel canned cycle','G81':'Drill','G82':'Drill + dwell',
-  'G83':'Peck drill','G84':'Right-hand tap','G85':'Boring (feed out)',
-  'G86':'Boring (stop)','G87':'Back boring','G89':'Boring + dwell',
-  'G90':'Absolute','G91':'Incremental','G92':'Coord set',
-  'G94':'Feed/min','G95':'Feed/rev','G96':'CSS mode','G97':'RPM mode',
-  'G98':'Return initial plane','G99':'Return R plane',
-};
-const MCODES = {
-  'M00':'Program stop','M01':'Optional stop','M02':'End',
-  'M03':'Spindle CW','M04':'Spindle CCW','M05':'Spindle stop',
-  'M06':'Tool change','M07':'Mist coolant','M08':'Flood coolant','M09':'Coolant off',
-  'M12':'Air blast on','M13':'Air blast off',
-  'M19':'Spindle orient','M29':'Rigid tap mode','M30':'End & rewind',
-  'M31':'Conveyor fwd','M33':'Conveyor off',
-  'M88':'TSC on','M89':'TSC off',
-  'M97':'Local sub','M98':'Subprogram call','M99':'Sub return',
-};
-
-// ════════════════════════════════════════════
-// NL RULES
-// ════════════════════════════════════════════
-const NL_RULES = [
-
-  // Tool change
-  { pattern: /(?:change\s+tool\s+to|tool\s+change\s+to?|use\s+tool|load\s+tool|select\s+tool|switch\s+to\s+tool)\s+T?(\d+)/i,
-    convert: m => { const t = String(parseInt(m[1])).padStart(2,'0'); return `T${t} M06`; } },
-  { pattern: /^T(\d+)\s+M0?6$/i,
-    convert: m => { const t = String(parseInt(m[1])).padStart(2,'0'); return `T${t} M06`; } },
-
-  // Spindle – now output without G97 (just S... M03)
-  { pattern: /(?:spindle\s+(?:on|start|cw|clockwise)|start\s+spindle|turn\s+on\s+spindle)(?:\s+(?:at\s+)?(\d+)(?:\s*rpm)?)?/i,
-    convert: m => m[1] ? `S${m[1]} M03` : `M03` },
-  { pattern: /(?:spindle\s+(?:ccw|counterclockwise|reverse)|reverse\s+spindle)(?:\s+(?:at\s+)?(\d+)(?:\s*rpm)?)?/i,
-    convert: m => m[1] ? `S${m[1]} M04` : `M04` },
-  { pattern: /(?:set\s+spindle(?:\s+speed)?\s+to|spindle\s+speed)\s+(\d+)(?:\s*rpm)?/i,
-    convert: m => `S${m[1]} M03` },
-  { pattern: /(?:stop\s+spindle|spindle\s+(?:off|stop))/i, convert: () => 'M05' },
-
-  // CSS — "CSS 400 sfm", "CSS 400 sfm max 3000 rpm", "surface speed 500"
-  { pattern: /(?:css|constant\s+surface\s+speed|surface\s+speed)\s+(\d+)(?:\s*(?:sfm|fpm|m\/min|sfpm))?(?:\s+(?:max|clamp|limit)\s+(\d+)(?:\s*rpm)?)?/i,
-    convert: m => {
-      const s = m[1], mx = m[2];
-      return mx ? `G96 S${s} M03\nG50 S${mx}` : `G96 S${s} M03`;
-    }
-  },
-  // CSS off / RPM mode
-  { pattern: /(?:css\s+off|end\s+css|(?:constant\s+)?rpm\s+mode)(?:\s+(\d+)(?:\s*rpm)?)?/i,
-    convert: m => m[1] ? `G97 S${m[1]} M03` : `G97` },
-
-  // Max spindle speed (explicit G97 S... M03)
-  { pattern: /max\s+spindle\s+speed\s+(\d+)/i,
-    convert: m => `G97 S${m[1]} M03` },
-
-  // Max spindle clamp (G50) – now without "speed"
-  { pattern: /(?:spindle\s+(?:clamp|max|limit))\s+(\d+)/i,
-    convert: m => `G50 S${m[1]}` },
-
-  // Coolant
-  { pattern: /(?:coolant\s+on|turn\s+on\s+coolant|flood\s+coolant|start\s+coolant)/i, convert: () => 'M08' },
-  { pattern: /(?:coolant\s+off|turn\s+off\s+coolant|stop\s+coolant)/i, convert: () => 'M09' },
-  { pattern: /(?:mist\s+(?:on|coolant)|coolant\s+mist)/i, convert: () => 'M07' },
-  { pattern: /(?:through\s+(?:spindle\s+)?coolant|tsc\s+on|high\s+pressure)/i, convert: () => 'M88' },
-
-  // Motion
-  { pattern: /(?:rapid(?:\s+to)?|go\s+rapid\s+to|move\s+rapid(?:ly)?\s+to|position\s+to)\s+((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
-    convert: m => {
-      const c = applyUnitFormat(parseCoords(m[1]));
-      return m[2] ? `G00 ${c} F${fmtNum(m[2])}` : `G00 ${c}`;
-    }
-  },
-  { pattern: /(?:feed(?:\s+to)?|linear\s+move(?:\s+to)?|mill\s+to|cut\s+to)\s+((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
-    convert: m => {
-      const c = applyUnitFormat(parseCoords(m[1]));
-      return m[2] ? `G01 ${c} F${fmtNum(m[2])}` : `G01 ${c}`;
-    }
-  },
-  // Generic motion (respect modal) – added after specific motion rules
-  { pattern: /(?:go\s+to|move\s+to|position\s+to)\s+((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
-    convert: (m, ctx) => {
-      let modal = 'G00';
-      if (ctx && ctx.lastMotionModal) {
-        const mModal = ctx.lastMotionModal;
-        if (mModal === 'G00' || mModal === 'G01' || mModal === 'G02' || mModal === 'G03') modal = mModal;
+  function removeAllSemicolons() {
+    const lines = editor.value.split('\n');
+    let modified = false;
+    const newLines = lines.map(line => {
+      const trimmed = line.trimRight();
+      if (trimmed.endsWith(';')) {
+        modified = true;
+        return trimmed.slice(0, -1).trimRight();
       }
-      const c = applyUnitFormat(parseCoords(m[1]));
-      return m[2] ? `${modal} ${c} F${fmtNum(m[2])}` : `${modal} ${c}`;
+      return line;
+    });
+    if (modified) {
+      editor.value = newLines.join('\n');
+      updateLineNumbers();
+      showStatus('Removed trailing semicolons from all lines');
+    } else {
+      showStatus('No trailing semicolons found');
     }
-  },
+  }
 
-  // Arcs
-  { pattern: /(?:arc\s+(?:cw|clockwise)|cw\s+arc)\s+((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:R(-?[\d.]+))?(?:\s*I(-?[\d.]+))?(?:\s*J(-?[\d.]+))?(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
-    convert: m => {
-      const c = applyUnitFormat(parseCoords(m[1]));
-      const f = m[5] ? ` F${fmtNum(m[5])}` : '';
-      if (m[2]) return `G02 ${c} R${fmtNum(m[2])}${f}`;
-      return `G02 ${c}${m[3]?' I'+fmtNum(m[3]):''}${m[4]?' J'+fmtNum(m[4]):''}${f}`;
+  function toggleAutoSemicolon() {
+    autoSemicolon = !autoSemicolon;
+    if (autoSemicolon) {
+      autoSemicolonBtn.textContent = 'Auto ; ON';
+      autoSemicolonBtn.classList.add('auto-btn-active');
+      showStatus('Auto semicolon ON');
+    } else {
+      autoSemicolonBtn.textContent = 'Auto ; OFF';
+      autoSemicolonBtn.classList.remove('auto-btn-active');
+      showStatus('Auto semicolon OFF');
     }
-  },
-  { pattern: /(?:arc\s+(?:ccw|counterclockwise|counter-clockwise)|ccw\s+arc)\s+((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:R(-?[\d.]+))?(?:\s*I(-?[\d.]+))?(?:\s*J(-?[\d.]+))?(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
-    convert: m => {
-      const c = applyUnitFormat(parseCoords(m[1]));
-      const f = m[5] ? ` F${fmtNum(m[5])}` : '';
-      if (m[2]) return `G03 ${c} R${fmtNum(m[2])}${f}`;
-      return `G03 ${c}${m[3]?' I'+fmtNum(m[3]):''}${m[4]?' J'+fmtNum(m[4]):''}${f}`;
+  }
+
+  autoSemicolonBtn.addEventListener('click', toggleAutoSemicolon);
+  addSemicolonsBtn.addEventListener('click', addSemicolonsToHaasLinesOnly);
+  removeSemicolonsBtn.addEventListener('click', removeAllSemicolons);
+
+  function updateUnitsBadge() {
+    currentUnits = HaasConverter.detectUnits(editor.value);
+    const b = document.getElementById('units-badge');
+    if (currentUnits === 'inch') { b.textContent = 'INCH (G20)'; b.className = 'inch'; }
+    else if (currentUnits === 'metric') { b.textContent = 'METRIC (G21)'; b.className = 'metric'; }
+    else { b.textContent = 'UNITS ?'; b.className = ''; }
+  }
+
+  function fmtNum(numStr) { return HaasConverter.fmtNum(numStr); }
+  function applyUnitFormat(str) {
+    if (!currentUnits) return str;
+    return HaasConverter.applyUnitFormat(str, currentUnits);
+  }
+  function parseCoords(str) { return HaasConverter.parseCoords(str); }
+  function tryConvertLine(rawLine, context) { return HaasConverter.tryConvertLine(rawLine, context); }
+  function getAutocompleteSuggestions(prefix) { return HaasConverter.getAutocompleteSuggestions(prefix); }
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function highlightRest(line) {
+    const TOKEN = /(\([^)]*\))|(\bG\d+\.?\d*)|(\bM\d+)|([FS]-?[\d.]+)|([THD]\d+)|([XYZABCUVWIJKRQP])(-?[\d.]+)|(-?[\d.]+)|(\s+)|(.)/gi;
+    let out = '';
+    let m;
+    while ((m = TOKEN.exec(line)) !== null) {
+      if (m[1]) out += `<span class="t-cm">${esc(m[1])}</span>`;
+      else if (m[2]) out += `<span class="t-g">${esc(m[2])}</span>`;
+      else if (m[3]) out += `<span class="t-m">${esc(m[3])}</span>`;
+      else if (m[4]) out += `<span class="t-f">${esc(m[4])}</span>`;
+      else if (m[5]) out += `<span class="t-tl">${esc(m[5])}</span>`;
+      else if (m[6]) out += `<span class="t-ax">${esc(m[6])}</span><span class="t-n">${esc(m[7])}</span>`;
+      else if (m[8]) out += `<span class="t-n">${esc(m[8])}</span>`;
+      else if (m[9]) out += esc(m[9]);
+      else out += `<span class="t-nl">${esc(m[0])}</span>`;
     }
-  },
+    return out;
+  }
 
-  // Dwell
-  { pattern: /(?:dwell|wait|pause)\s+(\d+(?:\.\d+)?)\s*(?:s(?:ec(?:ond)?s?)?|ms|millisec(?:ond)?s?)?/i,
-    convert: m => {
-      let v = parseFloat(m[1]);
-      if (/ms|milli/i.test(m[0])) v /= 1000;
-      return `G04 P${v}`;
-    }
-  },
-
-  // Home
-  { pattern: /(?:home\s+z|z\s+home|retract\s+z)/i, convert: () => 'G28 G91 Z0.\nG90' },
-  { pattern: /(?:go\s+(?:to\s+)?(?:machine\s+)?home|return\s+to\s+(?:machine\s+)?home|home\s+(?:all\s+)?axes)/i,
-    convert: () => 'G28 G91 Z0.\nG28 X0. Y0.\nG90' },
-
-  // Program flow
-  { pattern: /(?:optional\s+stop|program\s+(?:optional\s+)?stop)/i, convert: () => 'M01' },
-  { pattern: /(?:stop\s+program|program\s+stop\b)/i, convert: () => 'M00' },
-  { pattern: /(?:end\s+(?:of\s+)?program|program\s+end)/i, convert: () => 'M30\n%' },
-
-  // Mode switches
-  { pattern: /(?:set\s+)?absolute\s+(?:mode|programming)|use\s+absolute/i, convert: () => 'G90' },
-  { pattern: /(?:set\s+)?incremental\s+(?:mode|programming)|use\s+incremental/i, convert: () => 'G91' },
-  { pattern: /(?:set\s+)?(?:units?\s+to\s+)?(?:inches?|inch\s+mode|imperial)/i, convert: () => 'G20' },
-  { pattern: /(?:set\s+)?(?:units?\s+to\s+)?(?:metric|millim(?:etr(?:es?|s?))?|mm\s+mode)/i, convert: () => 'G21' },
-  { pattern: /feed\s+per\s+rev(?:olution)?/i, convert: () => 'G95' },
-  { pattern: /feed\s+per\s+min(?:ute)?/i, convert: () => 'G94' },
-
-  // Work offsets
-  { pattern: /(?:set\s+|use\s+)?work\s+offset\s+(?:G?(\d+)|(\d+))/i,
-    convert: m => {
-      const n = parseInt(m[1]||m[2]);
-      if (n>=54&&n<=59) return `G${n}`;
-      return ({1:'G54',2:'G55',3:'G56',4:'G57',5:'G58',6:'G59'})[n]||'G54';
-    }
-  },
-
-  // TLC
-  { pattern: /(?:enable|apply|activate|set|use)\s+tool\s+(?:length\s+)?comp(?:ensation)?\s+H(\d+)/i,
-    convert: m => `G43 H${m[1].padStart(2,'0')}` },
-  { pattern: /(?:cancel|disable|remove|turn\s+off)\s+tool\s+(?:length\s+)?comp(?:ensation)?/i,
-    convert: () => 'G49' },
-
-  // Cutter comp
-  { pattern: /cutter\s+comp(?:ensation)?\s+(?:left|climb)/i, convert: () => 'G41 D' },
-  { pattern: /cutter\s+comp(?:ensation)?\s+(?:right|conventional)/i, convert: () => 'G42 D' },
-  { pattern: /cancel\s+cutter\s+comp(?:ensation)?/i, convert: () => 'G40' },
-
-  // Canned cycles
-  // Drill cycle with R plane + N coordinate pairs: "drill cycle R0.1 Z-1.0 F10 X0Y0 X1Y0 X1Y1 X0Y1"
-  { pattern: /^drill\s+cycle\s+R(-?[\d.]+)\s+Z(-?[\d.]+)\s+F(-?[\d.]+)\s+((?:[XY]-?[\d.]+\s*){2,}(?:[XY]-?[\d.]+)?)$/i,
-    convert: m => {
-      const r = m[1], z = m[2], f = m[3];
-      const coordStr = m[4].trim().toUpperCase();
-      // Extract all X and Y values in order, pairing them up
-      const tokens = [];
-      const re = /([XY])(-?[\d.]+)/gi;
-      let t;
-      while ((t = re.exec(coordStr)) !== null) tokens.push({ axis: t[1].toUpperCase(), val: t[2] });
-      const pairs = [];
-      let i = 0;
-      while (i < tokens.length) {
-        if (tokens[i] && tokens[i+1] && tokens[i].axis === 'X' && tokens[i+1].axis === 'Y') {
-          pairs.push({ x: tokens[i].val, y: tokens[i+1].val }); i += 2;
-        } else if (tokens[i] && tokens[i+1] && tokens[i].axis === 'Y' && tokens[i+1].axis === 'X') {
-          pairs.push({ x: tokens[i+1].val, y: tokens[i].val }); i += 2;
-        } else { i++; }
-      }
-      const lines = [];
-      pairs.forEach((p, idx) => {
-        if (idx === 0) lines.push(`G81 G99 X${p.x} Y${p.y} Z${z} R${r} F${f}`);
-        else           lines.push(`X${p.x} Y${p.y}`);
+  function highlightLine(raw) {
+    const line = raw.toUpperCase();
+    if (/^\s*%\s*$/.test(line)) return `<span class="t-pc">${esc(line)}</span>`;
+    if (/^\s*O\d/.test(line)) {
+      return line.replace(/^(\s*)(O\d+)(.*)$/, (_, sp, onum, rest) => {
+        return esc(sp) + `<span class="t-ow">${esc(onum)}</span>` + highlightRest(rest);
       });
-      lines.push('G80');
-      return lines.join('\n');
     }
-  },
-  { pattern: /(?:drill\s+(?:hole\s+)?at|simple\s+drill)\s+((?:[XYZRQ]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
-    convert: m => `G81 G99 ${applyUnitFormat(parseCoords(m[1]))}${m[2]?' F'+m[2]:''}` },
-  { pattern: /(?:peck\s+drill(?:ing)?)\s+((?:[XYZRQ]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
-    convert: m => `G83 G99 ${applyUnitFormat(parseCoords(m[1]))}${m[2]?' F'+m[2]:''}` },
-  { pattern: /(?:tap(?:ping)?(?:\s+(?:hole\s+)?at)?)\s+((?:[XYZR]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
-    convert: m => `G84 G99 ${applyUnitFormat(parseCoords(m[1]))}${m[2]?' F'+m[2]:''}` },
-  { pattern: /(?:chip\s+break(?:ing)?\s+drill)\s+((?:[XYZRQ]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
-    convert: m => `G73 G99 ${applyUnitFormat(parseCoords(m[1]))}${m[2]?' F'+m[2]:''}` },
-  { pattern: /(?:boring(?:\s+cycle)?|bore\s+at)\s+((?:[XYZR]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
-    convert: m => `G85 G99 ${applyUnitFormat(parseCoords(m[1]))}${m[2]?' F'+m[2]:''}` },
-  { pattern: /cancel\s+(?:canned\s+)?cycle|end\s+(?:canned\s+)?cycle/i, convert: () => 'G80' },
-
-  // Planes
-  { pattern: /(?:select\s+)?XY\s+plane/i, convert: () => 'G17' },
-  { pattern: /(?:select\s+)?XZ\s+plane/i, convert: () => 'G18' },
-  { pattern: /(?:select\s+)?YZ\s+plane/i, convert: () => 'G19' },
-
-  // Subroutines
-  { pattern: /(?:call\s+sub(?:routine)?|run\s+sub(?:routine)?)\s+O?(\d+)/i,
-    convert: m => `M98 P${m[1].padStart(4,'0')}` },
-
-  // Comment
-  { pattern: /^(?:comment|;)\s+(.+)/i,
-    convert: m => `(${m[1].toUpperCase()})` },
-
-  // Rotation
-  { pattern: /(?:rotate\s+coords?|coord\s+rotation)\s+(\d+(?:\.\d+)?)\s*(?:deg(?:rees?)?)?/i,
-    convert: m => `G68 X0. Y0. R${m[1]}` },
-  { pattern: /cancel\s+(?:coord\s+)?rotation/i, convert: () => 'G69' },
-
-  // Orient / rigid tap
-  { pattern: /(?:orient\s+spindle|spindle\s+orient)(?:\s+(\d+(?:\.\d+)?))?/i,
-    convert: m => m[1] ? `M19 R${m[1]}` : 'M19' },
-  { pattern: /rigid\s+tap(?:\s+mode)?\s+(\d+)/i, convert: m => `M29 S${m[1]}` },
-
-  // Macro
-  { pattern: /(?:call\s+macro|macro\s+call)\s+(\d+)/i, convert: m => `G65 P${m[1]}` },
-
-  // Air / conveyor
-  { pattern: /air\s+(?:blast\s+)?on/i,  convert: () => 'M12' },
-  { pattern: /air\s+(?:blast\s+)?off/i, convert: () => 'M13' },
-  { pattern: /(?:chip\s+)?conveyor\s+(?:on|fwd)/i, convert: () => 'M31' },
-  { pattern: /(?:chip\s+)?conveyor\s+off/i,         convert: () => 'M33' },
-
-  // Scaling
-  { pattern: /scale\s+factor\s+([\d.]+)/i,
-    convert: m => `G51 X${m[1]} Y${m[1]} Z${m[1]}` },
-  { pattern: /cancel\s+scale/i, convert: () => 'G50' },
-];
-
-// ════════════════════════════════════════════
-// UTILITIES
-// ════════════════════════════════════════════
-function parseCoords(str) {
-  return str.trim().toUpperCase().replace(/\s+/g,' ');
-}
-
-function tryConvertLine(rawLine, context = {}) {
-  const trimmed = rawLine.trim();
-  if (!trimmed) return null;
-  if (/^\(/.test(trimmed)) return null;
-  if (/^%/.test(trimmed)) return null;
-  const hasNL = /[a-z]{3,}/.test(trimmed);
-  if (!hasNL && /^[GMTNOFSXYZABCUVW][- \d]/.test(trimmed)) return null;
-
-  for (const sc of SHORTCUTS) {
-    const m = trimmed.match(sc.pattern);
-    if (m) { const r = sc.convert(m, context); if (r != null) return applyUnitFormat(r); }
-  }
-  for (const rule of NL_RULES) {
-    const m = trimmed.match(rule.pattern);
-    if (m) { const r = rule.convert(m, context); if (r != null) return r; }
-  }
-  return null;
-}
-
-// ════════════════════════════════════════════
-// TRAILING NATURAL LANGUAGE EXTRACTION
-// ════════════════════════════════════════════
-function getTrailingNaturalLanguage(line) {
-  // Same token regex as in highlightRest
-  const tokenRegex = /(\([^)]*\))|(\bG\d+\.?\d*)|(\bM\d+)|([FS]-?[\d.]+)|([THD]\d+)|([XYZABCUVWIJKRQP])(-?[\d.]+)|(-?[\d.]+)|(\s+)|(.)/gi;
-  let lastGcodeEnd = 0;
-  let match;
-  while ((match = tokenRegex.exec(line)) !== null) {
-    // If this match is a G-code token (any of groups 2-8)
-    if (match[2] || match[3] || match[4] || match[5] || match[6] || match[8]) {
-      lastGcodeEnd = match.index + match[0].length;
+    if (/^\s*\(/.test(line)) return `<span class="t-cm">${esc(line)}</span>`;
+    const hasGM = /\bG\d+|\bM\d+/i.test(line);
+    if (!hasGM) {
+      const hasLongAlpha = /(?<![A-Z])[A-Z]{2,}/i.test(line.replace(/\([^)]*\)/g,''));
+      if (hasLongAlpha) return `<span class="t-nl">${esc(line)}</span>`;
     }
-    // Skip comments (group1) and whitespace (group9) and other chars (group10)
+    return highlightRest(line);
   }
-  const trailing = line.slice(lastGcodeEnd);
-  return { startIdx: lastGcodeEnd, trailing };
-}
 
-// ════════════════════════════════════════════
-// SYNTAX HIGHLIGHTER
-// Tokenises one line at a time, wraps spans.
-// NCViewer palette: G=teal, M=gold, axis=red,
-// num=amber, F/S=purple, T/H/D=green, (cmnt)=slate
-// ════════════════════════════════════════════
-function esc(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+  function highlightCode(text) {
+    return text.split('\n').map(highlightLine).join('\n');
+  }
 
-function highlightLine(raw) {
-  const line = raw.toUpperCase();
+  function syncHighlight() {
+    highlight.innerHTML = highlightCode(editor.value);
+    highlight.scrollTop = editor.scrollTop;
+    highlight.scrollLeft = editor.scrollLeft;
+  }
 
-  // % delimiter
-  if (/^\s*%\s*$/.test(line)) return `<span class="t-pc">${esc(line)}</span>`;
+  function updateLineNumbers() {
+    const lines = editor.value.split('\n');
+    lineNums.innerHTML = lines.map((_,i) => `<div style="line-height:22px">${i+1}</div>`).join('');
+    lineNums.scrollTop = editor.scrollTop;
+    updateUnitsBadge();
+    syncHighlight();
+  }
+  editor.addEventListener('scroll', () => {
+    lineNums.scrollTop = editor.scrollTop;
+    highlight.scrollTop = editor.scrollTop;
+    highlight.scrollLeft = editor.scrollLeft;
+  });
 
-  // O-word
-  if (/^\s*O\d/.test(line)) {
-    return line.replace(/^(\s*)(O\d+)(.*)$/, (_, sp, onum, rest) => {
-      return esc(sp) + `<span class="t-ow">${esc(onum)}</span>` + highlightRest(rest);
+  let statusTimer;
+  function showStatus(msg) {
+    statusPill.textContent = msg;
+    statusPill.classList.add('show');
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => statusPill.classList.remove('show'), 2200);
+  }
+
+  function showAutocomplete(suggestions, x, y) {
+    acItems = suggestions; acIndex = -1;
+    let html = '', lastType = null;
+    suggestions.forEach((s, i) => {
+      const typeLabel = HaasConverter.TYPE_LABEL[s.type] || s.type;
+      if (s.type !== lastType) {
+        html += `<div class="ac-section">${typeLabel}</div>`;
+        lastType = s.type;
+      }
+      html += `<div class="ac-item" data-i="${i}">
+        <span class="ac-code">${s.code}</span>
+        <span class="ac-desc">${s.desc}</span>
+      </div>`;
+    });
+    acDropdown.innerHTML = html;
+    acDropdown.style.left = x + 'px';
+    acDropdown.style.top = y + 'px';
+    acDropdown.style.display = 'block';
+    acVisible = true;
+    acDropdown.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', e => { e.preventDefault(); applyAutocomplete(parseInt(el.dataset.i)); });
     });
   }
 
-  // Full-line comment
-  if (/^\s*\(/.test(line)) return `<span class="t-cm">${esc(line)}</span>`;
-
-  // Natural-language: line contains a sequence of 3+ letters NOT immediately preceded by G/M
-  // and the line has no stand-alone G/M numeric codes at all.
-  // We check: no token of the form G## or M## exists anywhere on the line.
-  const hasGM = /\bG\d+|\bM\d+/i.test(line);
-  if (!hasGM) {
-    // Still could be a pure axis-move line like "X1. Y2." — let highlightRest handle those
-    const hasLongAlpha = /(?<![A-Z])[A-Z]{2,}/i.test(line.replace(/\([^)]*\)/g,''));
-    if (hasLongAlpha) return `<span class="t-nl">${esc(line)}</span>`;
+  function hideAutocomplete() { acDropdown.style.display='none'; acVisible=false; acIndex=-1; }
+  function acHighlight() {
+    acDropdown.querySelectorAll('.ac-item').forEach((el,i) => {
+      el.classList.toggle('selected', i===acIndex);
+      if (i===acIndex) el.scrollIntoView({block:'nearest'});
+    });
+  }
+  function applyAutocomplete(i) {
+    const item = acItems[i]; if (!item) return;
+    const pos = editor.selectionStart, val = editor.value;
+    const lineStart = val.lastIndexOf('\n', pos-1)+1;
+    const lineEnd = val.indexOf('\n', pos);
+    const end = lineEnd===-1 ? val.length : lineEnd;
+    editor.value = val.slice(0, lineStart) + item.code + val.slice(end);
+    const newPos = lineStart + item.code.length;
+    editor.setSelectionRange(newPos, newPos);
+    hideAutocomplete(); updateLineNumbers();
+  }
+  function getCaretCoords() {
+    const mirror = document.createElement('div');
+    const style = window.getComputedStyle(editor);
+    mirror.style.cssText = `position:absolute;visibility:hidden;white-space:pre-wrap;word-wrap:break-word;
+      font:${style.font};line-height:${style.lineHeight};padding:${style.padding};
+      border:${style.border};width:${editor.offsetWidth}px;`;
+    document.body.appendChild(mirror);
+    mirror.innerHTML = editor.value.slice(0,editor.selectionStart).replace(/</g,'&lt;') + '<span id="_c">|</span>';
+    const r = mirror.querySelector('#_c').getBoundingClientRect();
+    const w = document.getElementById('editor-inner').getBoundingClientRect();
+    document.body.removeChild(mirror);
+    return { x: r.left - w.left, y: r.bottom - w.top + 4 };
   }
 
-  return highlightRest(line);
-}
-
-function highlightRest(line) {
-  // Tokenise: comments, G-codes, M-codes, F/S words, T/H/D words, axis+number, bare numbers, spaces
-  // Also catch any other character and wrap it in .t-nl so it's visible.
-  const TOKEN = /(\([^)]*\))|(\bG\d+\.?\d*)|(\bM\d+)|([FS]-?[\d.]+)|([THD]\d+)|([XYZABCUVWIJKRQP])(-?[\d.]+)|(-?[\d.]+)|(\s+)|(.)/gi;
-  let out = '';
-  let m;
-  while ((m = TOKEN.exec(line)) !== null) {
-    if (m[1])  out += `<span class="t-cm">${esc(m[1])}</span>`;          // (comment)
-    else if (m[2])  out += `<span class="t-g">${esc(m[2])}</span>`;      // G-code
-    else if (m[3])  out += `<span class="t-m">${esc(m[3])}</span>`;      // M-code
-    else if (m[4])  out += `<span class="t-f">${esc(m[4])}</span>`;      // F/S word
-    else if (m[5])  out += `<span class="t-tl">${esc(m[5])}</span>`;     // T/H/D word
-    else if (m[6])  out += `<span class="t-ax">${esc(m[6])}</span>`      // axis letter
-                        +  `<span class="t-n">${esc(m[7])}</span>`;      // + number
-    else if (m[8])  out += `<span class="t-n">${esc(m[8])}</span>`;      // bare number
-    else if (m[9])  out += esc(m[9]);                                     // whitespace (no span, but whitespace is visible due to background)
-    else            out += `<span class="t-nl">${esc(m[0])}</span>`;     // any other character – make it visible
+  function getTrailingNaturalLanguage(line) {
+    const tokenRegex = /(\([^)]*\))|(\bG\d+\.?\d*)|(\bM\d+)|([FS]-?[\d.]+)|([THD]\d+)|([XYZABCUVWIJKRQP])(-?[\d.]+)|(-?[\d.]+)|(\s+)|(.)/gi;
+    let lastGcodeEnd = 0;
+    let match;
+    while ((match = tokenRegex.exec(line)) !== null) {
+      if (match[2] || match[3] || match[4] || match[5] || match[6] || match[8]) {
+        lastGcodeEnd = match.index + match[0].length;
+      }
+    }
+    const trailing = line.slice(lastGcodeEnd);
+    return { startIdx: lastGcodeEnd, trailing };
   }
-  return out;
-}
 
-function highlightCode(text) {
-  return text.split('\n').map(highlightLine).join('\n');
-}
+  function applySemicolonsToConvertedString(str) {
+    if (!autoSemicolon) return str;
+    const lines = str.split('\n');
+    const processed = lines.map(line => addSemicolonToLine(line));
+    return processed.join('\n');
+  }
 
-// ════════════════════════════════════════════
-// DOM
-// ════════════════════════════════════════════
-const editor     = document.getElementById('editor');
-const highlight  = document.getElementById('highlight');
-const lineNums   = document.getElementById('line-numbers');
-const statusPill = document.getElementById('status-pill');
-const toast      = document.getElementById('toast');
+  editor.addEventListener('keydown', e => {
+    if (acVisible) {
+      if (e.key==='ArrowDown')  { e.preventDefault(); acIndex=Math.min(acIndex+1,acItems.length-1); acHighlight(); return; }
+      if (e.key==='ArrowUp')    { e.preventDefault(); acIndex=Math.max(acIndex-1,0); acHighlight(); return; }
+      if ((e.key==='Enter'||e.key==='Tab') && acIndex>=0) { e.preventDefault(); applyAutocomplete(acIndex); return; }
+      if (e.key==='Escape')     { e.preventDefault(); hideAutocomplete(); return; }
+    }
 
-function syncHighlight() {
-  highlight.innerHTML = highlightCode(editor.value);
-  highlight.scrollTop  = editor.scrollTop;
-  highlight.scrollLeft = editor.scrollLeft;
-}
+    if (e.key==='Tab' && !acVisible) {
+      e.preventDefault();
+      const pos=editor.selectionStart, val=editor.value;
+      const lineStart=val.lastIndexOf('\n',pos-1)+1;
+      const sug=getAutocompleteSuggestions(val.slice(lineStart,pos).trim());
+      if (sug.length>0) { const c=getCaretCoords(); showAutocomplete(sug,c.x,c.y); }
+      return;
+    }
 
-function updateLineNumbers() {
-  const lines = editor.value.split('\n');
-  lineNums.innerHTML = lines.map((_,i) =>
-    `<div style="line-height:20px">${i+1}</div>`).join('');
-  lineNums.scrollTop = editor.scrollTop;
-  updateUnitsBadge();
-  syncHighlight();
-}
-editor.addEventListener('scroll', () => {
-  lineNums.scrollTop   = editor.scrollTop;
-  highlight.scrollTop  = editor.scrollTop;
-  highlight.scrollLeft = editor.scrollLeft;
-});
+    if (e.key==='Enter') {
+      e.preventDefault();
+      const pos=editor.selectionStart, val=editor.value;
+      const lineStart=val.lastIndexOf('\n',pos-1)+1;
+      const lineEnd=val.indexOf('\n',pos);
+      const end=lineEnd===-1?val.length:lineEnd;
+      const currentLine=val.slice(lineStart,end);
+      hideAutocomplete();
 
-let statusTimer;
-function showStatus(msg) {
-  statusPill.textContent = '✓ ' + msg;
-  statusPill.classList.add('show');
-  clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => statusPill.classList.remove('show'), 2200);
-}
+      currentUnits = HaasConverter.detectUnits(val.slice(0, lineStart));
+      const lastMotionModal = HaasConverter.getLastMotionModal(val.slice(0, lineStart));
+      const context = { lastMotionModal };
 
+      const cursorOffset = pos - lineStart;
+      const isMidLine = cursorOffset > 0 && cursorOffset < currentLine.length;
+      const isPureGcode = HaasConverter.tryConvertLine(currentLine, context) === null
+                          && /\bG\d+|\bM\d+|\b[XYZUVW]\s*-?\d|\bT\d+|\bS\d+|\bF\d+/i.test(currentLine)
+                          && !/[a-z]{3,}/i.test(currentLine.replace(/\([^)]*\)/g, ''));
 
-// ════════════════════════════════════════════
-// KEY HANDLING
-// ════════════════════════════════════════════
-editor.addEventListener('keydown', e => {
+      if (isPureGcode && isMidLine) {
+        editor.value = val.slice(0, pos) + '\n' + val.slice(pos);
+        editor.setSelectionRange(pos+1, pos+1);
+        updateLineNumbers();
+        return;
+      }
 
-  if (e.key==='Enter') {
-    e.preventDefault();
-    const pos=editor.selectionStart, val=editor.value;
-    const lineStart=val.lastIndexOf('\n',pos-1)+1;
-    const lineEnd=val.indexOf('\n',pos);
-    const end=lineEnd===-1?val.length:lineEnd;
-    const currentLine=val.slice(lineStart,end);
-    const cursorAtLineEnd = pos===end;
+      const hasNL = /[a-z]{3,}/i.test(currentLine);
+      const hasGM = /\bG\d+|\bM\d+/i.test(currentLine);
+      let newLine = currentLine;
 
-    // Detect units and last motion modal from everything before this line
-    currentUnits = detectUnits(val.slice(0, lineStart));
-    const lastMotionModal = getLastMotionModal(val.slice(0, lineStart));
-    const context = { lastMotionModal };
-
-    const hasNL = /[a-z]{3,}/i.test(currentLine);
-    const hasGM = /\bG\d+|\bM\d+/i.test(currentLine);
-
-    // If the line already contains G-code AND natural language, try to convert only the trailing natural language
-    if (hasGM && hasNL) {
-      const { startIdx, trailing } = getTrailingNaturalLanguage(currentLine);
-      const trimmedTrailing = trailing.trim();
-      if (trimmedTrailing) {
-        const convertedTrailing = tryConvertLine(trimmedTrailing, context);
-        if (convertedTrailing) {
-          const newLine = currentLine.slice(0, startIdx) + convertedTrailing;
-          editor.value = val.slice(0, lineStart) + newLine + val.slice(end);
-          const newPos = lineStart + newLine.length;
-          if (cursorAtLineEnd) {
-            const v2 = editor.value;
-            editor.value = v2.slice(0, newPos) + '\n' + v2.slice(newPos);
-            editor.setSelectionRange(newPos+1, newPos+1);
-          } else {
-            editor.setSelectionRange(newPos, newPos);
+      if (hasGM && hasNL) {
+        const { startIdx, trailing } = getTrailingNaturalLanguage(currentLine);
+        const trimmedTrailing = trailing.trim();
+        if (trimmedTrailing) {
+          const convertedTrailing = tryConvertLine(trimmedTrailing, context);
+          if (convertedTrailing) {
+            newLine = currentLine.slice(0, startIdx) + convertedTrailing;
           }
-          showStatus('Converted');
-          updateLineNumbers();
-          return;
         }
       }
-    }
 
-    // Otherwise, try to convert the whole line
-    const converted = tryConvertLine(currentLine, context);
-    if (converted) {
-      editor.value = val.slice(0,lineStart) + converted + val.slice(end);
-      const newPos = lineStart + converted.length;
-      if (cursorAtLineEnd) {
-        const v2 = editor.value;
-        editor.value = v2.slice(0,newPos) + '\n' + v2.slice(newPos);
-        editor.setSelectionRange(newPos+1, newPos+1);
-      } else {
-        editor.setSelectionRange(newPos, newPos);
+      if (newLine === currentLine) {
+        const converted = tryConvertLine(currentLine, context);
+        if (converted) {
+          newLine = converted;
+        }
       }
-      showStatus('Converted');
-    } else {
-      if (cursorAtLineEnd) {
-        editor.value = val.slice(0,pos) + '\n' + val.slice(pos);
-        editor.setSelectionRange(pos+1, pos+1);
-      }
-      // cursor mid-line with no conversion: do nothing
+
+      newLine = applySemicolonsToConvertedString(newLine);
+
+      editor.value = val.slice(0, lineStart) + newLine + val.slice(end);
+      const newPos = lineStart + newLine.length;
+      const v2 = editor.value;
+      editor.value = v2.slice(0, newPos) + '\n' + v2.slice(newPos);
+      editor.setSelectionRange(newPos+1, newPos+1);
+      if (newLine !== currentLine) showStatus('Converted');
+      updateLineNumbers();
+      return;
     }
+  });
+
+  editor.addEventListener('keyup', e => {
+    if (!['ArrowDown','ArrowUp','Enter','Tab','Escape'].includes(e.key)) hideAutocomplete();
     updateLineNumbers();
-    return;
+  });
+  editor.addEventListener('input', updateLineNumbers);
+  editor.addEventListener('click', () => hideAutocomplete());
+
+  // Cheat sheet modal
+  const cheatSheetModal = document.getElementById('cheat-sheet-modal');
+  const cheatSheetContent = document.getElementById('cheat-sheet-content');
+  const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
+  const closeCheatSheetBtn = document.getElementById('close-cheat-sheet');
+
+  function renderCheatSheet() {
+    const items = HaasConverter.getCheatSheetItems();
+    let html = '';
+    let lastCategory = '';
+    for (const item of items) {
+      if (item.category !== lastCategory) {
+        html += `<div class="cheat-category">${item.category}</div>`;
+        lastCategory = item.category;
+      }
+      const quickClass = item.isQuickSetup ? 'quick-setup' : '';
+      html += `<div class="cheat-item ${quickClass}">
+        <span class="cheat-code">${escapeHtml(item.code)}</span>
+        <span class="cheat-desc">${escapeHtml(item.desc)}</span>
+      </div>`;
+    }
+    cheatSheetContent.innerHTML = html;
   }
-});
 
-editor.addEventListener('keyup', updateLineNumbers);
-editor.addEventListener('input', updateLineNumbers);
+  function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
 
-// ════════════════════════════════════════════
-// INITIAL CONTENT
-// ════════════════════════════════════════════
-editor.value = `%
+  cheatSheetBtn.addEventListener('click', () => {
+    renderCheatSheet();
+    cheatSheetModal.classList.add('visible');
+  });
+  closeCheatSheetBtn.addEventListener('click', () => {
+    cheatSheetModal.classList.remove('visible');
+  });
+  cheatSheetModal.addEventListener('click', (e) => {
+    if (e.target === cheatSheetModal) cheatSheetModal.classList.remove('visible');
+  });
+
+  // Debug modal
+  const debugModal = document.getElementById('debug-modal');
+  const debugBody = document.getElementById('debug-body');
+  const debugSummary = document.getElementById('debug-summary');
+  const debugBtn = document.getElementById('debug-btn');
+  const closeDebugBtn = document.getElementById('close-debug');
+
+  // Dynamically built below — keeping old array start for replacement anchor
+  const _LEGACY_DEBUG_START = [
+    { category: 'Safety / Init', input: 'safety line', expect: 'G00 G17 G40 G49 G80 G90' },
+    { category: 'Safety / Init', input: 'safety line inch', expect: 'G00 G17 G20 G40 G49 G80 G90' },
+    { category: 'Safety / Init', input: 'safety line metric', expect: 'G00 G17 G21 G40 G49 G80 G90' },
+    { category: 'Safety / Init', input: 'home z', expect: 'G28 G91 Z0.\nG90' },
+    { category: 'Safety / Init', input: 'home all', expect: 'G28 G91 Z0.\nG28 X0. Y0.\nG90' },
+    { category: 'Safety / Init', input: 'retract z', expect: 'G28 G91 Z0.\nG90' },
+    { category: 'Safety / Init', input: 'go home', expect: 'G28 G91 Z0.\nG28 X0. Y0.\nG90' },
+
+    { category: 'Tool Change', input: 'change tool to T3', expect: 'T03 M06' },
+    { category: 'Tool Change', input: 'use tool T12', expect: 'T12 M06' },
+    { category: 'Tool Change', input: 'load tool T5', expect: 'T05 M06' },
+    { category: 'Tool Change', input: 'select tool T1', expect: 'T01 M06' },
+    { category: 'Tool Change', input: 'switch to tool T7', expect: 'T07 M06' },
+    { category: 'Tool Change', input: 'tool change to T2', expect: 'T02 M06' },
+    { category: 'Tool Change', input: 'quick tool change T4', expect: null },
+
+    { category: 'Spindle', input: 'spindle on 5000', expect: 'S5000 M03' },
+    { category: 'Spindle', input: 'start spindle at 3000 rpm', expect: 'S3000 M03' },
+    { category: 'Spindle', input: 'spindle off', expect: 'M05' },
+    { category: 'Spindle', input: 'stop spindle', expect: 'M05' },
+    { category: 'Spindle', input: 'spindle ccw 2000', expect: 'S2000 M04' },
+    { category: 'Spindle', input: 'reverse spindle', expect: 'M04' },
+    { category: 'Spindle', input: 'spindle orient', expect: 'M19' },
+    { category: 'Spindle', input: 'orient spindle 90', expect: 'M19 R90' },
+    { category: 'Spindle', input: 'max spindle speed 5000', expect: 'G97 S5000 M03' },
+    { category: 'Spindle', input: 'spindle clamp 6000', expect: 'G50 S6000' },
+
+    { category: 'Coolant', input: 'coolant on', expect: 'M08' },
+    { category: 'Coolant', input: 'flood coolant', expect: 'M08' },
+    { category: 'Coolant', input: 'coolant off', expect: 'M09' },
+    { category: 'Coolant', input: 'turn off coolant', expect: 'M09' },
+    { category: 'Coolant', input: 'mist on', expect: 'M07' },
+    { category: 'Coolant', input: 'tsc on', expect: 'M88' },
+    { category: 'Coolant', input: 'through spindle coolant', expect: 'M88' },
+    { category: 'Coolant', input: 'tsc off', expect: 'M89' },
+
+    { category: 'Air / Conveyor', input: 'air on', expect: 'M12' },
+    { category: 'Air / Conveyor', input: 'air blast on', expect: 'M12' },
+    { category: 'Air / Conveyor', input: 'air off', expect: 'M13' },
+    { category: 'Air / Conveyor', input: 'conveyor on', expect: 'M31' },
+    { category: 'Air / Conveyor', input: 'chip conveyor on', expect: 'M31' },
+    { category: 'Air / Conveyor', input: 'conveyor off', expect: 'M33' },
+
+    { category: 'Motion', input: 'rapid to X1 Y2', expect: 'G00 X1. Y2.' },
+    { category: 'Motion', input: 'go rapid to X0 Y0 Z1', expect: 'G00 X0. Y0. Z1.' },
+    { category: 'Motion', input: 'feed to Z-0.5 at 30', expect: 'G01 Z-.5 F30.' },
+    { category: 'Motion', input: 'feed to X5 at 20', expect: 'G01 X5. F20.' },
+    { category: 'Motion', input: 'linear move to X1 Y1 Z0 at 15', expect: 'G01 X1. Y1. Z0. F15.' },
+    { category: 'Motion', input: 'go to X2 Y3', expect: 'G00 X2. Y3.' },
+    { category: 'Motion', input: 'move to X0 Y0 Z0.1', expect: 'G00 X0. Y0. Z.1' },
+    { category: 'Motion', input: 'arc clockwise to X1 Y1 R1', expect: 'G02 X1. Y1. R1.' },
+    { category: 'Motion', input: 'arc counterclockwise to X2 Y2 R0.5', expect: 'G03 X2. Y2. R.5' },
+    { category: 'Motion', input: 'cw arc X1 Y0 R1', expect: 'G02 X1. Y0. R1.' },
+    { category: 'Motion', input: 'ccw arc X0 Y1 R1', expect: 'G03 X0. Y1. R1.' },
+
+    { category: 'Dwell', input: 'dwell 2 seconds', expect: 'G04 P2' },
+    { category: 'Dwell', input: 'wait 500 ms', expect: 'G04 P0.5' },
+    { category: 'Dwell', input: 'pause 1.5 sec', expect: 'G04 P1.5' },
+
+    { category: 'CSS', input: 'CSS 800 sfm', expect: 'G96 S800 M03' },
+    { category: 'CSS', input: 'CSS 800 sfm max 6000 rpm', expect: 'G96 S800 M03\nG50 S6000' },
+    { category: 'CSS', input: 'constant surface speed 500', expect: 'G96 S500 M03' },
+    { category: 'CSS', input: 'css off', expect: 'G97' },
+    { category: 'CSS', input: 'css off 4000', expect: 'G97 S4000 M03' },
+    { category: 'CSS', input: 'rpm mode 3000', expect: 'G97 S3000 M03' },
+
+    { category: 'Work Offsets / Coords', input: 'work offset 1', expect: 'G54' },
+    { category: 'Work Offsets / Coords', input: 'use work offset G55', expect: 'G55' },
+    { category: 'Work Offsets / Coords', input: 'absolute mode', expect: 'G90' },
+    { category: 'Work Offsets / Coords', input: 'incremental mode', expect: 'G91' },
+    { category: 'Work Offsets / Coords', input: 'use absolute', expect: 'G90' },
+    { category: 'Work Offsets / Coords', input: 'set units to inches', expect: 'G20' },
+    { category: 'Work Offsets / Coords', input: 'metric', expect: 'G21' },
+    { category: 'Work Offsets / Coords', input: 'rotate coords 45 degrees', expect: 'G68 X0. Y0. R45' },
+    { category: 'Work Offsets / Coords', input: 'cancel rotation', expect: 'G69' },
+    { category: 'Work Offsets / Coords', input: 'part zero', expect: 'G90 G00 G54 X0. Y0.' },
+    { category: 'Work Offsets / Coords', input: 'clear z', expect: 'G90 G00 Z1.' },
+
+    { category: 'Tool Comp', input: 'enable tool comp H03', expect: 'G43 H03' },
+    { category: 'Tool Comp', input: 'cancel tool comp', expect: 'G49' },
+    { category: 'Tool Comp', input: 'cutter comp left D20', expect: 'G41 D20' },
+    { category: 'Tool Comp', input: 'cutter comp right D10', expect: 'G42 D10' },
+    { category: 'Tool Comp', input: 'cancel cutter comp', expect: 'G40' },
+
+    { category: 'Canned Cycles', input: 'drill at X1 Y2 Z-0.5 R0.1 F10', expect: null },
+    { category: 'Canned Cycles', input: 'peck drill X1 Y1 Z-1 Q0.1 R0.1 F8', expect: null },
+    { category: 'Canned Cycles', input: 'tap at X0 Y0 Z-0.5 R0.1 F20', expect: null },
+    { category: 'Canned Cycles', input: 'chip break drill X1 Y0 Z-1 Q0.1 R0.1 F6', expect: null },
+    { category: 'Canned Cycles', input: 'boring at X2 Y2 Z-0.5 R0.1 F5', expect: null },
+    { category: 'Canned Cycles', input: 'cancel cycle', expect: 'G80' },
+    { category: 'Canned Cycles', input: 'cancel canned cycle', expect: 'G80' },
+
+    { category: 'Program Flow', input: 'end block', expect: null },
+    { category: 'Program Flow', input: 'end program', expect: 'M30\n%' },
+    { category: 'Program Flow', input: 'optional stop', expect: 'M01' },
+    { category: 'Program Flow', input: 'op stop', expect: 'M01' },
+    { category: 'Program Flow', input: 'program stop', expect: 'M00' },
+    { category: 'Program Flow', input: 'call subroutine O1234', expect: 'M98 P1234' },
+    { category: 'Program Flow', input: 'rigid tap mode 500', expect: 'M29 S500' },
+    { category: 'Program Flow', input: 'scale factor 2.0', expect: 'G51 X2.0 Y2.0 Z2.0' },
+    { category: 'Program Flow', input: 'cancel scale', expect: 'G50' },
+
+    { category: 'Plane Select / Feed', input: 'XY plane', expect: 'G17' },
+    { category: 'Plane Select / Feed', input: 'XZ plane', expect: 'G18' },
+    { category: 'Plane Select / Feed', input: 'YZ plane', expect: 'G19' },
+    { category: 'Plane Select / Feed', input: 'feed per rev', expect: 'G95' },
+    { category: 'Plane Select / Feed', input: 'feed per minute', expect: 'G94' },
+
+    { category: 'Blocks', input: 'tool change block', expect: null },
+    { category: 'Blocks', input: 'spindle start block', expect: null },
+    { category: 'Blocks', input: 'drill block', expect: null },
+    { category: 'Blocks', input: 'peck block', expect: null },
+    { category: 'Blocks', input: 'tap block', expect: null },
+    { category: 'Blocks', input: 'bore block', expect: null },
+    { category: 'Blocks', input: 'chip break block', expect: null },
+    { category: 'Blocks', input: 'css block', expect: null },
+    { category: 'Blocks', input: 'css off block', expect: null },
+    { category: 'Blocks', input: 'sub block', expect: null },
+    { category: 'Blocks', input: 'wcs block', expect: null },
+  ];
+
+  // Build debug cases dynamically from every cheat sheet item so the
+  // debug panel is always 100% in sync with the cheat sheet.
+  function buildDebugCases() {
+    const cases = [];
+    const items = HaasConverter.getCheatSheetItems();
+    for (const item of items) {
+      // Substitute placeholder tokens with safe example values
+      let input = item.code
+        .replace(/T##/g, 'T3')
+        .replace(/H##/g, 'H03')
+        .replace(/D##/g, 'D10')
+        .replace(/O####/g, 'O1234')
+        .replace(/####/g, '5000')
+        .replace(/###/g, '800')
+        .replace(/##/g, '03')
+        .replace(/#\.#/g, '2.0')
+        .replace(/\d+–\d+/g, '1')
+        .replace(/#/g, '1')
+        .trim();
+
+      const isGM = (item.category === 'G-Code' || item.category === 'M-Code');
+      // G/M code entries: raw gcode passes through unchanged (tryConvertLine → null),
+      // shown as INFO rows. NL/Shortcut entries: any non-null result = pass.
+      cases.push({
+        category: item.category,
+        input,
+        desc: item.desc,
+        raw: item.code,
+        expect: isGM ? undefined : null   // undefined = info-only, null = any-result pass
+      });
+    }
+    return cases;
+  }
+
+  function runDebug() {
+    const ctx = {};
+    let pass = 0, fail = 0, info = 0;
+    const byCategory = {};
+
+    const DEBUG_CASES = buildDebugCases();
+
+    for (const tc of DEBUG_CASES) {
+      const result = HaasConverter.tryConvertLine(tc.input, ctx);
+      let ok, isInfo;
+      if (tc.expect === undefined) {
+        // G-Code / M-Code info rows — no pass/fail, just show output
+        isInfo = true; ok = true; info++;
+      } else {
+        // NL / Shortcut rows — any non-null result counts as pass
+        isInfo = false;
+        ok = result !== null;
+        if (ok) pass++; else fail++;
+      }
+      if (!byCategory[tc.category]) byCategory[tc.category] = [];
+      byCategory[tc.category].push({ ...tc, result, ok, isInfo });
+    }
+
+    debugSummary.innerHTML =
+      `<span class="pass">OK ${pass} passed</span>&nbsp;&nbsp;<span class="fail">${fail > 0 ? 'FAIL ' + fail + ' failed' : ''}</span>&nbsp;&nbsp;<span style="color:var(--text-dim)">${info} info</span>`;
+
+    let html = '';
+    for (const [cat, rows] of Object.entries(byCategory)) {
+      html += `<div class="debug-category">${cat}</div>`;
+      for (const r of rows) {
+        const outText = r.result !== null && r.result !== undefined
+          ? r.result.replace(/\n/g, ' ↵ ')
+          : r.isInfo ? '— raw g-code —' : '— no conversion —';
+        const rowClass = r.isInfo ? 'info' : r.ok ? 'ok' : 'fail';
+        const checkLabel = r.isInfo ? 'INFO' : r.ok ? 'OK' : 'FAIL';
+        const inputDisplay = r.raw || r.input;
+        html += `<div class="debug-row ${rowClass}">
+          <span class="debug-check">${checkLabel}</span>
+          <span class="debug-input" title="${inputDisplay}">${inputDisplay}</span>
+          <span class="debug-output" title="${outText}">${outText}</span>
+        </div>`;
+      }
+    }
+    debugBody.innerHTML = html;
+  }
+
+  debugBtn.addEventListener('click', () => {
+    runDebug();
+    debugModal.classList.add('visible');
+  });
+  closeDebugBtn.addEventListener('click', () => debugModal.classList.remove('visible'));
+  debugModal.addEventListener('click', e => { if (e.target === debugModal) debugModal.classList.remove('visible'); });
+
+  // Initial content
+  editor.value = `%
 O0001 (EXAMPLE PROGRAM - HAAS VF-2)
 (DATE: ${new Date().toLocaleDateString()})
 (MATERIAL: 6061 ALUMINUM)
@@ -1042,7 +873,7 @@ G90
 change tool to T1
 G43 H01
 G54
-spindle on 5000      (this becomes "S5000 M03" – no G97)
+spindle on 5000
 coolant on
 G00 X-1 Y-1. Z.1
 go to X-2 Y-3 Z.2
@@ -1057,7 +888,7 @@ CSS 800 sfm max 6000 rpm
 coolant on
 G01 X0. Y0. Z.1
 go to X1. Y1. Z.2
-cutter comp left
+cutter comp left D20
 feed to Z-.5 at 12.
 arc clockwise to X1. Y1. R1.
 cancel cutter comp
@@ -1066,31 +897,12 @@ M09
 end block
 
 (MAX SPINDLE SPEED EXAMPLE)
-max spindle speed 5000   (now becomes "G97 S5000 M03")
+max spindle speed 5000
 
-(G-CODE + NATURAL LANGUAGE EXAMPLE – try it!)
-G41 feed to Z-.5 at 12.   (press Enter → "G41 G01 Z-.5 F12.")`;
+(G-CODE + NATURAL LANGUAGE EXAMPLE)
+G41 feed to Z-.5 at 12.`;
 
-updateLineNumbers();
-
-// ── Help modal ──────────────────────────────
-const helpBtn     = document.getElementById('help-btn');
-const helpOverlay = document.getElementById('help-overlay');
-const helpClose   = document.getElementById('help-close');
-helpBtn.addEventListener('click', () => helpOverlay.classList.add('show'));
-helpClose.addEventListener('click', () => helpOverlay.classList.remove('show'));
-helpOverlay.addEventListener('click', e => { if (e.target === helpOverlay) helpOverlay.classList.remove('show'); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') helpOverlay.classList.remove('show'); });
-
-// ── Copy button ─────────────────────────────
-const copyBtn = document.getElementById('copy-btn');
-copyBtn.addEventListener('click', () => {
-  navigator.clipboard.writeText(editor.value).then(() => {
-    copyBtn.textContent = '✓ Copied';
-    copyBtn.classList.add('copied');
-    setTimeout(() => { copyBtn.textContent = '⎘ Copy'; copyBtn.classList.remove('copied'); }, 2000);
-  });
-});
+  updateLineNumbers();
 </script>
 </body>
 </html>
