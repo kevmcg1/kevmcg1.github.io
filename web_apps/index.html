@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dial Caliper Sim</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=DM+Sans:wght@400;500;600;700&family=Barlow:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* Light theme colors */
+            --bg-primary: white;
+            --bg-secondary: white;
+            --bg-tertiary: #f8f8f8;
+            --bg-gradient-start: #f8f8f8;
+            --bg-gradient-end: #ffffff;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --text-muted: #555;
+            --border-primary: #333;
+            --border-secondary: #dee2e6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --shadow-inset: rgba(0, 0, 0, 0.1);
+            --accent-red: #ff0000;
+            --accent-blue: #007bff;
+            --accent-blue-hover: #0056b3;
+            --accent-blue-active: #004085;
+            --accent-green: #28a745;
+            --input-focus-bg: #f8f9ff;
+            --input-focus-shadow: rgba(0, 123, 255, 0.4);
+            --guide-bg: #f8f9fa;
+            --step-bg: white;
+            --step-border: #007bff;
+            --breakdown-bg: #e8f4f8;
+            --breakdown-border: #17a2b8;
+            --highlight-bg: #fff3cd;
+            --highlight-text: #856404;
+            --final-highlight-bg: #d4edda;
+            --final-highlight-text: #155724;
+            --slider-bg: #ddd;
+        }
+
+        [data-theme="dark"] {
+            /* Dark theme colors */
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3a3a3a;
+            --bg-gradient-start: #3a3a3a;
+            --bg-gradient-end: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --text-muted: #a0a0a0;
+            --border-primary: #e0e0e0;
+            --border-secondary: #555;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --shadow-inset: rgba(0, 0, 0, 0.3);
+            --accent-red: #ff4444;
+            --accent-blue: #4dabf7;
+            --accent-blue-hover: #339af0;
+            --accent-blue-active: #228be6;
+            --accent-green: #51cf66;
+            --input-focus-bg: #3d4147;
+            --input-focus-shadow: rgba(77, 171, 247, 0.4);
+            --guide-bg: #353535;
+            --step-bg: #404040;
+            --step-border: #4dabf7;
+            --breakdown-bg: #2c3e50;
+            --breakdown-border: #5dade2;
+            --highlight-bg: #4a4a2a;
+            --highlight-text: #f1c40f;
+            --final-highlight-bg: #2a4a2a;
+            --final-highlight-text: #5cb85c;
+            --slider-bg: #555;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .subtext {
+            font-family: 'Barlow', sans-serif;
+            font-weight: 400;
+            font-size: 18px;
+            font-style: italic;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+            margin: 10px 0;
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+        }
+
+        .caliper-container {
+            background: var(--bg-primary);
+            text-align: center;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .device-notice {
+            background: transparent;
+            border: 2px solid var(--border-secondary);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin: 20px auto 0;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            max-width: 400px;
+            transition: all 0.3s ease;
+        }
+
+        .main-title {
+            background: var(--accent-blue);
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-hover), #2a6ba9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            font-style: italic;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            line-height: 1.2;
+            padding: 5px 0;
+            font-family: 'Barlow', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .sub-title {
+            background: linear-gradient(135deg, #c0c0c0, #e0e0e0, #a0a0a0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
+            font-size: 4rem;
+            font-weight: 700;
+            font-style: italic;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+            line-height: 1;
+            padding: 5px 0;
+            margin-top: -5px;
+            text-transform: uppercase;
+            font-family: 'Barlow', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .main-title {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-hover), #2a6ba9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        [data-theme="dark"] .sub-title {
+            background: linear-gradient(135deg, #c0c0c0, #e0e0e0, #a0a0a0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .main-scale-container {
+            width: 400px;
+            height: 80px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-primary);
+            border-radius: 8px;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px var(--shadow-inset);
+            transition: all 0.3s ease;
+        }
+
+        .main-scale {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 1000px;
+            background: var(--bg-secondary);
+            transition: transform 0.2s ease, background-color 0.3s ease;
+        }
+
+        .scale-tick {
+            position: absolute;
+            background: var(--text-primary);
+            bottom: 0;
+            transition: background-color 0.3s ease;
+        }
+
+        .scale-tick.major {
+            width: 2px;
+            height: 40px;
+        }
+
+        .scale-tick.minor {
+            width: 1px;
+            height: 25px;
+        }
+
+        .scale-number {
+            position: absolute;
+            bottom: 45px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            transform: translateX(-50%);
+            font-family: 'DM Sans', sans-serif;
+            transition: color 0.3s ease;
+        }
+
+        .reference-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: var(--accent-red);
+            z-index: 10;
+            transform: translateX(-50%);
+        }
+
+        .main-scale-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            transition: color 0.3s ease;
+        }
+
+        .dial-face {
+            width: 320px;
+            height: 320px;
+            border: 8px solid var(--border-primary);
+            border-radius: 50%;
+            position: relative;
+            margin: 20px auto;
+            background: radial-gradient(circle, var(--bg-gradient-end) 0%, var(--bg-gradient-start) 100%);
+            box-shadow: inset 0 0 20px var(--shadow-inset);
+            transition: all 0.3s ease;
+        }
+
+        .tick {
+            position: absolute;
+            background: var(--text-primary);
+            transform-origin: bottom center;
+            transition: background-color 0.3s ease;
+        }
+
+        .tick.major {
+            width: 2px;
+            height: 25px;
+            top: 5px;
+            left: 50%;
+            margin-left: -1px;
+        }
+
+        .tick.minor {
+            width: 1px;
+            height: 15px;
+            top: 15px;
+            left: 50%;
+            margin-left: -0.5px;
+        }
+
+        .number {
+            position: absolute;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(-50%, -50%);
+            font-family: 'DM Sans', sans-serif;
+            transition: color 0.3s ease;
+        }
+
+        .needle {
+            position: absolute;
+            width: 3px;
+            height: 150px;
+            background: var(--accent-red);
+            top: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(0deg);
+            border-radius: 2px;
+            transition: transform 0.2s ease;
+            z-index: 10;
+        }
+
+        .center-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 11;
+            transition: background-color 0.3s ease;
+        }
+
+        .controls {
+            margin-top: 30px;
+        }
+
+        .slider-container {
+            margin: 20px 0;
+        }
+
+        .slider {
+            width: 300px;
+            height: 5px;
+            background: var(--slider-bg);
+            outline: none;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+
+        .reading {
+            font-size: 48px;
+            font-weight: 700;
+            font-style: italic;
+            color: var(--text-primary);
+            margin: 15px 0;
+            font-family: 'Roboto', sans-serif;
+            transition: color 0.3s ease;
+        }
+
+        .calculation-guide {
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            text-align: center;
+            max-width: auto;
+            transition: all 0.3s ease;
+        }
+
+        .calculation-guide h3 {
+            margin: 0 0 15px 0;
+            color: var(--text-secondary);
+            font-size: 16px;
+            text-align: center;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .calculation-step {
+            margin: 10px 0;
+            padding: 8px;
+            background: transparent;
+            border-radius: 0;
+            border-left: none;
+            line-height: 1.4;
+            transition: all 0.3s ease;
+        }
+
+        .breakdown-step {
+            background: transparent;
+            border-left: none;
+            font-size: 16px;
+        }
+
+        .highlight {
+            background-color: var(--highlight-bg);
+            font-weight: 700;
+            color: var(--highlight-text);
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .final-highlight {
+            background-color: var(--final-highlight-bg);
+            font-weight: 700;
+            color: var(--final-highlight-text);
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        label {
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: block;
+            font-family: 'DM Sans', sans-serif;
+            transition: color 0.3s ease;
+        }
+
+        .plus-sign {
+            color: var(--accent-green);
+            font-weight: 700;
+            font-size: 18px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .measurement-input {
+            width: 100px;
+            padding: 8px 10px;
+            border: 2px solid var(--border-primary);
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'DM Sans', sans-serif;
+            text-align: center;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            margin-right: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .measurement-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 8px var(--input-focus-shadow);
+            background-color: var(--input-focus-bg);
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .apply-button {
+            padding: 8px 16px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 10px;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .apply-button:hover {
+            background: var(--accent-blue-hover);
+        }
+
+        .apply-button:active {
+            background: var(--accent-blue-active);
+        }
+
+        h1 {
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+
+        .mode-toggle-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .mode-button {
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .mode-button:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        .mode-button.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        .guess-container {
+            margin: 20px 0;
+        }
+
+        .new-problem-container {
+            margin: 15px 0;
+        }
+
+        .feedback {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .feedback.correct {
+            background-color: var(--final-highlight-bg);
+            color: var(--final-highlight-text);
+            border: 2px solid var(--accent-green);
+        }
+
+        .feedback.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        [data-theme="dark"] .feedback.incorrect {
+            background-color: #4a2a2a;
+            color: #ff6b6b;
+            border-color: #ff4444;
+        }
+
+        /* Mobile optimizations for gradient heading */
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 2rem;
+            }
+
+            .sub-title {
+                font-size: 3rem;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 320px) {
+            .main-title {
+                font-size: 1.8rem;
+            }
+
+            .sub-title {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+
+    <div class="caliper-container">
+        <div class="title-container">
+            <h1 class="main-title">Dial</h1>
+            <h2 class="sub-title">Caliper</h2>
+            <h3 class="subtext">SIMULATOR - V2.13</h3>
+            <div class="device-notice">Currently only made for laptop/desktop devices</div>
+        </div>
+        
+        <div id="globalControlsForMeasurementDisplay"> 
+            <div class="reading" id="reading">0.000"</div>
+            <div class="slider-container">
+                <label for="masterSlider">Move the slider below!</label>
+                <input type="range" id="masterSlider" class="slider" min="0" max="6000" value="0" step="1">
+            </div>
+            
+            <div class="new-problem-container" id="moreControlsToggleContainer" style="margin-top: -10px; margin-bottom: 20px;">
+                <button id="moreControlsToggle" class="apply-button" style="padding: 10px 20px; font-size: 16px;">More Controls</button>
+            </div>
+            <div id="individualControls" style="display: none;"> 
+                <div class="slider-container">
+                    <label for="mainScaleSlider">Adjust the main scale itself:</label>
+                    <input type="range" id="mainScaleSlider" class="slider" min="0" max="60" value="0" step="1">
+                </div>
+                <div class="slider-container">
+                    <label for="positionSlider">Or the dial needle itself!</label>
+                    <input type="range" id="positionSlider" class="slider" min="0" max="99" value="0">
+                </div>
+            </div>
+            <div class="slider-container">
+                <label for="measurementInput">Or... you can enter directly!</label>
+                <div class="input-container">
+                    <input type="text" id="measurementInput" class="measurement-input" placeholder="0.000" maxlength="5">
+                    <span style="font-weight: bold; font-size: 18px; font-family: 'DM Sans', sans-serif;">"</span>
+                    <button id="applyButton" class="apply-button">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="new-problem-container" id="randomizeContainer" style="margin-bottom: 20px;">
+            <button id="randomizeButton" class="apply-button" style="padding: 10px 20px; font-size: 16px;">Randomize!</button>
+        </div>
+        <div class="main-scale-label">Scale is in inches from 0.000" to 6.000"</div>
+        <div class="main-scale-container">
+            <div class="main-scale" id="mainScale"></div>
+            <div class="reference-line"></div>
+        </div>
+
+        <div class="dial-face" id="dialFace">
+            <div class="needle" id="needle"></div>
+            <div class="center-dot"></div>
+        </div>
+
+        <div class="controls">
+            <div class="mode-toggle-container">
+                <button id="guessMode" class="mode-button">Guess Mode</button>
+                <button id="learnMode" class="mode-button active">Learn Mode</button>
+            </div>
+
+            <div id="learningControls">
+                
+                <div class="calculation-guide" id="calculationGuide">
+                    <h3>Breaking it down...</h3>
+                    
+                    <div class="calculation-step" id="step1">
+                        <strong>Step 1:</strong> Read main scale: 0.0"
+                    </div>
+                    <div class="calculation-step" id="step2">
+                        <strong>Step 2:</strong> Read dial scale: 0.000"
+                    </div>
+                    <div class="calculation-step" id="step3">
+                        <strong>Step 3:</strong> Add both readings together
+                    </div>
+                    <div class="calculation-step" id="step4">
+                        <strong>Final Reading:</strong> <span class="final-highlight" id="finalReading">0.000
+                            inches</span>
+                    </div>
+                    <div class="calculation-step breakdown-step" id="breakdown">
+                        <strong>Summary:</strong> <span class="highlight" id="breakdownText">0.000" + 0.000" =
+                            0.000"</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="guessControls" style="display: none;">
+                <div class="guess-container">
+                    <label for="guessInput">What is the measurement?</label>
+                    <div class="input-container">
+                        <input type="text" id="guessInput" class="measurement-input" placeholder="0.000" maxlength="5">
+                        <span style="font-weight: bold; font-size: 18px; font-family: 'DM Sans', sans-serif;">"</span>
+                        <button id="checkAnswer" class="apply-button">Check Answer</button>
+                    </div>
+                    <div class="new-problem-container">
+                        <button id="newProblem" class="apply-button">New Problem</button>
+                    </div>
+                </div>
+
+                <div id="feedback" class="feedback"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dialFace = document.getElementById('dialFace');
+        const needle = document.getElementById('needle');
+        const mainScale = document.getElementById('mainScale');
+        const masterSlider = document.getElementById('masterSlider');
+        const mainScaleSlider = document.getElementById('mainScaleSlider');
+        const dialSlider = document.getElementById('positionSlider');
+        const measurementInput = document.getElementById('measurementInput');
+        const applyButton = document.getElementById('applyButton');
+        const reading = document.getElementById('reading');
+        const guessMode = document.getElementById('guessMode');
+        const learnMode = document.getElementById('learnMode');
+        const learningControls = document.getElementById('learningControls');
+        const guessControls = document.getElementById('guessControls');
+        const guessInput = document.getElementById('guessInput');
+        const checkAnswer = document.getElementById('checkAnswer');
+        const newProblem = document.getElementById('newProblem');
+        const feedback = document.getElementById('feedback');
+        
+        // NEW REFERENCES
+        const globalControlsForMeasurementDisplay = document.getElementById('globalControlsForMeasurementDisplay');
+        const randomizeButton = document.getElementById('randomizeButton');
+        const randomizeContainer = document.getElementById('randomizeContainer');
+        const moreControlsToggle = document.getElementById('moreControlsToggle');
+        const moreControlsToggleContainer = document.getElementById('moreControlsToggleContainer');
+        const individualControls = document.getElementById('individualControls');
+        
+        let isUpdatingFromInput = false;
+        let isUpdatingFromMaster = false;
+        let isUpdatingDisplay = false;
+        let currentAnswer = 0;
+        let isGuessMode = false;
+        let individualControlsVisible = false;
+
+        // Toggles the visibility of the individual adjustment sliders
+        function toggleIndividualControls() {
+            individualControlsVisible = !individualControlsVisible;
+            if (individualControlsVisible) {
+                // Sliders are now *before* the measurement input
+                individualControls.style.display = 'block';
+                moreControlsToggle.textContent = 'Hide Controls';
+            } else {
+                individualControls.style.display = 'none';
+                moreControlsToggle.textContent = 'More Controls';
+            }
+        }
+
+        // Core function to set the caliper to a random position
+        function randomizeCaliperPosition() {
+            // Generate random measurement between 0.001 and 6.000 (since max is 6000 in masterSlider)
+            const randomValue = Math.floor(Math.random() * 6000) + 1; 
+            const totalMeasurement = randomValue * 0.001;
+
+            // Calculate main scale and dial values
+            const mainScaleSteps = Math.floor(totalMeasurement / 0.1);
+            const remainingValue = totalMeasurement - (mainScaleSteps * 0.1);
+            const dialSteps = Math.round(remainingValue / 0.001);
+
+            // Set the caliper to show this measurement
+            isUpdatingFromMaster = true;
+            mainScaleSlider.value = mainScaleSteps;
+            dialSlider.value = dialSteps;
+            masterSlider.value = Math.round(totalMeasurement * 1000);
+            isUpdatingFromMaster = false;
+
+            updateReading();
+            return totalMeasurement; // Return value for use in Guess Mode
+        }
+
+        // Mode switching functionality
+        function switchToGuessMode() {
+            isGuessMode = true;
+            learnMode.classList.remove('active');
+            guessMode.classList.add('active');
+            
+            // HIDE LEARNING CONTROLS AND ALL GLOBAL MANUAL CONTROLS
+            learningControls.style.display = 'none';
+            globalControlsForMeasurementDisplay.style.display = 'none'; 
+            randomizeContainer.style.display = 'none'; 
+            moreControlsToggleContainer.style.display = 'none';
+            individualControls.style.display = 'none'; // Ensure manual sliders are hidden
+            
+            guessControls.style.display = 'block';
+            generateNewProblem();
+        }
+
+        function switchToLearnMode() {
+            isGuessMode = false;
+            guessMode.classList.remove('active');
+            learnMode.classList.add('active');
+            
+            // SHOW LEARNING CONTROLS AND ALL GLOBAL MANUAL CONTROLS
+            guessControls.style.display = 'none';
+            learningControls.style.display = 'block';
+            globalControlsForMeasurementDisplay.style.display = 'block';
+            randomizeContainer.style.display = 'block';
+            moreControlsToggleContainer.style.display = 'block';
+
+            // Reset individual controls state to hidden
+            individualControlsVisible = false;
+            individualControls.style.display = 'none';
+            moreControlsToggle.textContent = 'More Controls';
+
+            feedback.textContent = '';
+            feedback.className = 'feedback';
+        }
+
+        // Function specific to Guess Mode
+        function generateNewProblem() {
+            currentAnswer = randomizeCaliperPosition(); // Set the new random position and update the currentAnswer
+
+            // Clear previous feedback and input
+            feedback.textContent = '';
+            feedback.className = 'feedback';
+            guessInput.value = '';
+        }
+
+        // Check the user's guess
+        function checkUserGuess() {
+            const userGuess = parseFloat(guessInput.value);
+
+            if (isNaN(userGuess)) {
+                feedback.textContent = 'Please enter a valid number';
+                feedback.className = 'feedback incorrect';
+                return;
+            }
+
+            // Check if the guess matches the correct answer (within 0.0005" tolerance for rounding)
+            if (Math.abs(userGuess - currentAnswer) < 0.0005) {
+                feedback.textContent = 'You got it! ✓';
+                feedback.className = 'feedback correct';
+            } else {
+                // Show the correct answer only if in guess mode and they failed
+                feedback.textContent = `Try again! The correct answer is ${currentAnswer.toFixed(3)}"`;
+                feedback.className = 'feedback incorrect';
+            }
+        }
+
+        // Create main scale ticks and numbers
+        function createMainScale() {
+            const scale = document.getElementById('mainScale');
+            const startOffset = 300; // Increased offset for wider scale
+
+            // Create ticks and numbers for 0" to 4" (extended range for smoother movement)
+            for (let i = 0; i <= 600; i++) {
+                const position = startOffset + (i * 2); // 2 pixels per 0.01"
+
+                if (i % 100 === 0) {
+                    // Major tick every 1.0" (whole inches) with large numbers
+                    const tick = document.createElement('div');
+                    tick.className = 'scale-tick major';
+                    tick.style.left = position + 'px';
+                    tick.style.height = '50px';
+                    tick.style.width = '3px';
+                    scale.appendChild(tick);
+
+                    // Add inch number label (0, 1, 2, 3, 4, 5, 6)
+                    const number = document.createElement('div');
+                    number.className = 'scale-number';
+                    number.style.fontSize = '18px';
+                    number.style.fontWeight = 'bold';
+                    number.textContent = (i / 100).toString();
+                    number.style.left = position + 'px';
+                    number.style.bottom = '55px';
+                    scale.appendChild(number);
+                } else if (i % 10 === 0) {
+                    // Medium tick every 0.1" with small numbers
+                    const tick = document.createElement('div');
+                    tick.className = 'scale-tick';
+                    tick.style.left = position + 'px';
+                    tick.style.height = '35px';
+                    tick.style.width = '2px';
+                    scale.appendChild(tick);
+
+                    // Add tenth number label (1, 2, 3, 4, 5, 6, 7, 8, 9)
+                    const tenthsNumber = (i % 100) / 10;
+                    if (tenthsNumber !== 0) {
+                        const number = document.createElement('div');
+                        number.className = 'scale-number';
+                        number.style.fontSize = '12px';
+                        number.textContent = tenthsNumber.toString();
+                        number.style.left = position + 'px';
+                        number.style.bottom = '40px';
+                        scale.appendChild(number);
+                    }
+                } else if (i % 5 === 0) {
+                    // Small tick every 0.05"
+                    const tick = document.createElement('div');
+                    tick.className = 'scale-tick minor';
+                    tick.style.left = position + 'px';
+                    tick.style.height = '25px';
+                    tick.style.width = '1px';
+                    scale.appendChild(tick);
+                } else {
+                    // Tiny tick every 0.01"
+                    const tick = document.createElement('div');
+                    tick.className = 'scale-tick minor';
+                    tick.style.left = position + 'px';
+                    tick.style.height = '15px';
+                    tick.style.width = '0.5px';
+                    scale.appendChild(tick);
+                }
+            }
+        }
+
+        // Create 100 tick marks around the dial
+        function createTicks() {
+            const dialCenter = 160; // Center of the 320px dial
+            const dialRadius = 150; // Radius to the edge
+
+            for (let i = 0; i < 100; i++) {
+                // Calculate angle for this tick (0 degrees = top, clockwise)
+                const angle = (i * 3.6 - 90) * Math.PI / 180; // Convert to radians, -90 to start at top
+
+                const tick = document.createElement('div');
+                tick.style.position = 'absolute';
+                tick.style.background = 'var(--text-primary)';
+                tick.style.transformOrigin = 'center';
+                tick.className = 'tick';
+
+                let tickLength, tickWidth, tickColor;
+
+                if (i % 10 === 0) {
+                    // Major ticks with numbers every 10 marks
+                    tickLength = 25;
+                    tickWidth = 2;
+                    tickColor = 'var(--text-primary)';
+                    tick.classList.add('major');
+
+                    // Add numbers for major ticks
+                    const number = document.createElement('div');
+                    number.className = 'number';
+                    number.textContent = i;
+
+                    // Position numbers around the circle with space inward from ticks
+                    const numberRadius = 105; // Moved inward from 135 to place numbers closer to center
+                    const numberX = dialCenter + numberRadius * Math.cos(angle);
+                    const numberY = dialCenter + numberRadius * Math.sin(angle);
+                    number.style.left = numberX + 'px';
+                    number.style.top = numberY + 'px';
+                    dialFace.appendChild(number);
+                } else if (i % 5 === 0) {
+                    // Medium ticks for every 5th mark
+                    tickLength = 20;
+                    tickWidth = 1.5;
+                    tickColor = 'var(--text-primary)';
+                } else {
+                    // Small ticks for individual marks
+                    tickLength = 15;
+                    tickWidth = 1;
+                    tickColor = 'var(--text-primary)';
+                    tick.classList.add('minor');
+                }
+
+                // Position tick at the rim of the dial
+                const tickRadius = dialRadius - tickLength / 2;
+                const tickX = dialCenter + tickRadius * Math.cos(angle);
+                const tickY = dialCenter + tickRadius * Math.sin(angle);
+
+                tick.style.width = tickWidth + 'px';
+                tick.style.height = tickLength + 'px';
+                tick.style.left = (tickX - tickWidth / 2) + 'px';
+                tick.style.top = (tickY - tickLength / 2) + 'px';
+                tick.style.background = tickColor;
+
+                // Rotate the tick to point toward center
+                tick.style.transform = `rotate(${i * 3.6}deg)`;
+
+                dialFace.appendChild(tick);
+            }
+        }
+
+        // Apply measurement from input
+        function applyMeasurement() {
+            const inputText = measurementInput.value.trim();
+
+            if (inputText === '') {
+                measurementInput.value = '0.000';
+                return;
+            }
+
+            let inputValue = parseFloat(inputText);
+
+            // Validate and clamp input
+            if (isNaN(inputValue) || inputValue < 0) {
+                inputValue = 0;
+            } else if (inputValue > 6.000) {
+                inputValue = 6.000;
+            }
+
+            // Calculate main scale and dial values
+            const mainScaleSteps = Math.floor(inputValue / 0.1);
+            const remainingValue = inputValue - (mainScaleSteps * 0.1);
+            const dialSteps = Math.round(remainingValue / 0.001);
+
+            isUpdatingFromInput = true;
+            mainScaleSlider.value = mainScaleSteps;
+            dialSlider.value = dialSteps;
+            masterSlider.value = Math.round(inputValue * 1000);
+            measurementInput.value = inputValue.toFixed(3);
+            isUpdatingFromInput = false;
+
+            updateReading();
+        }
+
+        // Update from master slider (simulates real caliper movement)
+        function updateFromMaster() {
+            if (isUpdatingFromMaster) return;
+
+            const masterValue = parseInt(masterSlider.value);
+            const totalMeasurement = masterValue * 0.001; // Convert to inches
+
+            // Calculate main scale and dial values
+            const mainScaleSteps = Math.floor(totalMeasurement / 0.1);
+            const remainingValue = totalMeasurement - (mainScaleSteps * 0.1);
+            const dialSteps = Math.round(remainingValue / 0.001);
+
+            isUpdatingFromMaster = true;
+            mainScaleSlider.value = mainScaleSteps;
+            dialSlider.value = dialSteps;
+            if (!isUpdatingDisplay) {
+                measurementInput.value = totalMeasurement.toFixed(3);
+            }
+            isUpdatingFromMaster = false;
+
+            updateReading();
+        }
+
+        // Update main scale position
+        function updateMainScale() {
+            if (isUpdatingFromMaster || isUpdatingFromInput) return;
+
+            // Update master slider when individual controls are used
+            const mainScaleValue = parseFloat(mainScaleSlider.value) / 10;
+            const dialValue = parseInt(dialSlider.value) * 0.001;
+            const totalMeasurement = mainScaleValue + dialValue;
+
+            masterSlider.value = Math.round(totalMeasurement * 1000);
+            updateReading();
+        }
+
+        // Update needle position and reading
+        function updateNeedle() {
+            if (isUpdatingFromMaster || isUpdatingFromInput) return;
+
+            const value = parseInt(dialSlider.value);
+            const angle = value * 3.6; // Convert to degrees, 0 starts at top
+            needle.style.transform = `translate(-50%, -100%) rotate(${angle}deg)`;
+
+            // Update master slider when individual controls are used
+            const mainScaleValue = parseFloat(mainScaleSlider.value) / 10;
+            const dialValue = parseInt(dialSlider.value) * 0.001;
+            const totalMeasurement = mainScaleValue + dialValue;
+
+            masterSlider.value = Math.round(totalMeasurement * 1000);
+            updateReading();
+        }
+
+        // Update the total reading and main scale position
+        function updateReading() {
+            const mainScaleValue = parseFloat(mainScaleSlider.value) / 10; // Convert to actual inches  
+            const dialValue = parseInt(dialSlider.value) * 0.001; // Each step is 0.001"
+            const totalMeasurement = mainScaleValue + dialValue;
+
+            // Update needle rotation
+            const needleAngle = parseInt(dialSlider.value) * 3.6;
+            needle.style.transform = `translate(-50%, -100%) rotate(${needleAngle}deg)`;
+
+            // Move the main scale based on the total measurement
+            // The reference line is at 200px (50% of 400px container)
+            // The "0" mark is at 300px on the scale
+            // So we need -100px offset to align "0" with reference line, then move based on measurement
+            const offset = -100 - (totalMeasurement * 200);
+            mainScale.style.transform = `translateX(${offset}px)`;
+
+            reading.textContent = totalMeasurement.toFixed(3) + '"';
+
+            // Update input field only when not being edited and not in guess mode
+            if (!isUpdatingFromInput && !isUpdatingFromMaster && !measurementInput.matches(':focus') && !isGuessMode) {
+                isUpdatingDisplay = true;
+                measurementInput.value = totalMeasurement.toFixed(3);
+                masterSlider.value = Math.round(totalMeasurement * 1000);
+                isUpdatingDisplay = false;
+            }
+
+            // Update calculation guide
+            updateCalculationGuide(parseInt(dialSlider.value), dialValue.toFixed(3), mainScaleValue.toFixed(1), totalMeasurement.toFixed(3));
+        }
+
+        // Update the calculation guide with step-by-step breakdown
+        function updateCalculationGuide(dialMarkValue, dialMeasurement, mainScaleMeasurement, totalMeasurement) {
+            // Calculate the breakdown for dial reading
+            const nearestTen = Math.floor(dialMarkValue / 10) * 10;
+            const additionalMarks = dialMarkValue - nearestTen;
+            const baseDialValue = (nearestTen * 0.001).toFixed(3);
+
+            // Update the breakdown step
+            if (mainScaleMeasurement === "0.0" && dialMarkValue === 0) {
+                document.getElementById('breakdownText').innerHTML =
+                    `<span class="highlight">0.000"</span> <span class="plus-sign">+</span> <span class="highlight">0.000"</span> = <span class="final-highlight">0.000"</span>`;
+            } else {
+                document.getElementById('breakdownText').innerHTML =
+                    `<span class="highlight">${mainScaleMeasurement}"</span> <span class="plus-sign">+</span> <span class="highlight">${dialMeasurement}"</span> = <span class="final-highlight">${totalMeasurement}"</span>`;
+            }
+
+            // Update step-by-step explanation
+            document.getElementById('step1').innerHTML =
+                `<strong>Step 1:</strong> Read main scale: <span class="highlight">${mainScaleMeasurement}"</span>`;
+
+            if (dialMarkValue === 0) {
+                document.getElementById('step2').innerHTML =
+                    `<strong>Step 2:</strong> Dial needle points to 0 (no additional measurement)`;
+                document.getElementById('step3').innerHTML =
+                    `<strong>Step 3:</strong> Total: ${mainScaleMeasurement}" + 0.000" = ${totalMeasurement}"`;
+            } else if (additionalMarks === 0) {
+                document.getElementById('step2').innerHTML =
+                    `<strong>Step 2:</strong> Dial shows <span class="highlight">${baseDialValue}"</span> (needle at ${nearestTen} mark)`;
+                document.getElementById('step3').innerHTML =
+                    `<strong>Step 3:</strong> Total: ${mainScaleMeasurement}" + ${baseDialValue}" = ${totalMeasurement}"`;
+            } else {
+                document.getElementById('step2').innerHTML =
+                    `<strong>Step 2:</strong> Dial shows <span class="highlight">${baseDialValue}" + ${additionalMarks} marks</span> = ${dialMeasurement}"`;
+                document.getElementById('step3').innerHTML =
+                    `<strong>Step 3:</strong> Total: ${mainScaleMeasurement}" + ${dialMeasurement}" = ${totalMeasurement}"`;
+            }
+
+            document.getElementById('finalReading').textContent = `${totalMeasurement} inches`;
+        }
+
+        // Event listeners
+        applyButton.addEventListener('click', applyMeasurement);
+        measurementInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                applyMeasurement();
+                measurementInput.blur();
+            }
+        });
+        masterSlider.addEventListener('input', updateFromMaster);
+        mainScaleSlider.addEventListener('input', updateMainScale);
+        dialSlider.addEventListener('input', updateNeedle);
+
+        // NEW EVENT LISTENERS
+        randomizeButton.addEventListener('click', randomizeCaliperPosition);
+        moreControlsToggle.addEventListener('click', toggleIndividualControls);
+
+        // Mode switching event listeners
+        guessMode.addEventListener('click', switchToGuessMode);
+        learnMode.addEventListener('click', switchToLearnMode);
+        checkAnswer.addEventListener('click', checkUserGuess);
+        newProblem.addEventListener('click', generateNewProblem);
+        guessInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkUserGuess();
+            }
+        });
+
+        // Initialize the caliper
+        createMainScale();
+        createTicks();
+        updateReading();
+    </script>
+</body>
+
+</html>
