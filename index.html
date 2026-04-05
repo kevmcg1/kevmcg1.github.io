@@ -2,59 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KGM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>KGM | Kevin McGinley</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg-top:    #0d0d0f;
-      --bg-bottom: #080810;
-      --surface:   #111114;
-      --border:    #1e1e24;
-      --text:      #e8e8e8;
-      --muted:     #52525e;
-      --accent:    #c8ff00;
-      --card-hover:#17171c;
-      --tag-bg:    #1a1a22;
-      --radius:    10px;
+    /* ----- RESET & BASE ----- */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    /* ─────────────── BASE ─────────────── */
-    html { scroll-behavior: smooth; }
+    :root {
+      --bg-top:      #0d0d0f;
+      --bg-bottom:   #080810;
+      --surface:     #111114;
+      --border:      #1e1e24;
+      --text:        #e8e8e8;
+      --muted:       #52525e;
+      --accent:      #c8ff00;
+      --card-hover:  #17171c;
+      --tag-bg:      #1a1a22;
+      --radius:      10px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      height: 100%;
+    }
 
     body {
       background: linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
       background-attachment: fixed;
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
+      
+      /* CRITICAL: perfect centering on all screen sizes */
       min-height: 100vh;
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
-      gap: clamp(1.8rem, 4vw, 2.8rem);
+      
+      /* balanced breathing space, won't break centering */
+      padding: clamp(1.2rem, 4vw, 2.5rem) clamp(1rem, 4vw, 2rem);
+      gap: clamp(1.5rem, 4vh, 2.8rem);
     }
 
-    /* ─────────────── HEADER ─────────────── */
+    /* ----- HEADER (all content is horizontally centered) ----- */
     header {
       text-align: center;
       animation: fadeUp 0.7s ease both;
       width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
+    /* decorative corner brackets */
     .title-wrap {
       position: relative;
       display: inline-block;
       padding: 0.6rem 1.2rem;
     }
 
-    /* Corner brackets */
     .title-wrap::before,
     .title-wrap::after {
       content: '';
@@ -66,19 +80,18 @@
       opacity: 0.6;
     }
 
-    /* top-left */
     .title-wrap::before {
-      top: -6px; left: -10px;
+      top: -6px;
+      left: -10px;
       border-width: 1.5px 0 0 1.5px;
     }
 
-    /* bottom-right */
     .title-wrap::after {
-      bottom: -6px; right: -10px;
+      bottom: -6px;
+      right: -10px;
       border-width: 0 1.5px 1.5px 0;
     }
 
-    /* top-right and bottom-left via inner spans */
     .corner-tr,
     .corner-bl {
       position: absolute;
@@ -90,8 +103,17 @@
       pointer-events: none;
     }
 
-    .corner-tr { top: -6px; right: -10px; border-width: 1.5px 1.5px 0 0; }
-    .corner-bl { bottom: -6px; left: -10px; border-width: 0 0 1.5px 1.5px; }
+    .corner-tr {
+      top: -6px;
+      right: -10px;
+      border-width: 1.5px 1.5px 0 0;
+    }
+
+    .corner-bl {
+      bottom: -6px;
+      left: -10px;
+      border-width: 0 0 1.5px 1.5px;
+    }
 
     .title {
       font-family: 'Bebas Neue', sans-serif;
@@ -102,20 +124,25 @@
       font-style: italic;
     }
 
-    .title .line-full { display: block; }
+    .title .line-full {
+      display: block;
+    }
+
     .title .line-name {
       display: block;
       color: transparent;
       -webkit-text-stroke: 1.2px var(--text);
     }
 
-    /* ─────────────── NAV ICONS ─────────────── */
+    /* ----- NAVIGATION ICONS (centered row) ----- */
     .nav-icons {
       display: flex;
       gap: clamp(1.2rem, 5vw, 2.2rem);
       justify-content: center;
+      align-items: center;
       margin-top: clamp(0.9rem, 2.5vw, 1.4rem);
       flex-wrap: wrap;
+      width: 100%;
     }
 
     .nav-icons a {
@@ -129,13 +156,16 @@
       font-weight: 500;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      transition: color 0.2s;
+      transition: color 0.2s ease;
       padding: 0.4rem 0.2rem;
       -webkit-tap-highlight-color: transparent;
     }
 
     .nav-icons a:hover,
-    .nav-icons a:focus-visible { color: var(--accent); outline: none; }
+    .nav-icons a:focus-visible {
+      color: var(--accent);
+      outline: none;
+    }
 
     .nav-icons svg {
       width: clamp(17px, 3.5vw, 20px);
@@ -146,10 +176,10 @@
 
     .nav-icons a:hover svg,
     .nav-icons a:focus-visible svg {
-      filter: drop-shadow(0 0 5px rgba(200,255,0,0.5));
+      filter: drop-shadow(0 0 5px rgba(200, 255, 0, 0.5));
     }
 
-    /* ─────────────── CONTACT BUTTON ─────────────── */
+    /* ----- CONTACT BUTTON (identical style + interaction) ----- */
     .contact-btn {
       display: flex;
       flex-direction: column;
@@ -168,11 +198,13 @@
       border: none;
       cursor: pointer;
       font-family: 'DM Sans', sans-serif;
-      position: relative;
     }
 
     .contact-btn:hover,
-    .contact-btn:focus-visible { color: var(--accent); outline: none; }
+    .contact-btn:focus-visible {
+      color: var(--accent);
+      outline: none;
+    }
 
     .contact-btn svg {
       width: clamp(17px, 3.5vw, 20px);
@@ -183,69 +215,111 @@
 
     .contact-btn:hover svg,
     .contact-btn:focus-visible svg {
-      filter: drop-shadow(0 0 5px rgba(200,255,0,0.5));
+      filter: drop-shadow(0 0 5px rgba(200, 255, 0, 0.5));
     }
 
-    /* ─────────────── EMAIL REVEAL ─────────────── */
+    /* ----- EMAIL REVEAL (smooth + responsive wrapping) ----- */
     .email-reveal {
       opacity: 0;
       pointer-events: none;
-      font-size: clamp(0.72rem, 2vw, 0.82rem);
+      font-size: clamp(0.72rem, 2.2vw, 0.85rem);
       font-weight: 400;
       letter-spacing: 0.04em;
       color: var(--accent);
       text-transform: none;
       font-family: 'DM Sans', sans-serif;
-      transition: opacity 1.2s ease;
-      white-space: nowrap;
-      /* subtle glow */
-      text-shadow: 0 0 12px rgba(200,255,0,0.35);
+      transition: opacity 0.9s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      margin-top: 0.5rem;
+      max-width: 90vw;
+      word-break: break-word;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.4;
+      background: rgba(0,0,0,0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 40px;
+      display: inline-block;
+      backdrop-filter: blur(2px);
     }
 
     .email-reveal.visible {
       opacity: 1;
       pointer-events: auto;
+      text-shadow: 0 0 8px rgba(200, 255, 0, 0.4);
     }
 
-    /* ─────────────── FOOTER ─────────────── */
+    /* ----- FOOTER (minimal, centered) ----- */
     footer {
       font-family: 'Bebas Neue', sans-serif;
       font-size: clamp(0.7rem, 2.2vw, 0.85rem);
       letter-spacing: 0.2em;
       color: var(--muted);
-      opacity: 0.5;
+      opacity: 0.55;
       animation: fadeUp 0.7s 0.4s ease both;
-      padding-top: 0.5rem;
+      text-align: center;
+      margin-top: 0.25rem;
     }
 
-    /* ─────────────── ANIMATIONS ─────────────── */
+    /* ----- ANIMATION ----- */
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
-    /* ─────────────── RESPONSIVE TWEAKS ─────────────── */
-
-    /* Mobile landscape (≤ 600px) */
-    @media (max-width: 600px) {
-      body { justify-content: flex-start; padding-top: clamp(2rem, 8vw, 3.5rem); }
-      .nav-icons { gap: 1.4rem; }
+    /* ----- RESPONSIVE: only adjust gaps for very small screens, but NEVER break centering ----- */
+    @media (max-width: 500px) {
+      .nav-icons {
+        gap: 1.2rem;
+      }
+      .email-reveal {
+        max-width: 85vw;
+        font-size: 0.75rem;
+      }
     }
 
-    /* Tiny phones (≤ 360px) */
+    /* tiny devices: ensure no overflow and clean centering */
     @media (max-width: 360px) {
-      .nav-icons { gap: 1rem; }
+      .nav-icons {
+        gap: 0.9rem;
+      }
+      .title-wrap {
+        padding: 0.4rem 0.8rem;
+      }
     }
 
-    /* Reduced motion */
+    /* landscape orientation on small phones — keep vertical center */
+    @media (max-height: 480px) and (orientation: landscape) {
+      body {
+        gap: 0.8rem;
+        padding: 1rem;
+      }
+      .nav-icons {
+        margin-top: 0.4rem;
+      }
+      .email-reveal {
+        margin-top: 0.2rem;
+      }
+    }
+
+    /* Reduce motion for accessibility */
     @media (prefers-reduced-motion: reduce) {
-      *, *::after { animation: none !important; transition: none !important; }
+      *,
+      *::after,
+      *::before {
+        animation: none !important;
+        transition: none !important;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- HEADER (full name, nav icons, contact button + email reveal) -->
   <header>
     <div class="title-wrap">
       <span class="corner-tr"></span>
@@ -256,8 +330,9 @@
       </div>
     </div>
 
-    <nav class="nav-icons" aria-label="Social links">
-      <a href="portfolio.html" target="_blank" rel="noopener" aria-label="GitHub">
+    <nav class="nav-icons" aria-label="Social & navigation links">
+      <!-- Portfolio (GitHub repo style) -->
+      <a href="portfolio.html" target="_blank" rel="noopener" aria-label="Portfolio (GitHub)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.762-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         Portfolio
       </a>
@@ -265,33 +340,46 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
         LinkedIn
       </a>
-      <a href="about.html" aria-label="About">
+      <a href="about.html" aria-label="About page">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
         About
       </a>
-      <button class="contact-btn" id="contactBtn" aria-label="Show contact email">
+      <button class="contact-btn" id="contactBtn" aria-label="Reveal contact email">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
         Contact
       </button>
     </nav>
 
-    <!-- Email reveal (stays intact) -->
+    <!-- Email reveal with smooth animation -->
     <div id="emailReveal" class="email-reveal" aria-live="polite">
       k3v.mcg123@gmail.com
     </div>
   </header>
 
-  <!-- FOOTER (always present) -->
   <footer>KEVMCG1.GITHUB.IO</footer>
 
-  <!-- Simple script for contact email reveal (unchanged) -->
   <script>
-    const btn = document.getElementById('contactBtn');
-    const reveal = document.getElementById('emailReveal');
+    (function() {
+      const contactBtn = document.getElementById('contactBtn');
+      const emailDiv = document.getElementById('emailReveal');
 
-    btn.addEventListener('click', () => {
-      reveal.classList.add('visible');
-    });
+      if (contactBtn && emailDiv) {
+        contactBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          emailDiv.classList.add('visible');
+          // Optional: tiny haptic feedback & accessibility announcement
+          contactBtn.setAttribute('aria-expanded', 'true');
+        });
+        // for keyboard: allow Enter/Space naturally, but we keep clean
+        contactBtn.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            emailDiv.classList.add('visible');
+            contactBtn.setAttribute('aria-expanded', 'true');
+          }
+        });
+      }
+    })();
   </script>
 </body>
 </html>
