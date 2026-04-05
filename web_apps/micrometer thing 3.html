@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Micrometer Simulator (Dynamic Drag Movement)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Link to Roboto Font (kept for the main reading AND new title) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@1,700&display=swap" rel="stylesheet">
+    <!-- Link to DM Sans Font (global font) -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,100..1000;1,100..1000&display=swap" rel="stylesheet">
+    <style>
+        body {
+            /* Changed global font to DM Sans */
+            font-family: 'DM Sans', sans-serif; 
+            background-color: #f7f7f7;
+            padding: 20px;
+            /* Use flex to center the main content wrapper */
+            display: flex; 
+            justify-content: center;
+            min-height: 100vh;
+        }
+        svg {
+            /* Keep the shadow and rounded corners for aesthetics */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background-color: white;
+            /* Ensure it is responsive but respects its native size */
+            max-width: 100%; 
+        }
+        /* Make the inner panel draggable visually */
+        #draggable-panel {
+            cursor: grab;
+        }
+        #draggable-panel:active {
+            cursor: grabbing;
+        }
+        /* Styling for the SVG container when it is next to the display */
+        #ruler-svg {
+            width: 800px; /* Increased width to accommodate 1.0000" of travel */
+        }
+        /* Ensure the new slider container matches the width of the SVG */
+        #coarse-slider-container {
+            width: 800px;
+            max-width: 100%;
+        }
+        /* Ensure the measurement display aligns visually */
+        #measurement-display {
+            width: 800px;
+            max-width: 100%;
+        }
+        
+        /* Custom style for the main measurement number: Roboto, Italic, Bold */
+        #live-total {
+            font-family: 'Roboto', sans-serif !important; /* Override global font */
+            font-style: italic !important; /* Ensure italic style */
+            font-weight: 700 !important; /* Ensure bold style (700) */
+        }
+        
+        /* Custom style for the new title and subtitle */
+        .roboto-title {
+            font-family: 'Roboto', sans-serif !important; 
+            font-style: italic !important; 
+            font-weight: 700 !important; /* Main title remains bold */
+        }
+        
+        /* Subtitle style overrides: Non-bold black, increased tracking */
+        .subtitle-tracking {
+            font-weight: 400 !important; /* Non-bold */
+            color: black !important;
+            letter-spacing: 0.15em; /* Increased tracking/text space */
+        }
+
+        /* --- QUICK SLIDER REDESIGN: Gray line with a black dot --- */
+        #fast-travel-slider {
+            -webkit-appearance: none; /* Override default appearance */
+            appearance: none;
+            width: 100%;
+            height: 6px; /* Reduced height for a thin line */
+            background: #e0e0e0; /* Gray line/track */
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 10px 0; /* Add vertical margin for spacing */
+        }
+
+        /* Chrome/Safari/Blink (Thumb - Black Dot) */
+        #fast-travel-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px; /* Size of the dot */
+            height: 16px;
+            background: black; /* Black dot */
+            border-radius: 50%; /* Make it a circle */
+            cursor: pointer;
+            margin-top: -5px; /* Adjust to center on the track */
+            transition: background 0.1s ease;
+        }
+
+        /* Firefox (Thumb - Black Dot) */
+        #fast-travel-slider::-moz-range-thumb {
+            width: 16px; 
+            height: 16px;
+            background: black;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        /* Removed the red-500 hover on the button for better contrast */
+        #random-button {
+             background-color: #3b82f6; /* Blue-500 */
+             transition: background-color 0.15s;
+        }
+        #random-button:hover {
+            background-color: #2563eb; /* Blue-600 */
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="flex flex-col items-center w-full max-w-7xl mx-auto p-4">
+    <!-- Container for the STACKED view (SVG on top, Slider below, Measurement below that) -->
+    <div id="main-visual-area" class="flex flex-col gap-4 w-full max-w-7xl justify-center items-center">
+        
+        <!-- UPDATED TITLE (Roboto, Uppercase, Italic, Bold) -->
+        <h1 class="text-4xl text-center mb-1 text-gray-800 uppercase roboto-title">
+            ONLINE MICROMETER
+        </h1>
+        <!-- UPDATED SUBTITLE (Roboto, Uppercase, Italic, Non-Bold, Black, Tracking) -->
+        <p class="text-lg text-center mb-4 uppercase roboto-title subtitle-tracking">
+            THOUSANDTH OF INCH.
+        </p>
+        
+        <p class="text-sm text-center text-gray-500 mb-4">Drag the semi-transparent panel **vertically** for fine-tuning.</p>
+
+        <!-- SVG Ruler -->
+        <svg id="ruler-svg" width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0 mx-auto">
+            <!-- SVG content is generated by JavaScript -->
+        </svg>
+
+        <!-- NEW LIVE DISPLAY: Total Measurement -->
+        <div id="live-total-display-container" class="w-full max-w-lg flex justify-center mx-auto mb-2">
+            <div class="p-3 text-black text-center w-full">
+                <!-- Custom CSS handles Roboto font -->
+                <span id="live-total" class="text-black text-3xl">0.0000"</span>
+            </div>
+        </div>
+        <!-- END NEW LIVE DISPLAY -->
+        
+        <!-- QUICK SLIDER LOCATION -->
+        <div id="coarse-slider-container" class="p-4 bg-white rounded-xl shadow-md border border-gray-100 mx-auto">
+            <label for="fast-travel-slider" class="block text-lg font-bold text-gray-700 mb-2">
+                Quick Slider (Full Range 0.0000" to 1.0000")
+            </label>
+            <!-- Custom CSS applies gray track and black dot thumb. Removed bg-red-400 and h-3 -->
+            <input type="range" id="fast-travel-slider" min="0" max="1000" step="1" value="0" class="w-full appearance-none cursor-pointer">
+        </div>
+
+        <!-- NEW Random Position Button location (just below quick slider) -->
+        <button id="random-button" class="mt-2 py-3 text-white font-bold rounded-lg shadow-md mx-auto" style="width: 800px; max-width: 100%;">
+            Set Random Position (0.0000" - 1.0000")
+        </button>
+
+        <!-- Measurement Area (Now below the SVG and centered) -->
+        <div id="measurement-display" class="p-6 bg-white rounded-xl shadow-lg border border-gray-100 flex-shrink-0 mx-auto">
+            <!-- Updated heading for 0.0001" resolution -->
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Measurement Reading (0.0001" Resolution)</h2>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center text-lg">
+                    <span class="text-gray-600">Horizontal Sleeve Reading (0.025"):</span>
+                    <span id="reading-025" class="font-mono text-xl font-semibold text-blue-700">0.0000</span>
+                </div>
+                <div class="flex justify-between items-center text-lg">
+                    <span class="text-gray-600">Thimble Reading (0.001"):</span>
+                    <span id="reading-001" class="font-mono text-xl font-semibold text-blue-700">00</span>
+                </div>
+                <div class="flex justify-between items-center text-lg mb-4">
+                    <span class="text-gray-600">Vernier Reading (0.0001"):</span>
+                    <span id="reading-0001" class="font-mono text-xl font-semibold text-green-600">0</span>
+                </div>
+                
+                <!-- NEW: Math Calculation Breakdown Section -->
+                <div class="flex flex-col items-end pt-2 border-t mt-4">
+                    <span class="text-gray-500 text-sm font-medium mb-1">Detailed Vertical Summation:</span>
+                    <div id="reading-math-sum" class="text-gray-700 text-base flex flex-col space-y-1 w-full"> 
+                        <!-- Content will be inserted by JavaScript -->
+                    </div>
+                </div>
+                <!-- END NEW SECTION -->
+                
+                <div class="flex justify-between items-center pt-2 border-t mt-4">
+                    <span class="text-gray-800 font-bold">Total Measurement:</span>
+                    <span id="reading-total" class="font-mono text-2xl font-bold text-green-600">0.0000"</span>
+                </div>
+            </div>
+            
+            <!-- DEBUG INFO REMOVED HERE -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const svgElement = document.getElementById('ruler-svg');
+    
+    // Configuration sliders were removed, using default constants instead:
+    const DEFAULT_VERTICAL_SPACING = 27; // The default value of the removed spacing slider
+    const DEFAULT_MARK_SPACING = 15; // The default value of the removed red mark spacing slider
+    const DEFAULT_OPACITY = 1.0; // The default value of the removed opacity slider
+    
+    // NOTE: scrollDisplay element and variable removed as requested.
+    
+    // Fast Travel elements
+    const fastTravelSlider = document.getElementById('fast-travel-slider');
+
+    // Live total display element
+    const liveTotalDisplay = document.getElementById('live-total');
+
+    // Random button element
+    const randomButton = document.getElementById('random-button');
+
+    // Constants for the ruler's layout
+    const X_START = 50; // The X coordinate where the main vertical grid lines start.
+    const X_UNIT_WIDTH = 50;
+    const Y_BOTTOM_ANCHOR = 270; // This is the Y position of the horizontal number line and the green horizon.
+    
+    // Physical micrometer constants
+    const HORIZONTAL_INCREMENT_VALUE = 0.025; // 1 mark on the sleeve
+    const THIMBLE_DIVISIONS = 25; // Divisions on the thimble scale
+    const THIMBLE_INCREMENT_VALUE = HORIZONTAL_INCREMENT_VALUE / THIMBLE_DIVISIONS; // 0.001"
+    // New constant for 0.0001" resolution
+    const VERNIER_INCREMENT_VALUE = THIMBLE_INCREMENT_VALUE / 10; // 0.0001"
+    
+    // Consistent stroke width for the sleeve/stator scale
+    const SLEEVE_STROKE_WIDTH = 1;
+
+    // --- DRAG STATE VARIABLES (Single source of truth) ---
+    let isDragging = false;
+    let startY = 0; 
+    let initialAbsoluteScroll = 0; 
+    
+    // totalAbsoluteScroll tracks the overall pixel drag down from start (MIN_OFFSET = 0)
+    let totalAbsoluteScroll = 0; 
+    
+    const PANEL_WIDTH = 200;
+    const SVG_WIDTH = 800; // Updated to 800px
+    
+    // Calculate MAX_TOTAL_SCROLL based on current settings
+    function getMaxTotalScroll(markSpacing) {
+        const P_025_RED_CYCLE = THIMBLE_DIVISIONS * markSpacing;
+        // Maximum turns for 1.000" of travel (40 turns)
+        return 40 * P_025_RED_CYCLE; 
+    }
+
+
+    function drawRuler() {
+        // ----------------------------------------------------
+        // 1. UI Constants and Debug Display (using fixed defaults)
+        // ----------------------------------------------------
+        // Use fixed defaults since controls were removed
+        const spacingValue = DEFAULT_VERTICAL_SPACING;
+        const MARK_SPACING = DEFAULT_MARK_SPACING; 
+        const opacityValue = DEFAULT_OPACITY;
+
+        // The scroll display update logic was removed here as requested.
+        
+        // --- Dynamic Max Scroll ---
+        const MAX_TOTAL_SCROLL = getMaxTotalScroll(MARK_SPACING);
+
+        // ----------------------------------------------------
+        // 2. Mechanical Linkage Calculation (Decouples UI from Mouse Drag)
+        // ----------------------------------------------------
+        const P_0025_HORIZONTAL = X_UNIT_WIDTH / 4; // 12.5 pixels (distance on sleeve for 0.025")
+        const P_025_RED_CYCLE = THIMBLE_DIVISIONS * MARK_SPACING; // Pixel distance for 1 full thimble turn (e.g., 375 px)
+
+        // Calculate the Red Mark Vertical Offset (Cyclical Movement)
+        // This is the remaining vertical scroll *within* the current 0.025" turn.
+        const redMarkYOffset = totalAbsoluteScroll % P_025_RED_CYCLE; 
+        
+        // Calculate the Panel Horizontal Position (Linear Movement)
+        // Total number of 0.025" increments completed (full and partial)
+        const totalHorizontalIncrements = totalAbsoluteScroll / P_025_RED_CYCLE; 
+        
+        // Panel X position starts at X_START and moves right based on the total increments
+        const panelXMovement = totalHorizontalIncrements * P_0025_HORIZONTAL;
+        let panelX = X_START + panelXMovement;
+
+        // ----------------------------------------------------
+        // 3. Draw Base SVG Content (Sleeve/Stator) - Ensuring consistent stroke-width
+        // ----------------------------------------------------
+        const majorYSteps = 6;
+        const totalIntervals = majorYSteps - 1;
+        const totalGridHeight = spacingValue * totalIntervals;
+        const Y_NEW_START = Y_BOTTOM_ANCHOR - totalGridHeight;
+
+        // Main SVG boundary rectangle - Updated width
+        let svgContent = `<rect x="0" y="0" width="800" height="400" fill="white" stroke="black" stroke-width="5"/>`;
+        
+        // Draw Main Vertical Grid Lines and Numbers (0, 8, 6, 4, 2, 0)
+        for (let i = 0; i < majorYSteps; i++) {
+            const yPos = Y_NEW_START + spacingValue * i;
+            const numberLabel = ['0', '8', '6', '4', '2', '0'][i];
+            
+            // Main grid line across the SVG - Uses SLEEVE_STROKE_WIDTH
+            svgContent += `<line x1="${X_START}" y1="${yPos}" x2="800" y2="${yPos}" stroke="black" stroke-width="${SLEEVE_STROKE_WIDTH}"/>`;
+            
+            // Mid-point lines - Uses SLEEVE_STROKE_WIDTH
+            if (i < totalIntervals) {
+                const yPosMinor = yPos + spacingValue / 2;
+                svgContent += `<line x1="${X_START}" y1="${yPosMinor}" x2="800" y2="${yPosMinor}" stroke="black" stroke-width="${SLEEVE_STROKE_WIDTH}"/>`;
+            }
+            
+            // Main vertical axis label (large numbers)
+            svgContent += `<text x="20" y="${yPos}" font-family="Arial" font-size="30" fill="black" alignment-baseline="middle">${numberLabel}</text>`;
+        }
+
+        // Draw Horizontal Ruler Marks and Numbers (0, 1, 2, ... 10)
+        const fixedWidth = X_UNIT_WIDTH; 
+        const majorXSteps = 11; // Marks for 0.000" up to 1.000"
+        const MAJOR_TICK_Y2 = 300; 
+        const MEDIUM_TICK_Y2 = 290; 
+        const SMALLEST_TICK_Y2 = 280; 
+
+        for (let i = 0; i < majorXSteps; i++) {
+            const xPosMajor = X_START + fixedWidth * i;
+            const numberLabel = i;
+            
+            // Check boundary against the new SVG width
+            if (xPosMajor <= 750) { 
+                // Major tick - Uses SLEEVE_STROKE_WIDTH
+                svgContent += `<line x1="${xPosMajor}" y1="270" x2="${xPosMajor}" y2="${MAJOR_TICK_Y2}" stroke="black" stroke-width="${SLEEVE_STROKE_WIDTH}"/>`;
+            }
+            
+            // Minor and medium ticks between major ticks
+            if (i < majorXSteps - 1) { 
+                const minorStep = fixedWidth / 4; 
+                for (let j = 1; j <= 3; j++) {
+                    const xPosMinor = xPosMajor + minorStep * j;
+                    if (xPosMinor < 750) { 
+                        let y2_target = SMALLEST_TICK_Y2;
+                        if (j === 2) { 
+                            y2_target = MEDIUM_TICK_Y2;
+                        }
+                        // Minor/Medium tick - Uses SLEEVE_STROKE_WIDTH
+                        svgContent += `<line x1="${xPosMinor}" y1="270" x2="${xPosMinor}" y2="${y2_target}" stroke="black" stroke-width="${SLEEVE_STROKE_WIDTH}"/>`;
+                    }
+                }
+            }
+            
+            // Horizontal axis label
+            if (xPosMajor <= 750) {
+                 const labelX = (numberLabel === 10) ? xPosMajor - 25 : xPosMajor - 15;
+                 svgContent += `<text x="${labelX}" y="340" font-family="Arial" font-size="40" fill="black">${numberLabel}</text>`;
+            }
+        }
+        
+        // ----------------------------------------------------
+        // 4. Stationary Vernier Scale (Green Ticks) - Hidden
+        // ----------------------------------------------------
+        const HORIZON_Y = Y_BOTTOM_ANCHOR; // 270
+        // Position the Vernier scale just right of the full-open thimble position
+        const VERNIER_X_START = X_START + PANEL_WIDTH + 10; 
+        const VERNIER_MARK_LENGTH = 10;
+        // Standard Vernier divides 9 thimble units into 10 marks. 
+        // Visually, this is 9/10ths of the MARK_SPACING divided into 10 steps.
+        const VERNIER_SPACING = (MARK_SPACING * 0.9) / 10; 
+        const VERNIER_COLOR = "#10B981"; // Tailwind green-600
+
+        /* --- START VERNIR MARK GENERATION (Temporarily Hidden) ---
+        // Draw 10 Vernier marks (0 to 9)
+        for (let v = 0; v <= 10; v++) {
+            // Marks go up from the horizon
+            const vYPos = HORIZON_Y - (v * VERNIER_SPACING); 
+            
+            // Draw the tick line in green
+            // svgContent += `<line 
+            //     x1="${VERNIER_X_START}" y1="${vYPos}" 
+            //     x2="${VERNIER_X_START + VERNIER_MARK_LENGTH}" y2="${vYPos}" 
+            //     stroke="${VERNIER_COLOR}" stroke-width="1"
+            //     title="Vernier Mark ${v}"
+            // />`;
+
+            // Label 0, 5, and 10
+            // if (v === 0 || v === 5 || v === 10) {
+            //      const labelText = (v % 10).toString();
+            //      svgContent += `<text 
+            //         x="${VERNIER_X_START + VERNIER_MARK_LENGTH + 3}" y="${vYPos}" 
+            //         font-family="Arial" font-size="12" fill="${VERNIER_COLOR}" 
+            //         alignment-baseline="middle" text-anchor="start"
+            //     >${labelText}</text>`;
+            // }
+        }
+        */
+        // --- END VERNIR MARK GENERATION (Temporarily Hidden) ---
+        
+        // ----------------------------------------------------
+        // 5. Draw Inner Panel (Thimble) and Horizon
+        // ----------------------------------------------------
+        
+        // Inner Panel Rectangle (Draggable)
+        svgContent += `
+            <rect id="draggable-panel" x="${panelX}" y="2" width="${PANEL_WIDTH}" height="396" fill="white" fill-opacity="${opacityValue}" stroke="black" stroke-width="2"/>
+        `;
+
+        /* The green 'Moving Horizon Mark' was removed here as requested. The black line 
+           from the main grid drawing already acts as the datum line at Y=270.
+        */
+        
+        // ----------------------------------------------------
+        // 6. Draw the Red Markings (Thimble Scale)
+        // ----------------------------------------------------
+        const MARK_X_START = panelX; 
+        const MARK_LENGTH = 15;
+        const MARK_COLOR = "#B91C1C";
+        const MAX_MARKS = 50 * THIMBLE_DIVISIONS; // 1.25" total travel
+
+        // Loop from 0 up to MAX_MARKS
+        for (let i = 0; i <= MAX_MARKS; i++) {
+            
+            // Calculate the Y position: (i * MARK_SPACING) moves UP (Y decreases from HORIZON_Y)
+            // Apply the calculated cyclical vertical offset
+            let currentY = HORIZON_Y - (i * MARK_SPACING) + redMarkYOffset; 
+            
+            // Calculate the label value (0 through 24)
+            let markValue = i % THIMBLE_DIVISIONS;
+            let isMajorMark = markValue % 5 === 0;
+
+            // Relaxed boundary check for smoother dragging (1px buffer)
+            if (currentY > 1 && currentY < 399) { 
+                
+                let tickLength = MARK_LENGTH;
+                let tickWidth = 1.5;
+                
+                if (isMajorMark) {
+                    tickLength = MARK_LENGTH + 5; 
+                    tickWidth = 2;
+                }
+                
+                // Draw the tick line
+                svgContent += `<line 
+                    x1="${MARK_X_START}" y1="${currentY}" 
+                    x2="${MARK_X_START + tickLength}" y2="${currentY}" 
+                    stroke="${MARK_COLOR}" stroke-width="${tickWidth}" 
+                    title="Mark ${i} (Value ${markValue})"
+                />`;
+                
+                // Conditional Labeling: Only label the marks 0, 5, 10, 15, 20
+                if (isMajorMark) {
+                    const labelText = markValue.toString().padStart(2, '0'); 
+                    const LABEL_X = MARK_X_START + tickLength + 3; 
+                    
+                    // Draw the label
+                    svgContent += `<text 
+                        x="${LABEL_X}" y="${currentY}" 
+                        font-family="Arial" font-size="16" font-weight="bold" 
+                        fill="${MARK_COLOR}" alignment-baseline="middle" text-anchor="start"
+                        title="Label ${markValue}"
+                    >${labelText}</text>`;
+                }
+            }
+        }
+        
+        // Update SVG content
+        svgElement.innerHTML = svgContent;
+        
+        // Re-attach drag listeners after innerHTML is updated
+        const panel = document.getElementById('draggable-panel');
+        if (panel) {
+            // Must remove and re-add to avoid duplicate listeners when redrawing
+            panel.removeEventListener('mousedown', startDrag);
+            panel.removeEventListener('touchstart', startDrag);
+            panel.addEventListener('mousedown', startDrag);
+            panel.addEventListener('touchstart', startDrag);
+        }
+
+        // ----------------------------------------------------
+        // 7. Reading Display Update (Total Value Decomposition)
+        // ----------------------------------------------------
+
+        // 7a. Calculate Total Value (in inches)
+        // Pixel space for 0.0001" movement
+        const PIXELS_PER_0001 = MARK_SPACING / 10; 
+        const totalIncrementsOf0001 = totalAbsoluteScroll / PIXELS_PER_0001; 
+        
+        // Total reading in inches 
+        const totalMeasurementRaw = totalIncrementsOf0001 * VERNIER_INCREMENT_VALUE; 
+        
+        // 7b. Decompose for Sleeve (0.025")
+        const sleeveIncrements = Math.floor(totalMeasurementRaw / HORIZONTAL_INCREMENT_VALUE);
+        const reading025Value = sleeveIncrements * HORIZONTAL_INCREMENT_VALUE; // e.g., 0.5000
+
+        // 7c. Remainder after Sleeve
+        const remainder025 = totalMeasurementRaw - reading025Value;
+        
+        // 7d. Decompose for Thimble (0.001")
+        const thimbleIndex = Math.floor(remainder025 / THIMBLE_INCREMENT_VALUE);
+        const thimbleReadingValue = thimbleIndex * THIMBLE_INCREMENT_VALUE; // e.g., 0.0100
+        
+        // 7e. Remainder for Vernier (0.0001")
+        const remainder001 = remainder025 - thimbleReadingValue;
+        
+        // Calculate the Vernier digit (0-9). Use rounding to snap to the nearest 0.0001" position.
+        const vernierDigit = Math.round(remainder001 / VERNIER_INCREMENT_VALUE); 
+        
+        let finalThimbleIndex = thimbleIndex;
+        let finalVernierDigit = vernierDigit;
+        
+        // Handle carry-over if the vernier rounds up to 10 (the next 0.001")
+        if (vernierDigit === 10) {
+            finalVernierDigit = 0;
+            finalThimbleIndex += 1; 
+        }
+
+        const vernierReadingValue = finalVernierDigit * VERNIER_INCREMENT_VALUE;
+        
+        // Re-calculate thimble reading based on potentially carried-over index (or the original if no carry)
+        const calculatedThimbleValue = (finalThimbleIndex % THIMBLE_DIVISIONS) * THIMBLE_INCREMENT_VALUE;
+
+
+        // 7f. Final Total (Sum of all components)
+        const totalMeasurementFinal = reading025Value + calculatedThimbleValue + vernierReadingValue;
+
+        // Update the display elements (all now 4 decimal places)
+        document.getElementById('reading-025').textContent = reading025Value.toFixed(4);
+        document.getElementById('reading-001').textContent = (finalThimbleIndex % THIMBLE_DIVISIONS).toString().padStart(2, '0');
+        document.getElementById('reading-0001').textContent = finalVernierDigit.toString();
+        document.getElementById('reading-total').textContent = totalMeasurementFinal.toFixed(4) + "\""; 
+        
+        // Update the live total display above the slider (4 decimal places)
+        liveTotalDisplay.textContent = totalMeasurementFinal.toFixed(4) + "\"";
+
+        // Update the Math Breakdown (Now includes Vernier value)
+        const mathSumElement = document.getElementById('reading-math-sum');
+
+        // Use the existing numerical readings, but now display them in a neat vertical stack.
+        mathSumElement.innerHTML = `
+            <div class="flex justify-between w-full text-lg">
+                <span class="text-gray-600 font-normal w-1/2">Sleeve Value:</span>
+                <span class="font-mono text-blue-700 w-1/2 text-right">${reading025Value.toFixed(4)}</span>
+            </div>
+            <div class="flex justify-between w-full text-lg">
+                <span class="text-gray-600 font-normal w-1/2">+ Thimble Value:</span>
+                <span class="font-mono text-blue-700 w-1/2 text-right">${calculatedThimbleValue.toFixed(4)}</span>
+            </div>
+             <div class="flex justify-between w-full text-lg border-b border-gray-300 pb-2">
+                <span class="text-gray-600 font-normal w-1/2">+ Vernier Value:</span>
+                <span class="font-mono text-green-600 w-1/2 text-right">${vernierReadingValue.toFixed(4)}</span>
+            </div>
+            <div class="flex justify-between w-full text-lg font-bold pt-2">
+                <span class="text-gray-800 w-1/2">= Calculated Total:</span>
+                <span class="font-mono text-green-600 w-1/2 text-right">${totalMeasurementFinal.toFixed(4)}</span>
+            </div>
+        `;
+    }
+    
+    // --- Fast Travel Slider Handler ---
+    function handleFastTravelChange() {
+        // MARK_SPACING is now a constant since the slider was removed
+        const MARK_SPACING = DEFAULT_MARK_SPACING;
+        const MAX_TOTAL_SCROLL = getMaxTotalScroll(MARK_SPACING);
+
+        const sliderValue = parseFloat(fastTravelSlider.value); // 0-1000 range
+        
+        // Map the slider value to the full pixel travel range (1000 represents 100%)
+        const targetScroll = (sliderValue / 1000) * MAX_TOTAL_SCROLL;
+        
+        // Update the main position variable and the initial drag starting point
+        totalAbsoluteScroll = targetScroll;
+        initialAbsoluteScroll = totalAbsoluteScroll;
+        
+        drawRuler();
+    }
+    
+    // --- Random Position Setter ---
+    function setRandomPosition() {
+        // MARK_SPACING is now a constant since the slider was removed
+        const MARK_SPACING = DEFAULT_MARK_SPACING;
+        const MAX_TOTAL_SCROLL = getMaxTotalScroll(MARK_SPACING);
+        
+        // Generate a random scroll value between 0 and MAX_TOTAL_SCROLL
+        const targetScroll = Math.random() * MAX_TOTAL_SCROLL;
+        
+        // Update the global position variables
+        totalAbsoluteScroll = targetScroll;
+        initialAbsoluteScroll = targetScroll;
+        
+        // Update the fast travel slider position to reflect the new total (0-1000)
+        const fastTravelPercentage = (totalAbsoluteScroll / MAX_TOTAL_SCROLL) * 1000;
+        fastTravelSlider.value = fastTravelPercentage;
+
+        drawRuler();
+    }
+
+    // --- DRAG HANDLERS ---
+
+    function getClientY(e) {
+        // Handle both mouse and touch events
+        return e.touches ? e.touches[0].clientY : e.clientY;
+    }
+
+    function startDrag(e) {
+        e.preventDefault(); 
+        isDragging = true;
+        
+        // Store the starting vertical position of the cursor
+        startY = getClientY(e);
+        // Store the starting absolute scroll position
+        initialAbsoluteScroll = totalAbsoluteScroll; 
+        
+        // Attach global listeners for movement and release
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchmove', drag);
+        window.addEventListener('touchend', stopDrag);
+    }
+
+    function drag(e) {
+        if (!isDragging) return;
+
+        const currentY = getClientY(e);
+        // Calculate the vertical distance the cursor has moved since starting the drag
+        const deltaY = currentY - startY; 
+        
+        // totalAbsoluteScroll is the cumulative pixel distance the scale has been dragged.
+        let newTotalAbsoluteScroll = initialAbsoluteScroll + deltaY;
+
+        // BOUNDARY CHECKING: Cannot drag up past initial 0
+        const MIN_OFFSET = 0; 
+        if (newTotalAbsoluteScroll < MIN_OFFSET) {
+            newTotalAbsoluteScroll = MIN_OFFSET; // Lock the offset at 0
+        }
+        
+        // BOUNDARY CHECKING: Max limit (e.g., 40 full turns for 1.0000" of travel)
+        // MARK_SPACING is now a constant since the slider was removed
+        const MARK_SPACING = DEFAULT_MARK_SPACING; 
+        const MAX_TOTAL_SCROLL = getMaxTotalScroll(MARK_SPACING);
+        
+        if (newTotalAbsoluteScroll > MAX_TOTAL_SCROLL) {
+             newTotalAbsoluteScroll = MAX_TOTAL_SCROLL;
+        }
+
+        // Update the global variable and redraw
+        totalAbsoluteScroll = newTotalAbsoluteScroll;
+        
+        // Update the fast travel slider position to reflect the new total
+        const fastTravelPercentage = (totalAbsoluteScroll / MAX_TOTAL_SCROLL) * 1000;
+        fastTravelSlider.value = fastTravelPercentage;
+
+        drawRuler();
+    }
+
+    function stopDrag() {
+        isDragging = false;
+        // Remove global listeners
+        window.removeEventListener('mousemove', drag);
+        window.removeEventListener('mouseup', stopDrag);
+        window.removeEventListener('touchmove', drag);
+        window.removeEventListener('touchend', stopDrag);
+    }
+
+    // Initial draw and event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        // Note: The configuration slider event listeners have been removed.
+        
+        // Fast travel slider listener
+        fastTravelSlider.addEventListener('input', handleFastTravelChange);
+        
+        // Random button listener
+        randomButton.addEventListener('click', setRandomPosition);
+
+        // Initial draw will attach the first mousedown/touchstart listener
+        drawRuler();
+    });
+</script>
+
+</body>
+</html>
