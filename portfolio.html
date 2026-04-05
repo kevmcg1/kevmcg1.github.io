@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Registry</title>
+  <title>Project Registry — Compatibility Overview</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
@@ -22,7 +22,7 @@
       --tag-bg:    #1a1a22;
       --radius:    10px;
 
-      /* category colors re-mapped to fit the about-page palette */
+      /* category colors */
       --cat-web:   #c8ff00;
       --cat-shop:  #e8e8e8;
       --status-complete: #c8ff00;
@@ -330,6 +330,51 @@
       color: var(--muted);
     }
 
+    /* ── COMPATIBILITY INDICATORS (NEW) ── */
+    .compat-row {
+      display: flex;
+      gap: 14px;
+      margin-top: 8px;
+      padding-top: 4px;
+      border-top: 1px dashed var(--border);
+    }
+    .compat-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.55rem;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+      background: rgba(30,30,36,0.5);
+      padding: 3px 8px;
+      border-radius: 20px;
+      backdrop-filter: blur(2px);
+    }
+    .compat-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+    }
+    .compat-symbol {
+      font-weight: bold;
+      font-size: 0.7rem;
+      line-height: 1;
+    }
+    .compat-check {
+      color: #c8ff00;
+      text-shadow: 0 0 2px #c8ff0030;
+    }
+    .compat-x {
+      color: #a0a0b4;
+      opacity: 0.7;
+    }
+    @media (max-width: 768px) {
+      .card-right { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; align-items: center; width: 100%; }
+      .compat-row { margin-top: 0; border-top: none; padding-left: 0; }
+      .compat-item { padding: 2px 7px; }
+    }
+
     /* Stats bar */
     .stats {
       display: flex; gap: 0; margin-top: 24px;
@@ -625,7 +670,7 @@
     wip:      'In Progress',
   };
 
-  // ── ADD YOUR PROJECTS HERE ──────────────────────────────────────────────────
+  // ── PROJECTS with compatibility flags (only for web_apps) ──
   const DATA = [
     {
       id: 'PROJ-001',
@@ -636,16 +681,20 @@
       desc: 'Insert Decoder & Builder — a tool for working with machining inserts.',
       tags: ['Web App', 'Tool'],
       updated: 'Mar 2026',
+      laptopCompat: true,
+      mobileCompat: true,
     },
     {
       id: 'PROJ-002',
       name: 'Speeds & Feeds',
       cat: 'web_apps',
-      status: 'complete',
+      status: 'wip',
       url: '/web_apps/speedsnfeeds.html',
       desc: 'Enter your material, tool, and machine parameters to get instant feed rate and spindle speed recommendations.',
       tags: ['CNC', 'Calculator', 'Milling', 'Turning'],
       updated: 'Mar 2026',
+      laptopCompat: true,
+      mobileCompat: true,
     },
     {
       id: 'PROJ-003',
@@ -656,6 +705,8 @@
       desc: 'Quick programmer for those who are beginners to manual programming, or really just need g-code fast.',
       tags: ['Web App', 'Tool'],
       updated: 'Mar 2026',
+      laptopCompat: true,
+      mobileCompat: false,
     },
     {
       id: 'PROJ-004',
@@ -666,6 +717,8 @@
       desc: 'Low poly car simulator. Nothing really special to it.',
       tags: ['Web App'],
       updated: 'Apr 2026',
+      laptopCompat: true,
+      mobileCompat: false,
     },
     {
       id: 'PROJ-005',
@@ -676,6 +729,8 @@
       desc: 'Dial caliper simulator to help those new in machining with an interactive assistant.',
       tags: ['Web App', 'Tool'],
       updated: 'Apr 2026',
+      laptopCompat: true,
+      mobileCompat: true,
     },
     {
       id: 'PROJ-006',
@@ -686,14 +741,14 @@
       desc: 'Micrometer simulator to help those new in machining with an interactive assistant.',
       tags: ['Web App', 'Tool'],
       updated: 'Apr 2026',
+      laptopCompat: true,
+      mobileCompat: false,
     },
   ];
-  // ───────────────────────────────────────────────────────────────────────────
 
   document.getElementById('totalCount').textContent = DATA.length + ' Projects';
 
   const F = { cat: new Set(), status: new Set() };
-
   const CHIP_BG = {
     web_apps:  'rgba(200,255,0,0.1)',
     shop_work: 'rgba(232,232,232,0.08)',
@@ -726,31 +781,23 @@
   function apply() {
     const cards = document.querySelectorAll('.project-card');
     let vis=0, webApps=0, shopWork=0;
-
     cards.forEach(c => {
-      const ok =
-        (F.cat.size===0    || F.cat.has(c.dataset.cat)) &&
-        (F.status.size===0 || F.status.has(c.dataset.status));
+      const ok = (F.cat.size===0 || F.cat.has(c.dataset.cat)) && (F.status.size===0 || F.status.has(c.dataset.status));
       c.classList.toggle('hide', !ok);
       if (ok) {
         vis++;
-        if (c.dataset.cat==='web_apps')  webApps++;
+        if (c.dataset.cat==='web_apps') webApps++;
         if (c.dataset.cat==='shop_work') shopWork++;
       }
     });
-
-    document.getElementById('vc').textContent        = vis;
-    document.getElementById('sTotal').textContent    = vis;
-    document.getElementById('sWebApps').textContent  = webApps;
+    document.getElementById('vc').textContent = vis;
+    document.getElementById('sTotal').textContent = vis;
+    document.getElementById('sWebApps').textContent = webApps;
     document.getElementById('sShopWork').textContent = shopWork;
     document.getElementById('empty').classList.toggle('show', vis===0);
-
     const bar = document.getElementById('tagBar');
     bar.innerHTML='';
-    const all = [
-      ...[...F.cat].map(v=>({g:'cat',v})),
-      ...[...F.status].map(v=>({g:'status',v})),
-    ];
+    const all = [...[...F.cat].map(v=>({g:'cat',v})), ...[...F.status].map(v=>({g:'status',v}))];
     all.forEach(({g,v})=>{
       const color = CAT_COLOR[v] || STATUS_COLOR[v] || '#fff';
       const label = CAT_LABEL[v] || STATUS_LABEL[v] || v;
@@ -765,28 +812,17 @@
     syncDrawerChips();
   }
 
-  function openDrawer() {
-    document.getElementById('filterDrawer').classList.add('open');
-    document.getElementById('drawerOverlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeDrawer() {
-    document.getElementById('filterDrawer').classList.remove('open');
-    document.getElementById('drawerOverlay').classList.remove('open');
-    document.body.style.overflow = '';
-  }
+  function openDrawer() { document.getElementById('filterDrawer').classList.add('open'); document.getElementById('drawerOverlay').classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function closeDrawer() { document.getElementById('filterDrawer').classList.remove('open'); document.getElementById('drawerOverlay').classList.remove('open'); document.body.style.overflow = ''; }
   function toggleDrawer(btn) {
     const g = btn.dataset.g, v = btn.dataset.v;
-    if (F[g].has(v)) { F[g].delete(v); btn.classList.remove('on'); }
-    else             { F[g].add(v);    btn.classList.add('on'); }
+    if (F[g].has(v)) { F[g].delete(v); btn.classList.remove('on'); } else { F[g].add(v); btn.classList.add('on'); }
     const sideChip = document.querySelector(`.chip[data-g="${g}"][data-v="${v}"]`);
     if (sideChip) sideChip.classList.toggle('on', F[g].has(v));
     apply();
   }
   function syncDrawerChips() {
-    document.querySelectorAll('.drawer-chip').forEach(btn => {
-      btn.classList.toggle('on', F[btn.dataset.g].has(btn.dataset.v));
-    });
+    document.querySelectorAll('.drawer-chip').forEach(btn => btn.classList.toggle('on', F[btn.dataset.g].has(btn.dataset.v)));
     const hasAny = Object.values(F).some(s => s.size > 0);
     const ftb = document.getElementById('filterToggleBtn');
     if (ftb) ftb.classList.toggle('has-filters', hasAny);
@@ -795,22 +831,31 @@
   (function buildCards(){
     const wrap = document.getElementById('cardsWrap');
     DATA.forEach((p, i) => {
-      const catColor    = CAT_COLOR[p.cat]       || '#fff';
+      const catColor = CAT_COLOR[p.cat] || '#fff';
       const statusColor = STATUS_COLOR[p.status] || '#8a8a9a';
-
       const card = document.createElement(p.url ? 'a' : 'div');
       card.className = 'project-card';
       if (p.url) card.href = p.url;
       card.style.animationDelay = `${0.05*i + 0.35}s`;
       card.style.setProperty('--cat-color', catColor);
-      card.dataset.cat    = p.cat;
+      card.dataset.cat = p.cat;
       card.dataset.status = p.status;
 
-      const tagPills = (p.tags||[]).map(t =>
-        `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`
-      ).join('');
-
+      const tagPills = (p.tags||[]).map(t => `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`).join('');
       const linkIcon = p.url ? `<span class="card-link-icon">↗</span>` : '';
+
+      // --- Compatibility markup: only for web_apps ---
+      let compatMarkup = '';
+      if (p.cat === 'web_apps' && (p.laptopCompat !== undefined || p.mobileCompat !== undefined)) {
+        const laptopSymbol = p.laptopCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
+        const mobileSymbol = p.mobileCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
+        compatMarkup = `
+          <div class="compat-row">
+            <div class="compat-item"><span class="compat-label">Laptop</span> ${laptopSymbol}</div>
+            <div class="compat-item"><span class="compat-label">Mobile</span> ${mobileSymbol}</div>
+          </div>
+        `;
+      }
 
       card.innerHTML = `
         <div class="card-accent-bar"></div>
@@ -831,6 +876,7 @@
               <div class="status-dot" style="--status-color:${statusColor}"></div>
               ${STATUS_LABEL[p.status]||p.status}
             </div>
+            ${compatMarkup}
           </div>
         </div>
       `;
