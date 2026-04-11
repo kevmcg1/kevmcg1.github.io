@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Setup Sheet Maker — Pro Zoom</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Roboto:ital,wght@1,400;1,700;1,900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #ffffff;
+    --sidebar: #f8f9fa;
+    --accent: #2d3436;
+    --border: #dee2e6;
+    --line: rgba(0,0,0,0.1);
+    --label: #636e72;
+    --sidebar-width: 380px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: #e9ecef;
+    color: var(--ink);
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  header {
+    background: var(--ink);
+    color: white;
+    padding: 1.5rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    height: 74px;
+    z-index: 20;
+    position: relative;
+  }
+  header h1 {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    font-size: 1.8rem;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 6px 1fr;
+    height: calc(100vh - 74px);
+    position: relative;
+  }
+
+  .form-panel {
+    padding: 2rem;
+    overflow-y: auto;
+    background: var(--sidebar);
+    height: 100%;
+  }
+
+  .resizer {
+    width: 6px;
+    cursor: col-resize;
+    background: var(--border);
+    transition: background 0.2s;
+    z-index: 10;
+  }
+  .resizer:hover, .resizer.active { background: var(--ink); }
+
+  .form-section { margin-bottom: 2rem; }
+  .form-section-title {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.95rem;
+    font-style: italic;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 1.2rem;
+    color: var(--ink);
+  }
+
+  .field { margin-bottom: 1rem; }
+  label {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-bottom: 0.3rem;
+    font-weight: 700;
+  }
+  input, select {
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.7rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--ink);
+    outline: none;
+    border-radius: 2px;
+  }
+  input:focus { border-color: var(--ink); }
+
+  .btn {
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-style: italic;
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--ink); color: white; }
+  .btn-primary:hover { background: #333; }
+  .btn-secondary { background: white; color: var(--ink); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #f0f0f0; }
+
+  .preview-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+  .preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--sidebar);
+    z-index: 5;
+  }
+  .preview-header h2 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 1rem;
+    font-style: italic;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  /* ── Pan/Zoom Viewport – HIGH QUALITY RENDERING ── */
+  #pz-viewport {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background:
+      radial-gradient(circle, #c8c8c8 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-color: #e2e2e2;
+    cursor: grab;
+  }
+  #pz-viewport.panning { cursor: grabbing; }
+
+  #pz-world {
+    position: absolute;
+    top: 0; left: 0;
+    transform-origin: 0 0;
+    /* CRITICAL: NO will-change, NO backface-visibility hacks that force rasterization.
+       Pure vector scaling — text stays razor-sharp at any zoom level. */
+    image-rendering: auto;
+    will-change: auto;
+    backface-visibility: visible;
+    transform-style: flat;
+  }
+
+  /* Force subpixel antialiasing + maximum text clarity */
+  #canvas-area {
+    background: #fff;
+    width: 1056px;
+    min-height: 816px;
+    padding: 72px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 8px 32px rgba(0,0,0,0.12);
+    flex-shrink: 0;
+    margin: 48px;
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: optimizeLegibility;
+    font-smoothing: antialiased;
+  }
+
+  /* All text inside preview gets premium crispness */
+  #canvas-area * {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: subpixel-antialiased;
+    font-smoothing: antialiased;
+  }
+
+  /* Zoom HUD */
+  .zoom-hud {
+    position: absolute;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.94);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    z-index: 10;
+    user-select: none;
+  }
+  .zoom-btn {
+    width: 28px; height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink);
+    transition: background 0.1s;
+  }
+  .zoom-btn:hover { background: #eee; }
+  .zoom-level {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--label);
+    min-width: 40px;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .zoom-sep {
+    width: 1px; height: 18px;
+    background: var(--border);
+    margin: 0 2px;
+  }
+
+  .doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1.5rem;
+    border-bottom: 4px solid var(--ink);
+    margin-bottom: 2rem;
+  }
+  .doc-title {
+    font-family: 'Roboto', sans-serif;
+    font-size: 2.2rem;
+    line-height: 1;
+    font-style: italic;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+  .doc-subtitle {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.85rem;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-top: 0.4rem;
+  }
+  .doc-meta { text-align: right; font-size: 0.75rem; color: var(--label); line-height: 1.6; }
+  .doc-meta strong {
+    font-family: 'Roboto', sans-serif;
+    font-style: italic;
+    text-transform: uppercase;
+    color: var(--ink);
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  /* SYNCHRONIZED 3-TABLE GRID (crisp layout) */
+  .synced-tables-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    column-gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: start;
+    grid-template-rows: auto repeat(5, auto);
+    row-gap: 0;
+  }
+
+  .synced-col {
+    display: grid;
+    grid-template-rows: auto repeat(5, auto);
+    grid-row: 1 / -1;
+  }
+  .synced-col-header {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.75rem;
+    font-style: italic;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 0.4rem 0.6rem;
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    align-self: start;
+    grid-row: 1;
+  }
+  .synced-cell {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    border-bottom: 1px solid #eee;
+    min-height: 38px;
+    align-items: center;
+  }
+  .synced-cell:nth-child(odd) { background: #fafafa; }
+  .synced-cell-label {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--label);
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+  }
+  .synced-cell-value {
+    padding: 0.3rem 0.6rem;
+    font-family: 'Nunito Sans', sans-serif;
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 0.8rem;
+    word-break: break-word;
+  }
+
+  .tables-grid-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  .table-block-title {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.75rem;
+    font-style: italic;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 0.4rem 0.6rem;
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    display: inline-block;
+    margin-bottom: 0.75rem;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  thead th {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--ink);
+    color: var(--ink);
+  }
+  tbody tr:nth-child(even) { background: #fafafa; }
+
+  .entry-col-headers {
+    display: grid;
+    gap: 0.4rem;
+    margin-bottom: 0.25rem;
+  }
+  .entry-col-headers span {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--label);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .tool-entry, .other-offset-entry {
+    display: grid;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+    align-items: stretch;
+  }
+  .entry-col-headers.tool-headers, .tool-entry { grid-template-columns: 0.8fr 1.4fr 0.8fr; }
+  .entry-col-headers.offset-headers, .other-offset-entry { grid-template-columns: 0.8fr 1.4fr 0.8fr; }
+
+  .tool-entry textarea, .other-offset-entry textarea {
+    resize: none;
+    overflow: hidden;
+    min-height: 34px;
+    line-height: 1.4;
+    padding: 0.5rem 0.7rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    outline: none;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+  }
+  .tool-entry textarea:focus, .other-offset-entry textarea:focus { border-color: var(--ink); }
+  .size-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 0.75rem; }
+  .size-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    padding: 0.45rem 0.6rem;
+    cursor: pointer;
+    text-align: left;
+    color: var(--label);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    transition: all 0.12s;
+    width: 100%;
+    font-family: 'DM Mono', monospace;
+  }
+  .size-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .orient-row { display: flex; gap: 5px; margin-top: 0.5rem; }
+  .orient-btn {
+    flex: 1;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    color: var(--label);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .orient-btn.active { border-color: var(--ink); background: var(--ink); color: #fff; }
+</style>
+</head>
+<body spellcheck="false">
+
+<header>
+  <h1>SETUP SHEET MAKER</h1>
+</header>
+
+<div class="app" id="appGrid">
+  <aside class="form-panel">
+    <div class="form-section"><div class="form-section-title">Project Information</div>
+      <div class="field"><label>Document Title</label><input type="text" id="docTitle" value="SETUP SHEET" oninput="updatePreview()"></div>
+      <div class="field"><label>Organization</label><input type="text" id="orgName" value="Precision Works" oninput="updatePreview()"></div>
+      <div class="field"><label>Department</label><input type="text" id="department" value="REDESIGNED" oninput="updatePreview()"></div>
+    </div>
+    <div class="form-section"><div class="form-section-title">Part Info</div>
+      <div class="field"><label>Part No</label><input type="text" id="partNo" value="PW-102" oninput="updatePreview()"></div>
+      <div class="field"><label>Revision</label><input type="text" id="partRev" value="A" oninput="updatePreview()"></div>
+      <div class="field"><label>Part Name</label><input type="text" id="partName" value="Flange Adaptor" oninput="updatePreview()"></div>
+      <div class="field"><label>Due Date</label><input type="text" id="partDueDate" value="2024-04-15" oninput="updatePreview()"></div>
+      <div class="field"><label>Date Created</label><input type="text" id="partDate" value="2024-03-24" oninput="updatePreview()"></div>
+    </div>
+    <div class="form-section"><div class="form-section-title">Operation Info</div>
+      <div class="field"><label>Fixture</label><input type="text" id="opFixture" value="6-inch Kurt Vise" oninput="updatePreview()"></div>
+      <div class="field"><label>Program No</label><input type="text" id="opProgNo" value="O1002" oninput="updatePreview()"></div>
+      <div class="field"><label>Material</label><input type="text" id="opMaterial" value="Aluminum 6061-T6" oninput="updatePreview()"></div>
+      <div class="field"><label>Quantity</label><input type="text" id="opQuantity" value="50 units" oninput="updatePreview()"></div>
+      <div class="field"><label>Stock Size</label><input type="text" id="opStockSize" value="4 x 4 x 2.25" oninput="updatePreview()"></div>
+    </div>
+    <div class="form-section"><div class="form-section-title">Machine Info</div>
+      <div class="field"><label>Operation</label><input type="text" id="machOp" value="OP 10" oninput="updatePreview()"></div>
+      <div class="field"><label>Machine</label><input type="text" id="machName" value="Haas VF-2" oninput="updatePreview()"></div>
+      <div class="field"><label>Control</label><input type="text" id="machControl" value="Haas NGC" oninput="updatePreview()"></div>
+      <div class="field"><label>Planner</label><input type="text" id="machPlanner" value="J. Miller" oninput="updatePreview()"></div>
+      <div class="field"><label>Est. Time</label><input type="text" id="machEstTime" value="45m 20s" oninput="updatePreview()"></div>
+    </div>
+
+    <div class="form-section"><div class="form-section-title">Tool Info</div>
+      <div class="entry-col-headers tool-headers"><span>Tool #</span><span>Desc</span><span>Offset #</span></div>
+      <div id="toolFields"><div class="tool-entry"><textarea class="t-num" rows="1" placeholder="T#" oninput="handleToolInput(this)">1</textarea><textarea class="t-desc" rows="1" placeholder="Description" oninput="syncRowTA(this);updatePreview()">Drill Bit 12mm</textarea><textarea class="t-offset" rows="1" placeholder="H/D" oninput="syncRowTA(this);updatePreview()">H1/D1</textarea></div></div>
+      <button class="btn btn-secondary" onclick="addToolRow()">+ Add Tool</button>
+    </div>
+
+    <div class="form-section"><div class="form-section-title">Offset Info</div>
+      <div class="entry-col-headers offset-headers"><span>Offset</span><span>Desc</span><span>Value</span></div>
+      <div id="otherOffsetFields"><div class="other-offset-entry"><textarea class="oo-num" rows="1" placeholder="Offset" oninput="syncRowOO(this);updatePreview()">G54</textarea><textarea class="oo-desc" rows="1" placeholder="Ref" oninput="syncRowOO(this);updatePreview()">Main Work Offset</textarea><textarea class="oo-val" rows="1" placeholder="Value" oninput="syncRowOO(this);updatePreview()">X0 Y0 Z0</textarea></div></div>
+      <button class="btn btn-secondary" onclick="addOtherOffsetRow()">+ Add Offset</button>
+    </div>
+
+    <div class="form-section"><div class="form-section-title">Paper Size</div>
+      <div class="size-list" id="sizeList"></div>
+      <div class="orient-row"><button class="orient-btn active" id="btnPortrait" onclick="setOrientation('portrait')"><svg width="12" height="16" viewBox="0 0 12 16" fill="none"><rect x="1" y="1" width="10" height="14" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>Portrait</button><button class="orient-btn" id="btnLandscape" onclick="setOrientation('landscape')"><svg width="16" height="12" viewBox="0 0 16 12" fill="none"><rect x="1" y="1" width="14" height="10" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>Landscape</button></div>
+    </div>
+    <div class="form-section"><div class="form-section-title">Save / Load</div>
+      <button class="btn btn-secondary" onclick="exportTXT()">⬇ Export .txt</button>
+      <label class="btn btn-secondary" style="margin-top:0.5rem; cursor:pointer;">⬆ Import .txt<input type="file" id="importFileInput" accept=".txt" style="display:none;" onchange="importTXT(this)"></label>
+    </div>
+    <button class="btn btn-primary" onclick="exportPDF()" id="exportBtnSide">Export PDF</button>
+  </aside>
+
+  <div class="resizer" id="resizer"></div>
+
+  <main class="preview-panel">
+    <div class="preview-header"><h2>Document Preview — Crisp Vector Zoom</h2><button class="btn btn-primary" style="width:auto; margin:0" onclick="exportPDF()">Export PDF</button></div>
+    <div id="pz-viewport"><div id="pz-world"><div id="canvas-area">
+      <div class="doc-header"><div><div class="doc-title" id="prev-title">SETUP SHEET</div><div class="doc-subtitle" id="prev-dept">REDESIGNED</div></div><div class="doc-meta"><strong id="prev-org">Precision Works</strong><span id="prev-date"></span></div></div>
+      <div class="synced-tables-wrapper" id="syncedTables">
+        <div class="synced-col" style="grid-column:1; grid-row:1/-1;"><div class="synced-col-header" style="grid-row:1;">Part Info</div><div class="synced-cell" style="grid-row:2;"><span class="synced-cell-label">Part No</span><span class="synced-cell-value" id="cell-partNo"></span></div><div class="synced-cell" style="grid-row:3;"><span class="synced-cell-label">Rev</span><span class="synced-cell-value" id="cell-partRev"></span></div><div class="synced-cell" style="grid-row:4;"><span class="synced-cell-label">Part Name</span><span class="synced-cell-value" id="cell-partName"></span></div><div class="synced-cell" style="grid-row:5;"><span class="synced-cell-label">Due Date</span><span class="synced-cell-value" id="cell-partDueDate"></span></div><div class="synced-cell" style="grid-row:6;"><span class="synced-cell-label">Date Created</span><span class="synced-cell-value" id="cell-partDate"></span></div></div>
+        <div class="synced-col" style="grid-column:2; grid-row:1/-1;"><div class="synced-col-header" style="grid-row:1;">Operation Info</div><div class="synced-cell" style="grid-row:2;"><span class="synced-cell-label">Fixture</span><span class="synced-cell-value" id="cell-opFixture"></span></div><div class="synced-cell" style="grid-row:3;"><span class="synced-cell-label">Program No</span><span class="synced-cell-value" id="cell-opProgNo"></span></div><div class="synced-cell" style="grid-row:4;"><span class="synced-cell-label">Material</span><span class="synced-cell-value" id="cell-opMaterial"></span></div><div class="synced-cell" style="grid-row:5;"><span class="synced-cell-label">Quantity</span><span class="synced-cell-value" id="cell-opQuantity"></span></div><div class="synced-cell" style="grid-row:6;"><span class="synced-cell-label">Stock Size</span><span class="synced-cell-value" id="cell-opStockSize"></span></div></div>
+        <div class="synced-col" style="grid-column:3; grid-row:1/-1;"><div class="synced-col-header" style="grid-row:1;">Machine Info</div><div class="synced-cell" style="grid-row:2;"><span class="synced-cell-label">Operation</span><span class="synced-cell-value" id="cell-machOp"></span></div><div class="synced-cell" style="grid-row:3;"><span class="synced-cell-label">Machine</span><span class="synced-cell-value" id="cell-machName"></span></div><div class="synced-cell" style="grid-row:4;"><span class="synced-cell-label">Control</span><span class="synced-cell-value" id="cell-machControl"></span></div><div class="synced-cell" style="grid-row:5;"><span class="synced-cell-label">Planner</span><span class="synced-cell-value" id="cell-machPlanner"></span></div><div class="synced-cell" style="grid-row:6;"><span class="synced-cell-label">Est. Time</span><span class="synced-cell-value" id="cell-machEstTime"></span></div></div>
+      </div>
+      <div class="tables-grid-bottom"><div class="table-block" style="grid-column: 1 / 3;"><div class="table-block-title">Tool Info</div><table><thead><tr><th style="width:20%;">Tool #</th><th style="width:50%;">Description</th><th style="width:30%;">Offsets</th></tr></thead><tbody id="prev-tools"></tbody></table></div><div class="table-block" style="grid-column: 3 / 4;"><div class="table-block-title">Offset Info</div><table><thead><tr><th style="width:25%;">Offset</th><th style="width:45%;">Description</th><th style="width:30%;">Value</th></tr></thead><tbody id="prev-other-offsets"></tbody></table></div></div>
+    </div></div></div>
+    <div class="zoom-hud"><button class="zoom-btn" onclick="pzZoom(-0.1)" title="Zoom out">−</button><span class="zoom-level" id="zoomLabel">100%</span><button class="zoom-btn" onclick="pzZoom(+0.1)" title="Zoom in">+</button><div class="zoom-sep"></div><button class="zoom-btn" onclick="pzFit()" title="Fit to view" style="font-size:0.75rem;width:36px;">FIT</button><button class="zoom-btn" onclick="pzReset()" title="Reset to 100%" style="font-size:0.65rem;width:36px;">1:1</button></div>
+  </main>
+</div>
+
+<script>
+  // ─── Paper & orientation helpers ───────────────────────
+  const PAPER_SIZES = [{ id: 'ansi-a',  label: 'ANSI A',  w: 8.5, h: 11 },{ id: 'ansi-b',  label: 'ANSI B',  w: 11,  h: 17 },{ id: 'arch-c',  label: 'ARCH C',  w: 18,  h: 24 },{ id: 'arch-d',  label: 'ARCH D',  w: 24,  h: 36 },{ id: 'arch-e1', label: 'ARCH E1', w: 30,  h: 42 }];
+  const PX_PER_IN = 96, MARGIN_IN = 0.75;
+  let selectedSize = PAPER_SIZES[0], orientation = 'portrait';
+
+  function paperSVG(w,h,isLandscape){ const rw=isLandscape?h:w, rh=isLandscape?w:h; const ratio=rw/rh; let pw,ph; if(ratio>1){ pw=14; ph=Math.max(6,Math.round(14/ratio)); } else { ph=18; pw=Math.max(6,Math.round(18*ratio)); } return `<svg width="${pw}" height="${ph}" viewBox="0 0 ${pw} ${ph}" fill="none"><rect x="0.8" y="0.8" width="${pw-1.6}" height="${ph-1.6}" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>`; }
+  function buildSizeList(){ const list=document.getElementById('sizeList'); list.innerHTML=''; const isL=orientation==='landscape'; PAPER_SIZES.forEach(s=>{ const dw=isL?s.h:s.w, dh=isL?s.w:s.h; const btn=document.createElement('button'); btn.className='size-btn'+(s.id===selectedSize.id?' active':''); btn.innerHTML=`<span class="size-icon">${paperSVG(s.w,s.h,isL)}</span><span><span class="size-name">${s.label}</span><span class="size-dims">${dw}" × ${dh}"</span></span>`; btn.onclick=()=>{ selectedSize=s; buildSizeList(); applyPaperSize(); }; list.appendChild(btn); }); }
+  function setOrientation(o){ orientation=o; document.getElementById('btnPortrait').classList.toggle('active',o==='portrait'); document.getElementById('btnLandscape').classList.toggle('active',o==='landscape'); buildSizeList(); applyPaperSize(); }
+  function applyPaperSize(){ const isL=orientation==='landscape'; const wIn=isL?selectedSize.h:selectedSize.w, hIn=isL?selectedSize.w:selectedSize.h; const wPx=Math.round(wIn*PX_PER_IN), hPx=Math.round(hIn*PX_PER_IN), marginPx=Math.round(MARGIN_IN*PX_PER_IN); const canvasEl=document.getElementById('canvas-area'); canvasEl.style.width=wPx+'px'; canvasEl.style.minHeight=hPx+'px'; canvasEl.style.padding=marginPx+'px'; pzFit(); }
+
+  // ─── HIGH QUALITY PAN/ZOOM ENGINE (NO PIXELATION) ─────────
+  const PZ = (() => {
+    let scale = 1, tx = 0, ty = 0;
+    let isPanning = false, startX = 0, startY = 0, startTx = 0, startTy = 0;
+    const MIN_SCALE = 0.08, MAX_SCALE = 4.2;
+    const viewport = () => document.getElementById('pz-viewport');
+    const world = () => document.getElementById('pz-world');
+    const label = () => document.getElementById('zoomLabel');
+
+    // Force a sub-pixel re-paint without losing quality
+    function forceRedraw() {
+      const w = world();
+      if(!w) return;
+      w.style.opacity = '0.999';
+      w.offsetHeight; // reflow
+      w.style.opacity = '';
+    }
+
+    function commit() {
+      world().style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      label().textContent = Math.round(scale * 100) + '%';
+      // subtle redraw ensures text stays ultra sharp after transform
+      requestAnimationFrame(() => forceRedraw());
+    }
+
+    function fit() {
+      const vp = viewport();
+      const ca = document.getElementById('canvas-area');
+      if(!vp || !ca) return;
+      const vpW = vp.clientWidth, vpH = vp.clientHeight;
+      const caW = ca.offsetWidth + 96, caH = ca.offsetHeight + 96;
+      scale = Math.min(vpW / caW, vpH / caH, 1.2);
+      scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+      tx = (vpW - caW * scale) / 2;
+      ty = (vpH - caH * scale) / 2;
+      commit();
+    }
+
+    function reset() {
+      scale = 1;
+      const vp = viewport();
+      const ca = document.getElementById('canvas-area');
+      tx = (vp.clientWidth  - (ca.offsetWidth  + 96)) / 2;
+      ty = (vp.clientHeight - (ca.offsetHeight + 96)) / 2;
+      commit();
+    }
+
+    function zoom(delta, cx, cy) {
+      const vp = viewport();
+      const rect = vp.getBoundingClientRect();
+      const mx = (cx ?? rect.left + rect.width/2) - rect.left;
+      const my = (cy ?? rect.top  + rect.height/2) - rect.top;
+      let newScale = scale + delta * scale;
+      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+      if(newScale === scale) return;
+      tx = mx - (mx - tx) * (newScale / scale);
+      ty = my - (my - ty) * (newScale / scale);
+      scale = newScale;
+      commit();
+    }
+
+    function init() {
+      const vp = viewport();
+      vp.addEventListener('wheel', e => { e.preventDefault(); const delta = e.deltaY < 0 ? 0.09 : -0.09; zoom(delta, e.clientX, e.clientY); }, { passive: false });
+      vp.addEventListener('mousedown', e => { if(e.button === 1 || e.button === 0) { isPanning=true; startX=e.clientX; startY=e.clientY; startTx=tx; startTy=ty; vp.classList.add('panning'); e.preventDefault(); } });
+      window.addEventListener('mousemove', e => { if(!isPanning) return; tx=startTx+(e.clientX-startX); ty=startTy+(e.clientY-startY); commit(); });
+      window.addEventListener('mouseup', () => { if(isPanning){ isPanning=false; vp.classList.remove('panning'); } });
+      let lastTouches = null;
+      vp.addEventListener('touchstart', e => { lastTouches = e.touches; e.preventDefault(); }, { passive: false });
+      vp.addEventListener('touchmove', e => { e.preventDefault(); if(e.touches.length===1 && lastTouches?.length===1) { tx+=e.touches[0].clientX-lastTouches[0].clientX; ty+=e.touches[0].clientY-lastTouches[0].clientY; commit(); } else if(e.touches.length===2 && lastTouches?.length===2) { const prevDist=Math.hypot(lastTouches[0].clientX-lastTouches[1].clientX, lastTouches[0].clientY-lastTouches[1].clientY); const currDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); const midX=(e.touches[0].clientX+e.touches[1].clientX)/2, midY=(e.touches[0].clientY+e.touches[1].clientY)/2; const delta=(currDist/prevDist-1)*0.6; zoom(delta, midX, midY); } lastTouches=e.touches; }, { passive: false });
+      requestAnimationFrame(fit);
+    }
+    return { init, fit, reset, zoom: (d) => zoom(d) };
+  })();
+  function pzFit() { PZ.fit(); }
+  function pzReset() { PZ.reset(); }
+  function pzZoom(delta) { PZ.zoom(delta); }
+
+  // ─── Resizer + helpers ─────────────────────────────────
+  const resizer=document.getElementById('resizer'), appGrid=document.getElementById('appGrid');
+  let isResizing=false;
+  resizer.addEventListener('mousedown',()=>{ isResizing=true; resizer.classList.add('active'); document.body.classList.add('resizing'); });
+  window.addEventListener('mousemove',(e)=>{ if(!isResizing) return; const newWidth=Math.max(250,Math.min(e.clientX,800)); document.documentElement.style.setProperty('--sidebar-width',`${newWidth}px`); });
+  window.addEventListener('mouseup',()=>{ if(isResizing){ isResizing=false; resizer.classList.remove('active'); document.body.classList.remove('resizing'); } });
+  window.addEventListener('resize',()=>{ PZ.fit(); });
+
+  function syncRowTA(ta){ const row=ta.closest('.tool-entry'); if(!row) return; const all=Array.from(row.querySelectorAll('textarea')); all.forEach(t=>{ t.style.height='auto'; }); const maxH=Math.max(...all.map(t=>t.scrollHeight)); all.forEach(t=>{ t.style.height=maxH+'px'; }); }
+  function handleToolInput(ta){ const row=ta.closest('.tool-entry'); const offsetTA=row.querySelector('.t-offset'); let val=ta.value.trim().replace(/^T/i,''); offsetTA.value=val!==''?`H${val}/D${val}`:''; syncRowTA(ta); updatePreview(); }
+  function syncRowOO(ta){ const row=ta.closest('.other-offset-entry'); if(!row) return; const all=Array.from(row.querySelectorAll('textarea')); all.forEach(t=>{ t.style.height='auto'; }); const maxH=Math.max(...all.map(t=>t.scrollHeight)); all.forEach(t=>{ t.style.height=maxH+'px'; }); }
+
+  function updatePreview(){
+    const get=id=>document.getElementById(id)?.value||'—';
+    document.getElementById('prev-title').textContent=get('docTitle').toUpperCase();
+    document.getElementById('prev-org').textContent=get('orgName');
+    document.getElementById('prev-dept').textContent=get('department');
+    document.getElementById('prev-date').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    ['partNo','partRev','partName','partDueDate','partDate'].forEach(id=>document.getElementById(`cell-${id}`).textContent=get(id));
+    ['opFixture','opProgNo','opMaterial','opQuantity','opStockSize'].forEach(id=>document.getElementById(`cell-${id}`).textContent=get(id));
+    ['machOp','machName','machControl','machPlanner','machEstTime'].forEach(id=>document.getElementById(`cell-${id}`).textContent=get(id));
+
+    const toolBody=document.getElementById('prev-tools'); toolBody.innerHTML='';
+    document.querySelectorAll('.tool-entry').forEach(e=>{ let tn=e.querySelector('.t-num').value.trim(); const desc=e.querySelector('.t-desc').value, off=e.querySelector('.t-offset').value; if(!tn&&!desc) return; if(tn&&!tn.toUpperCase().startsWith('T')) tn='T'+tn; const tr=document.createElement('tr'); tr.innerHTML=`<td style="font-weight:700">${tn}</td><td style="font-family:'Nunito Sans',sans-serif;font-weight:600;">${desc}</td><td style="color:#636e72">${off}</td>`; toolBody.appendChild(tr); });
+    const ooBody=document.getElementById('prev-other-offsets'); ooBody.innerHTML='';
+    document.querySelectorAll('.other-offset-entry').forEach(e=>{ const num=e.querySelector('.oo-num').value, desc=e.querySelector('.oo-desc').value, val=e.querySelector('.oo-val').value; if(!num&&!desc) return; const tr=document.createElement('tr'); tr.innerHTML=`<td style="font-weight:700">${num}</td><td style="font-size:0.7rem">${desc}</td><td style="color:#636e72">${val}</td>`; ooBody.appendChild(tr); });
+    requestAnimationFrame(()=>{ const rows=document.querySelectorAll('.synced-cell'); if(rows.length){} });
+  }
+  function addToolRow(){ const div=document.createElement('div'); div.className='tool-entry'; div.innerHTML=`<textarea class="t-num" rows="1" placeholder="T#" oninput="handleToolInput(this)"></textarea><textarea class="t-desc" rows="1" placeholder="Description" oninput="syncRowTA(this);updatePreview()"></textarea><textarea class="t-offset" rows="1" placeholder="H/D" oninput="syncRowTA(this);updatePreview()"></textarea>`; document.getElementById('toolFields').appendChild(div); }
+  function addOtherOffsetRow(){ const div=document.createElement('div'); div.className='other-offset-entry'; div.innerHTML=`<textarea class="oo-num" rows="1" placeholder="Offset" oninput="syncRowOO(this);updatePreview()"></textarea><textarea class="oo-desc" rows="1" placeholder="Ref" oninput="syncRowOO(this);updatePreview()"></textarea><textarea class="oo-val" rows="1" placeholder="Value" oninput="syncRowOO(this);updatePreview()"></textarea>`; document.getElementById('otherOffsetFields').appendChild(div); }
+  async function exportPDF(){ const btn=document.getElementById('exportBtnSide'); btn.innerHTML='GENERATING...'; try{ const canvasEl=document.getElementById('canvas-area'); const htmlCanvas=await html2canvas(canvasEl,{scale:2.5, logging:false}); const isL=orientation==='landscape'; const wIn=isL?selectedSize.h:selectedSize.w, hIn=isL?selectedSize.w:selectedSize.h; const wPt=wIn*72, hPt=hIn*72; const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation,unit:'pt',format:[wPt,hPt],compress:true}); const imgWidth=pdf.internal.pageSize.getWidth(); const imgHeight=(htmlCanvas.height*imgWidth)/htmlCanvas.width; pdf.addImage(htmlCanvas.toDataURL('image/png'),'PNG',0,0,imgWidth,imgHeight); pdf.save('setup_sheet.pdf'); } catch(e){ console.error(e); } btn.innerHTML='Export PDF'; }
+  function exportTXT(){ const getVal=id=>document.getElementById(id)?.value??''; const simple=['docTitle','orgName','department','partNo','partRev','partName','partDueDate','partDate','opFixture','opProgNo','opMaterial','opQuantity','opStockSize','machOp','machName','machControl','machPlanner','machEstTime']; let lines=['[SETUP SHEET MAKER EXPORT]','']; simple.forEach(id=>{ lines.push(`${id}=${getVal(id)}`); }); lines.push('','[TOOLS]'); document.querySelectorAll('.tool-entry').forEach((e,i)=>{ lines.push(`tool_${i}_num=${e.querySelector('.t-num').value}`,`tool_${i}_desc=${e.querySelector('.t-desc').value}`,`tool_${i}_offset=${e.querySelector('.t-offset').value}`); }); lines.push('','[OFFSETS]'); document.querySelectorAll('.other-offset-entry').forEach((e,i)=>{ lines.push(`offset_${i}_num=${e.querySelector('.oo-num').value}`,`offset_${i}_desc=${e.querySelector('.oo-desc').value}`,`offset_${i}_val=${e.querySelector('.oo-val').value}`); }); const blob=new Blob([lines.join('\n')],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='setup_sheet.txt'; a.click(); URL.revokeObjectURL(a.href); }
+  function importTXT(input){ const file=input.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=e=>{ const lines=e.target.result.split('\n'); const data={}; lines.forEach(line=>{ const eq=line.indexOf('='); if(eq===-1) return; data[line.slice(0,eq).trim()]=line.slice(eq+1); }); const simple=['docTitle','orgName','department','partNo','partRev','partName','partDueDate','partDate','opFixture','opProgNo','opMaterial','opQuantity','opStockSize','machOp','machName','machControl','machPlanner','machEstTime']; simple.forEach(id=>{ const el=document.getElementById(id); if(el&&data[id]!==undefined) el.value=data[id]; }); const toolCont=document.getElementById('toolFields'); toolCont.innerHTML=''; let ti=0; while(data[`tool_${ti}_num`]!==undefined){ const div=document.createElement('div'); div.className='tool-entry'; div.innerHTML=`<textarea class="t-num" rows="1" placeholder="T#" oninput="handleToolInput(this)"></textarea><textarea class="t-desc" rows="1" placeholder="Description" oninput="syncRowTA(this);updatePreview()"></textarea><textarea class="t-offset" rows="1" placeholder="H/D" oninput="syncRowTA(this);updatePreview()"></textarea>`; toolCont.appendChild(div); div.querySelector('.t-num').value=data[`tool_${ti}_num`]??''; div.querySelector('.t-desc').value=data[`tool_${ti}_desc`]??''; div.querySelector('.t-offset').value=data[`tool_${ti}_offset`]??''; ti++; } const ooCont=document.getElementById('otherOffsetFields'); ooCont.innerHTML=''; let oi=0; while(data[`offset_${oi}_num`]!==undefined){ const div=document.createElement('div'); div.className='other-offset-entry'; div.innerHTML=`<textarea class="oo-num" rows="1" placeholder="Offset" oninput="syncRowOO(this);updatePreview()"></textarea><textarea class="oo-desc" rows="1" placeholder="Ref" oninput="syncRowOO(this);updatePreview()"></textarea><textarea class="oo-val" rows="1" placeholder="Value" oninput="syncRowOO(this);updatePreview()"></textarea>`; ooCont.appendChild(div); div.querySelector('.oo-num').value=data[`offset_${oi}_num`]??''; div.querySelector('.oo-desc').value=data[`offset_${oi}_desc`]??''; div.querySelector('.oo-val').value=data[`offset_${oi}_val`]??''; oi++; } document.querySelectorAll('.tool-entry textarea').forEach(ta=>syncRowTA(ta)); document.querySelectorAll('.other-offset-entry textarea').forEach(ta=>syncRowOO(ta)); updatePreview(); input.value=''; }; reader.readAsText(file); }
+
+  buildSizeList(); updatePreview(); document.querySelectorAll('.tool-entry textarea').forEach(ta=>syncRowTA(ta)); document.querySelectorAll('.other-offset-entry textarea').forEach(ta=>syncRowOO(ta)); PZ.init();
+</script>
+</body>
+</html>
