@@ -274,6 +274,37 @@
   #stop-hud.stop-m00 { color: #ff4455; background: rgba(50,0,5,0.93); border: 1px solid #882233; }
   #stop-hud.stop-m01 { color: #ff8c00; background: rgba(40,20,0,0.93); border: 1px solid #885500; }
 
+  /* ---- Mouse controls hint — bottom-right of viewport ---- */
+  #mouse-hints {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 89;
+  }
+  .mh-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .mh-mouse {
+    width: 18px;
+    height: 28px;
+    color: rgba(255,255,255,0.45);
+  }
+  .mh-label {
+    font-family: var(--font-ui);
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+  }
+
   /* ---- Floating viewport transport bar (bottom-center playback controls) ---- */
   /* ============================================================
      TRANSPORT BAR — viewport playback controls (bottom-center)
@@ -362,8 +393,10 @@
   }
   .speed-preset:hover { color: var(--accent); background: rgba(232,197,71,0.08); }
   .speed-preset.active {
-    color: var(--bg); background: var(--accent);
-    box-shadow: 0 0 10px rgba(232,197,71,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+    color: var(--accent);
+    background: transparent;
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(232,197,71,0.15);
   }
 
   /* ----- Transport buttons (reset / prev / play / next) ----- */
@@ -743,7 +776,7 @@
 <body>
 <div id="site-header">
   <a href="https://kevmcg1.github.io" target="_blank">
-    <span class="brk">⌐</span>KEVMCG1.GITHUB.IO<span class="brk">¬</span>
+    KEVMCG1.GITHUB.IO
   </a>
 </div>
 <div id="app">
@@ -1376,6 +1409,38 @@
         <div class="v-hud-row"><span class="v-hud-label">Feed</span><span class="v-hud-val accent" id="hud-feed">—</span></div>
         <div class="v-hud-row"><span class="v-hud-label">RPM</span><span class="v-hud-val" id="hud-rpm">—</span></div>
         <div class="v-hud-row"><span class="v-hud-label">Tool</span><span class="v-hud-val" id="hud-tool">—</span></div>
+      </div>
+
+      <!-- Mouse controls hint — bottom-right of viewport -->
+      <div id="mouse-hints">
+        <div class="mh-item">
+          <!-- Left mouse button -->
+          <svg class="mh-mouse" viewBox="0 0 22 34" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="7" width="20" height="26" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="11" y1="7" x2="11" y2="20" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="1" y="7" width="10" height="10" rx="5" fill="currentColor" opacity="0.5"/>
+            <rect x="9" y="21" width="4" height="6" rx="2" fill="currentColor" opacity="0.6"/>
+          </svg>
+          <span class="mh-label">Pan</span>
+        </div>
+        <div class="mh-item">
+          <!-- Right mouse button -->
+          <svg class="mh-mouse" viewBox="0 0 22 34" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="7" width="20" height="26" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="11" y1="7" x2="11" y2="20" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="11" y="7" width="10" height="10" rx="5" fill="currentColor" opacity="0.5"/>
+            <rect x="9" y="21" width="4" height="6" rx="2" fill="currentColor" opacity="0.6"/>
+          </svg>
+          <span class="mh-label">Rotate</span>
+        </div>
+        <div class="mh-item">
+          <!-- Scroll wheel -->
+          <svg class="mh-mouse" viewBox="0 0 22 34" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="7" width="20" height="26" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="9" y="10" width="4" height="10" rx="2" fill="currentColor" opacity="0.7"/>
+          </svg>
+          <span class="mh-label">Zoom</span>
+        </div>
       </div>
 
       <!-- Floating transport / playback controls, centered on bottom of viewport -->
