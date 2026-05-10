@@ -62,31 +62,51 @@
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
+            height: 16px;
+            background: transparent;
+            cursor: pointer;
+            margin: 10px 0;
+            padding: 0;
+            vertical-align: middle;
+        }
+
+        #fast-travel-slider::-webkit-slider-container {
+            align-items: center;
+        }
+
+        #fast-travel-slider::-webkit-slider-runnable-track {
             height: 6px;
             background: #e0e0e0;
             border-radius: 3px;
-            cursor: pointer;
-            margin: 10px 0;
         }
 
         #fast-travel-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             background: black;
             border-radius: 50%;
             cursor: pointer;
-            margin-top: -5px;
+            margin-top: -6px; /* (6px track - 18px thumb) / 2 = -6px */
             transition: background 0.1s ease;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+        }
+
+        #fast-travel-slider::-moz-range-track {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
         }
 
         #fast-travel-slider::-moz-range-thumb {
-            width: 16px; 
-            height: 16px;
+            width: 18px; 
+            height: 18px;
             background: black;
             border-radius: 50%;
             cursor: pointer;
+            border: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.35);
         }
         
         #random-button {
@@ -112,73 +132,96 @@
         
         <p class="text-sm text-center text-gray-500 mb-4">Drag the semi-transparent panel <strong>vertically</strong> for fine-tuning.</p>
 
-        <svg id="ruler-svg" width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0 mx-auto">
+        <div style="position:relative;width:800px;max-width:100%;margin:0 auto;">
+        <svg id="ruler-svg" width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;">
         </svg>
-
-        <!-- Inline equation: sits directly below the visual, above the live total -->
-        <div class="flex items-baseline justify-center gap-2 flex-wrap font-mono text-2xl mx-auto" style="width: 800px; max-width: 100%;">
-            <span id="reading-eq-sleeve" class="text-blue-700">0.0000</span>
-            <span class="text-gray-400">+</span>
-            <span id="reading-eq-thimble" class="text-blue-700">0.0000</span>
-            <span class="text-gray-400">+</span>
-            <span id="reading-eq-vernier" class="text-green-600">0.0000</span>
-            <span class="text-gray-400">=</span>
-            <span id="reading-eq-total" class="font-bold text-gray-900">0.0000"</span>
         </div>
 
-        <div id="live-total-display-container" class="w-full max-w-lg flex justify-center mx-auto mb-2">
-            <div class="p-3 text-black text-center w-full">
-                <span id="live-total" class="text-black text-3xl">0.0000"</span>
-            </div>
-        </div>
-        
-        <div id="coarse-slider-container" class="p-4 bg-white rounded-xl shadow-md border border-gray-100 mx-auto">
+        <div id="coarse-slider-container" class="mx-auto mt-3" style="width: 800px; max-width: 100%;">
             <label for="fast-travel-slider" class="block text-lg font-bold text-gray-700 mb-2">
                 Quick Slider (Full Range 0.0000" to 1.0000")
             </label>
-            <input type="range" id="fast-travel-slider" min="0" max="1000" step="1" value="0" class="w-full appearance-none cursor-pointer">
+            <div style="display: flex; align-items: center; height: 36px;">
+                <input type="range" id="fast-travel-slider" min="0" max="1000" step="1" value="0" class="w-full appearance-none cursor-pointer" style="margin: 0;">
+            </div>
+        </div>
+
+        <!-- Test mode guess panel (hidden by default) -->
+        <div id="test-mode-panel" class="hidden p-6 bg-gray-50 rounded-xl shadow-lg border-2 border-gray-800 mx-auto" style="width: 800px; max-width: 100%;">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">🎯 What's the reading?</h2>
+            <div class="flex gap-3 items-center">
+                <input id="guess-input" type="text" placeholder='e.g. 0.3722"'
+                    class="flex-1 font-mono text-2xl border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-gray-800"
+                />
+                <button id="guess-submit" class="py-3 px-6 bg-gray-800 text-white font-bold rounded-lg shadow-md hover:bg-gray-700 transition-colors duration-150 text-lg">
+                    Check
+                </button>
+            </div>
+            <div id="guess-result" class="mt-4 text-xl font-mono font-bold hidden"></div>
+        </div>
+
+        <!-- All readings — hidden in test mode -->
+        <div id="readings-area">
+            <!-- Inline equation: sits directly below the visual, above the live total -->
+            <div class="flex items-baseline justify-center gap-2 flex-wrap font-mono text-2xl mx-auto" style="width: 800px; max-width: 100%;">
+                <span id="reading-eq-sleeve" class="text-blue-700">0.0000</span>
+                <span class="text-gray-400">+</span>
+                <span id="reading-eq-thimble" class="text-blue-700">0.0000</span>
+                <span class="text-gray-400">+</span>
+                <span id="reading-eq-vernier" class="text-green-600">0.0000</span>
+                <span class="text-gray-400">=</span>
+                <span id="reading-eq-total" class="font-bold text-gray-900">0.0000"</span>
+            </div>
+
+            <div id="live-total-display-container" class="w-full max-w-lg flex justify-center mx-auto mb-2">
+                <div class="p-3 text-black text-center w-full">
+                    <span id="live-total" class="text-black text-3xl">0.0000"</span>
+                </div>
+            </div>
+
+            <div id="measurement-display" class="p-6 bg-white rounded-xl shadow-lg border border-gray-100 flex-shrink-0 mx-auto">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Measurement Reading (0.0001" Resolution)</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-lg">
+                        <span class="text-gray-600">Horizontal Sleeve Reading (0.025"):</span>
+                        <span id="reading-025" class="font-mono text-xl font-semibold text-blue-700">0.0000</span>
+                    </div>
+                    <div class="flex justify-between items-center text-lg">
+                        <span class="text-gray-600">Thimble Reading (0.001"):</span>
+                        <span id="reading-001" class="font-mono text-xl font-semibold text-blue-700">00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-lg">
+                        <span class="text-gray-600">Vernier Reading (0.0001"):</span>
+                        <span id="reading-0001" class="font-mono text-xl font-semibold text-green-600">0</span>
+                    </div>
+                    <div class="flex flex-col items-end pt-2 border-t mt-4">
+                        <span class="text-gray-500 text-sm font-medium mb-1">Detailed Vertical Summation:</span>
+                        <div id="reading-math-sum-vertical" class="text-gray-700 text-base flex flex-col space-y-1 w-full"></div>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t mt-2">
+                        <span class="text-gray-800 font-bold">Total Measurement:</span>
+                        <span id="reading-total" class="font-mono text-2xl font-bold text-green-600">0.0000"</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <div class="flex gap-3 mx-auto" style="width: 800px; max-width: 100%;">
             <button id="random-button" class="mt-2 py-3 text-white font-bold rounded-lg shadow-md flex-1">
                 Set Random Position (0.0000" - 1.0000")
             </button>
-            <button id="vernier-highlight-button" class="mt-2 py-3 font-bold rounded-lg shadow-md border-2 border-blue-900 text-blue-900 bg-white flex-shrink-0 px-5 transition-colors duration-150" style="min-width: 220px;">
+            <button id="vernier-highlight-button" class="mt-2 py-3 font-bold rounded-lg shadow-md border-2 border-blue-900 text-blue-900 bg-white flex-shrink-0 px-5 transition-colors duration-150" style="min-width: 200px;">
                 Highlight Vernier Line: OFF
             </button>
-            <button id="thimble-highlight-button" class="mt-2 py-3 font-bold rounded-lg shadow-md border-2 border-red-800 text-red-800 bg-white flex-shrink-0 px-5 transition-colors duration-150" style="min-width: 220px;">
+            <button id="thimble-highlight-button" class="mt-2 py-3 font-bold rounded-lg shadow-md border-2 border-red-800 text-red-800 bg-white flex-shrink-0 px-5 transition-colors duration-150" style="min-width: 200px;">
                 Thimble Reading: OFF
+            </button>
+            <button id="test-mode-button" class="mt-2 py-3 font-bold rounded-lg shadow-md border-2 border-gray-800 text-gray-800 bg-white flex-shrink-0 px-5 transition-colors duration-150" style="min-width: 160px;">
+                Test Mode: OFF
             </button>
         </div>
 
-        <div id="measurement-display" class="p-6 bg-white rounded-xl shadow-lg border border-gray-100 flex-shrink-0 mx-auto">
-            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Measurement Reading (0.0001" Resolution)</h2>
-            <div class="space-y-3">
-                <div class="flex justify-between items-center text-lg">
-                    <span class="text-gray-600">Horizontal Sleeve Reading (0.025"):</span>
-                    <span id="reading-025" class="font-mono text-xl font-semibold text-blue-700">0.0000</span>
-                </div>
-                <div class="flex justify-between items-center text-lg">
-                    <span class="text-gray-600">Thimble Reading (0.001"):</span>
-                    <span id="reading-001" class="font-mono text-xl font-semibold text-blue-700">00</span>
-                </div>
-                <div class="flex justify-between items-center text-lg">
-                    <span class="text-gray-600">Vernier Reading (0.0001"):</span>
-                    <span id="reading-0001" class="font-mono text-xl font-semibold text-green-600">0</span>
-                </div>
-
-                <div class="flex flex-col items-end pt-2 border-t mt-4">
-                    <span class="text-gray-500 text-sm font-medium mb-1">Detailed Vertical Summation:</span>
-                    <div id="reading-math-sum-vertical" class="text-gray-700 text-base flex flex-col space-y-1 w-full">
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-center pt-2 border-t mt-2">
-                    <span class="text-gray-800 font-bold">Total Measurement:</span>
-                    <span id="reading-total" class="font-mono text-2xl font-bold text-green-600">0.0000"</span>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -202,7 +245,7 @@
     const THIMBLE_INCREMENT_VALUE = HORIZONTAL_INCREMENT_VALUE / THIMBLE_DIVISIONS; // 0.001"
     const VERNIER_INCREMENT_VALUE = THIMBLE_INCREMENT_VALUE / 10; // 0.0001"
     
-    const SLEEVE_STROKE_WIDTH = 1;
+    const SLEEVE_STROKE_WIDTH = 1.5;
 
     let isDragging = false;
     let startY = 0; 
@@ -264,6 +307,12 @@
         const totalIntervals = majorYSteps - 1;
         const totalGridHeight = spacingValue * totalIntervals;
         const Y_NEW_START = Y_BOTTOM_ANCHOR - totalGridHeight;
+        
+        // Vernier lines must scroll in sync with the thimble sub-tick offset.
+        // sub_px is how far (in px) we are past the last full thimble division.
+        // The vernier scale is magnified 9x relative to thimble motion, so shift it down by sub_px * 9.
+        const sub_px = redMarkYOffset % MARK_SPACING;
+        const vernierScrollOffset = sub_px * (spacingValue / 2) / (MARK_SPACING / 10);
 
         let svgContent = `<rect x="0" y="0" width="800" height="400" fill="white" stroke="black" stroke-width="5"/>`;
         
@@ -272,7 +321,7 @@
         // Y values go from high (bottom of SVG) to low (top), so we reverse.
         const allLineYs = []; // index 0 = bottom line (vernier 0), index 10 = top line
         for (let i = majorYSteps - 1; i >= 0; i--) {
-            const yPos = Y_NEW_START + spacingValue * i;
+            const yPos = Y_NEW_START + spacingValue * i + vernierScrollOffset;
             // mid-line sits ABOVE this major line (lower Y = higher on screen)
             if (i > 0) {
                 const yPosMid = Y_NEW_START + spacingValue * i - spacingValue / 2;
@@ -401,12 +450,7 @@
             if (currentY > -20 && currentY < 420) { 
                 
                 let tickLength = MARK_LENGTH;
-                let tickWidth = 1.5;
-                
-                if (isMajorMark) {
-                    tickLength = MARK_LENGTH + 5; 
-                    tickWidth = 2;
-                }
+                let tickWidth = SLEEVE_STROKE_WIDTH;
                 
                 svgContent += `<line 
                     x1="${MARK_X_START}" y1="${currentY}" 
@@ -445,7 +489,7 @@
 
             const ARROW_COLOR = "#7f1d1d";
             const HEAD_SIZE   = 6;
-            const majorTickLen = MARK_LENGTH + 5;          // 20px — major tick length
+            const majorTickLen = MARK_LENGTH;              // all ticks same length now
             const LABEL_WIDTH  = 20;                        // approx width of 2-char label at font-size 16
             const LABEL_GAP    = 3;                         // gap between tick end and label start
             // Tip sits just after the label
@@ -471,6 +515,34 @@
 
         // Redraw the panel border ON TOP so the edge acts as a clean curtain wall
         svgContent += `<rect x="${panelX}" y="2" width="${PANEL_WIDTH}" height="396" fill="none" stroke="black" stroke-width="2"/>`;
+
+        // "Drag me up and down" text with arrows — moves with the panel, vertically centered
+        const textX = panelX + PANEL_WIDTH / 2;
+        const arrowGap = 82;  // distance from center to arrow shaft start (clears text half-width)
+        const arrowLen = 12;
+        const arrowHead = 5;
+        const col = "#888";
+        // All drawn in rotated space: everything is rotated -90deg around (textX, 200)
+        // So we draw in normal coords and apply the same rotation transform to the whole group
+        svgContent += `<g transform="rotate(-90, ${textX}, 200)" style="pointer-events:none;user-select:none;">
+            <text
+                x="${textX}"
+                y="200"
+                font-family="Arial"
+                font-size="13"
+                font-weight="bold"
+                fill="${col}"
+                text-anchor="middle"
+                dominant-baseline="middle"
+            >Drag me up and down</text>
+            <!-- arrow pointing left (= up on screen) -->
+            <line x1="${textX - arrowGap}" y1="200" x2="${textX - arrowGap - arrowLen}" y2="200" stroke="${col}" stroke-width="1.5"/>
+            <polygon points="${textX - arrowGap - arrowLen - arrowHead},200 ${textX - arrowGap - arrowLen},${200 - arrowHead} ${textX - arrowGap - arrowLen},${200 + arrowHead}" fill="${col}"/>
+            <!-- arrow pointing right (= down on screen) -->
+            <line x1="${textX + arrowGap}" y1="200" x2="${textX + arrowGap + arrowLen}" y2="200" stroke="${col}" stroke-width="1.5"/>
+            <polygon points="${textX + arrowGap + arrowLen + arrowHead},200 ${textX + arrowGap + arrowLen},${200 - arrowHead} ${textX + arrowGap + arrowLen},${200 + arrowHead}" fill="${col}"/>
+        </g>`;
+
         
         // Update SVG content
         svgElement.innerHTML = svgContent;
@@ -522,6 +594,15 @@
         `;
     }
     
+    function clearTestGuess() {
+        if (typeof testModeActive !== 'undefined' && testModeActive) {
+            const gr = document.getElementById('guess-result');
+            const gi = document.getElementById('guess-input');
+            if (gr) { gr.classList.add('hidden'); gr.textContent = ''; }
+            if (gi) gi.value = '';
+        }
+    }
+
     function handleFastTravelChange() {
         const MARK_SPACING = DEFAULT_MARK_SPACING;
         const MAX_TOTAL_SCROLL = getMaxTotalScroll(MARK_SPACING);
@@ -533,6 +614,7 @@
         initialAbsoluteScroll = totalAbsoluteScroll;
         
         drawRuler();
+        clearTestGuess();
     }
     
     function setRandomPosition() {
@@ -548,6 +630,7 @@
         fastTravelSlider.value = fastTravelPercentage;
 
         drawRuler();
+        clearTestGuess();
     }
 
     function getClientY(e) {
@@ -605,6 +688,77 @@
     document.addEventListener('DOMContentLoaded', () => {
         fastTravelSlider.addEventListener('input', handleFastTravelChange);
         randomButton.addEventListener('click', setRandomPosition);
+
+        // Test Mode
+        let testModeActive = false;
+        const testModeBtn = document.getElementById('test-mode-button');
+        const testModePanel = document.getElementById('test-mode-panel');
+        const readingsArea = document.getElementById('readings-area');
+        const guessInput = document.getElementById('guess-input');
+        const guessSubmit = document.getElementById('guess-submit');
+        const guessResult = document.getElementById('guess-result');
+
+        function getCurrentAnswer() {
+            const MARK_SPACING = DEFAULT_MARK_SPACING;
+            const PIXELS_PER_0001 = MARK_SPACING / 10;
+            const totalIncrementsOf0001 = totalAbsoluteScroll / PIXELS_PER_0001;
+            const totalMeasurementRaw = totalIncrementsOf0001 * VERNIER_INCREMENT_VALUE;
+            const sleeveIncrements = Math.floor(totalMeasurementRaw / HORIZONTAL_INCREMENT_VALUE);
+            const reading025Value = sleeveIncrements * HORIZONTAL_INCREMENT_VALUE;
+            const remainder025 = totalMeasurementRaw - reading025Value;
+            const thimbleIndex = Math.floor(remainder025 / THIMBLE_INCREMENT_VALUE);
+            const thimbleReadingValue = thimbleIndex * THIMBLE_INCREMENT_VALUE;
+            const remainder001 = remainder025 - thimbleReadingValue;
+            let vernierDigit = Math.round(remainder001 / VERNIER_INCREMENT_VALUE);
+            let finalThimbleIndex = thimbleIndex;
+            if (vernierDigit === 10) { vernierDigit = 0; finalThimbleIndex += 1; }
+            const vernierReadingValue = vernierDigit * VERNIER_INCREMENT_VALUE;
+            const calculatedThimbleValue = (finalThimbleIndex % THIMBLE_DIVISIONS) * THIMBLE_INCREMENT_VALUE;
+            return reading025Value + calculatedThimbleValue + vernierReadingValue;
+        }
+
+        testModeBtn.addEventListener('click', () => {
+            testModeActive = !testModeActive;
+            if (testModeActive) {
+                testModeBtn.textContent = 'Test Mode: ON';
+                testModeBtn.classList.remove('text-gray-800', 'bg-white');
+                testModeBtn.classList.add('text-white', 'bg-gray-800');
+                readingsArea.classList.add('hidden');
+                testModePanel.classList.remove('hidden');
+                guessInput.value = '';
+                guessResult.classList.add('hidden');
+            } else {
+                testModeBtn.textContent = 'Test Mode: OFF';
+                testModeBtn.classList.remove('text-white', 'bg-gray-800');
+                testModeBtn.classList.add('text-gray-800', 'bg-white');
+                readingsArea.classList.remove('hidden');
+                testModePanel.classList.add('hidden');
+            }
+        });
+
+        function checkGuess() {
+            const raw = guessInput.value.trim().replace(/['"]/g, '');
+            const userVal = parseFloat(raw);
+            if (isNaN(userVal)) {
+                guessResult.textContent = '⚠️ Please enter a number, e.g. 0.3722';
+                guessResult.className = 'mt-4 text-lg font-mono font-bold text-yellow-600';
+                guessResult.classList.remove('hidden');
+                return;
+            }
+            const correct = getCurrentAnswer();
+            const diff = Math.abs(userVal - correct);
+            if (diff < 0.00005) {
+                guessResult.textContent = `✅ Correct! The answer is ${correct.toFixed(4)}"`;
+                guessResult.className = 'mt-4 text-lg font-mono font-bold text-green-600';
+            } else {
+                guessResult.textContent = `❌ Not quite. The answer is ${correct.toFixed(4)}" — you were off by ${diff.toFixed(4)}"`;
+                guessResult.className = 'mt-4 text-lg font-mono font-bold text-red-600';
+            }
+            guessResult.classList.remove('hidden');
+        }
+
+        guessSubmit.addEventListener('click', checkGuess);
+        guessInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkGuess(); });
 
         const vernierBtn = document.getElementById('vernier-highlight-button');
         vernierBtn.addEventListener('click', () => {
