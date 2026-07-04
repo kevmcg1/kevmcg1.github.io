@@ -576,8 +576,32 @@
     padding: 14px 18px;
     border-bottom: 1px solid var(--border);
     min-height: 56px;
+    position: relative;
   }
   .field-row:last-child { border-bottom: none; }
+
+  .field-clear {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px;
+    border: 1px solid transparent; background: transparent; color: var(--text-faint);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; transition: var(--transition);
+  }
+  .field-clear:hover { background: rgba(255,95,109,0.12); border-color: rgba(255,95,109,0.4); color: var(--danger); }
+
+  .notif-warning { display: none; }
+  .notif-warning.show {
+    display: flex; align-items: center; gap: 13px;
+    background: rgba(255,95,109,0.12); border: 1px solid rgba(255,95,109,0.45);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 24px; cursor: pointer;
+  }
+  .notif-warning > i { color: var(--danger); font-size: 18px; flex-shrink: 0; }
+  .notif-warning div { flex: 1; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+  .notif-warning strong { color: var(--text); }
+  .nw-btn {
+    background: var(--danger); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  }
+  .nw-btn:hover { filter: brightness(1.1); }
 
   .field-icon {
     width: 30px; height: 30px; border-radius: var(--radius-sm);
@@ -627,7 +651,11 @@
   .combo-stack input[type="datetime-local"] { max-width: none; width: 100%; }
 
   /* Urgency pills */
-  .icon-picker { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 264px; }
+  .icon-picker { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; width: 100%; }
+  .icon-quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .icon-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 280px; }
+  .icon-grid[hidden] { display: none; }
+  .icon-more.open { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
   .icon-choice {
     width: 32px; height: 32px; border-radius: 8px;
     border: 1px solid var(--border); background: var(--bg-elev-2); color: var(--text-dim);
@@ -833,8 +861,13 @@
     .combo-stack { width: 100%; }
     .detect { align-self: flex-start; white-space: normal; }
     .urgency-pills { flex-wrap: wrap; }
-    .icon-picker { justify-content: flex-start; max-width: 100%; }
+    .icon-picker { align-items: stretch; }
+    .icon-quick, .icon-grid { justify-content: flex-start; max-width: 100%; }
     .cl-del { opacity: 0.55; }
+    /* Clear button pinned to the top-right of the stacked row */
+    .field-clear { position: absolute; top: 12px; right: 14px; }
+    .field-label { padding-right: 34px; }
+    .ds { max-width: 100%; }
 
     .sidebar-header { padding: 16px 16px 12px; }
     .modal { padding: 22px; }
@@ -1339,12 +1372,6 @@ function parseNaturalLanguage(text) {
   return res;
 }
 
-function summarizeParse(p) {
-  const bits = [];
-  if (p.due) bits.push(fmtDate(p.due));
-  if (p.repeat) bits.push(p.repeat);
-  return bits.join(' · ');
-}
 
 function urgencyLabel(id) {
   const u = URGENCIES.find(x => x.id === id);
@@ -1850,6 +1877,21 @@ function wireDetail(r) {
   wireField($('d-notes'), $('nlp-hint-notes'), 'notes');
   autoGrow($('d-notes'));
   updateFullTitle();
+  updateNotifWarning(r);
+
+  // Red "clear" buttons — reset a single setting to its default
+  document.querySelectorAll('#detail .field-clear').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const which = btn.dataset.clear;
+      if (which === 'due') r.due = '';
+      else if (which === 'repeat') r.repeat = 'Never';
+      else if (which === 'end') r.endText = 'Never';
+      else if (which === 'snooze') r.snooze = 'Off';
+      else if (which === 'urgency') r.urgency = 'none';
+      else if (which === 'icon') r.icon = '';
+      save(); renderDetail(); renderList();
+    });
+  });
 
   // Show/hide the end-repeat row without a full re-render (keeps input focus)
   function toggleRepeatRows() {
@@ -1860,11 +1902,11 @@ function wireDetail(r) {
   const dueText = $('d-due-text'), duePreset = $('d-due-preset'), duePick = $('d-due');
   function commitDueText() {
     const v = dueText.value.trim();
-    if (v === '') { r.due = ''; duePick.value = ''; duePreset.value = '__custom'; save(); renderList(); return; }
+    if (v === '') { r.due = ''; duePick.value = ''; duePreset.value = '__custom'; save(); renderList(); updateNotifWarning(r); return; }
     const parsed = parseNaturalLanguage(v);
     if (parsed.due) { r.due = parsed.due; duePick.value = r.due; }
     duePreset.value = DUE_PRESETS.includes(v) ? v : '__custom';
-    save(); renderList();
+    save(); renderList(); updateNotifWarning(r);
   }
   dueText.addEventListener('input', () => updateDetect('datetime', dueText.value));
   dueText.addEventListener('change', commitDueText);
@@ -1875,14 +1917,14 @@ function wireDetail(r) {
     if (parsed.due) { r.due = parsed.due; duePick.value = r.due; }
     dueText.value = e.target.value;
     updateDetect('datetime', dueText.value);
-    save(); renderList();
+    save(); renderList(); updateNotifWarning(r);
   });
   duePick.addEventListener('change', e => {
     r.due = e.target.value;
     dueText.value = r.due ? fmtDate(r.due) : '';
     duePreset.value = '__custom';
     updateDetect('datetime', dueText.value);
-    save(); renderList();
+    save(); renderList(); updateNotifWarning(r);
   });
 
   // --- Repeat combo: text + preset dropdown mirror each other ---
@@ -1892,7 +1934,7 @@ function wireDetail(r) {
     repeatPreset.value = isPresetRepeat(r.repeat) ? r.repeat : '__custom';
     toggleRepeatRows();
     updateDetect('repeat', r.repeat);
-    save(); renderList();
+    save(); renderList(); updateNotifWarning(r);
   });
   repeatPreset.addEventListener('change', e => {
     if (e.target.value === '__custom') return;
@@ -1900,7 +1942,7 @@ function wireDetail(r) {
     repeatInput.value = r.repeat;
     toggleRepeatRows();
     updateDetect('repeat', r.repeat);
-    save(); renderList();
+    save(); renderList(); updateNotifWarning(r);
   });
 
   // --- End repeat combo: text + preset dropdown ---
@@ -1945,13 +1987,21 @@ function wireDetail(r) {
     p.addEventListener('click', () => { r.urgency = p.dataset.urg; save(); renderDetail(); renderList(); });
   });
 
-  const iconPicker = $('d-icon');
-  iconPicker.querySelectorAll('[data-icon]').forEach(b => {
-    b.addEventListener('click', () => {
-      r.icon = b.dataset.icon;
-      iconPicker.querySelectorAll('.icon-choice').forEach(x => x.classList.toggle('sel', x.dataset.icon === r.icon));
-      save(); renderList();
-    });
+  // --- Icon picker (few + "more" grid) ---
+  const iconBox = $('d-icon');
+  renderIconPicker(r, false);
+  iconBox.addEventListener('click', e => {
+    const more = e.target.closest('[data-more]');
+    if (more) {
+      const grid = iconBox.querySelector('.icon-grid');
+      const open = grid.hasAttribute('hidden');
+      renderIconPicker(r, open); // toggle
+      return;
+    }
+    const btn = e.target.closest('[data-icon]');
+    if (!btn) return;
+    r.icon = btn.dataset.icon;
+    save(); renderIconPicker(r, false); renderList();
   });
 
   // --- Checklist ---
@@ -2390,6 +2440,7 @@ async function enableNotifications() {
     if (perm === 'granted') {
       try { new Notification('Reminders', { body: 'Notifications are now enabled.' }); } catch (e) {}
       toast('Notifications enabled');
+      if (selectedId) renderDetail(); // clears the "notifications off" warning
     }
   } catch (e) {}
 }
