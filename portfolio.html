@@ -28,6 +28,7 @@
       --status-complete: #c8ff00;
       --status-active:   #e8e8e8;
       --status-wip:      #8a8a9a;
+      --status-retired:  #5a5a66;
     }
 
     html { scroll-behavior: smooth; }
@@ -245,6 +246,21 @@
     .project-card[href]:hover::after { opacity: 1; }
     .project-card:not([href]):hover { background: var(--card-hover); }
     .project-card.hide { display: none; }
+
+    /* Retired projects: dimmed (applied to children so the card's fadeUp animation doesn't override opacity) */
+    .project-card.retired > * {
+      opacity: 0.4;
+      filter: grayscale(1);
+      transition: opacity 0.2s, filter 0.2s;
+    }
+    .project-card.retired:hover > * { opacity: 0.7; }
+    .retired-tag {
+      font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 3px;
+      border: 1px solid var(--muted); color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      white-space: nowrap;
+    }
 
     .card-accent-bar {
       width: 3px; flex-shrink: 0;
@@ -565,6 +581,7 @@
           <button class="drawer-chip" data-g="status" data-v="complete" style="--chip-color:#c8ff00" onclick="toggleDrawer(this)">Complete</button>
           <button class="drawer-chip" data-g="status" data-v="active"   style="--chip-color:#e8e8e8" onclick="toggleDrawer(this)">Active</button>
           <button class="drawer-chip" data-g="status" data-v="wip"      style="--chip-color:#8a8a9a" onclick="toggleDrawer(this)">In Progress</button>
+          <button class="drawer-chip" data-g="status" data-v="retired"  style="--chip-color:#5a5a66" onclick="toggleDrawer(this)">Retired</button>
         </div>
       </div>
       <button class="drawer-clear" onclick="clearAll()">⟳ &nbsp;Clear All Filters</button>
@@ -606,6 +623,10 @@
         </button>
         <button class="chip" data-g="status" data-v="wip" style="--chip-color:#8a8a9a" onclick="toggle(this)">
           <span class="chip-dot"></span><span class="chip-label">In Progress</span>
+          <span class="chip-check">✓</span>
+        </button>
+        <button class="chip" data-g="status" data-v="retired" style="--chip-color:#5a5a66" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Retired</span>
           <span class="chip-check">✓</span>
         </button>
       </div>
@@ -663,14 +684,17 @@
     complete: '#c8ff00',
     active:   '#e8e8e8',
     wip:      '#8a8a9a',
+    retired:  '#5a5a66',
   };
   const STATUS_LABEL = {
     complete: 'Complete',
     active:   'Active',
     wip:      'In Progress',
+    retired:  'Retired',
   };
 
   // ── PROJECTS with compatibility flags (only for web_apps) ──
+  // Set status: 'retired' to tag a project as retired and dim its card.
   const DATA = [
     {
       id: 'PROJ-001',
@@ -779,6 +803,7 @@
     complete:  'rgba(200,255,0,0.1)',
     active:    'rgba(232,232,232,0.08)',
     wip:       'rgba(138,138,154,0.12)',
+    retired:   'rgba(90,90,102,0.15)',
   };
 
   function toggle(btn) {
@@ -864,9 +889,12 @@
       card.style.setProperty('--cat-color', catColor);
       card.dataset.cat = p.cat;
       card.dataset.status = p.status;
+      const isRetired = p.status === 'retired';
+      if (isRetired) card.classList.add('retired');
 
       const tagPills = (p.tags||[]).map(t => `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`).join('');
       const linkIcon = p.url ? `<span class="card-link-icon">↗</span>` : '';
+      const retiredTag = isRetired ? `<span class="retired-tag">Retired</span>` : '';
 
       // --- Compatibility markup: only for web_apps ---
       let compatMarkup = '';
@@ -885,7 +913,7 @@
         <div class="card-accent-bar"></div>
         <div class="card-body">
           <div class="card-left">
-            <div class="card-name">${p.name}${linkIcon}</div>
+            <div class="card-name">${p.name}${linkIcon}${retiredTag}</div>
             <div class="card-id">${p.id}</div>
             <div class="card-desc">${p.desc}</div>
             <div class="card-tags">${tagPills}</div>
