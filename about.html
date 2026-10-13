@@ -21,6 +21,7 @@
       --card-hover:#17171c;
       --tag-bg:    #1a1a22;
       --radius:    10px;
+      --max:       920px;
     }
 
     html { scroll-behavior: smooth; }
@@ -60,11 +61,6 @@
       font-style: italic;
     }
     .title .line-full { display: block; }
-    .title .line-name {
-      display: block;
-      color: transparent;
-      -webkit-text-stroke: 1.2px var(--text);
-    }
     .title-underline {
       width: 100%;
       height: 1.5px;
@@ -103,11 +99,74 @@
     }
     .nav-icons a:hover svg { filter: drop-shadow(0 0 5px rgba(200,255,0,0.5)); }
 
-    /* ─── BIO SECTION ─── */
-    .bio-wrap {
+    /* ─── HERO: PHOTO + INTRO + BIO ─── */
+    .hero {
       width: 100%;
-      max-width: 700px;
+      max-width: var(--max);
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: clamp(1.5rem, 4vw, 2.75rem);
+      align-items: start;
       animation: fadeUp 0.7s 0.1s ease both;
+    }
+
+    .portrait {
+      position: relative;
+      order: 2;                /* photo on the right */
+      margin: 0 0 12px 12px;   /* room for the offset frame */
+    }
+    .hero-text { order: 1; }
+    .portrait::before {        /* offset accent frame */
+      content: '';
+      position: absolute;
+      inset: 12px 12px -12px -12px;
+      border: 1.5px solid var(--accent);
+      border-radius: var(--radius);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .portrait img {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: auto;            /* let aspect-ratio control the crop */
+      aspect-ratio: 3 / 4;     /* portrait style */
+      object-fit: cover;
+      object-position: 50% 30%;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .greeting {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.6rem, 8vw, 4.6rem);
+      line-height: 0.95;
+      letter-spacing: 0.03em;
+      font-weight: 400;
+      color: var(--text);
+    }
+    .greeting span {
+      color: var(--accent);
+    }
+
+    .intro {
+      /* Exactly two blank lines between the greeting and the paragraph */
+      margin-top: calc(2 * 1.8em);
+      font-size: clamp(0.88rem, 2.2vw, 1rem);
+      line-height: 1.8;
+      color: #d4d4e2;
+      font-weight: 300;
+    }
+    .intro strong {
+      color: var(--text);
+      font-weight: 500;
     }
 
     .section-label {
@@ -148,7 +207,7 @@
     /* ─── SECTION WRAPPER ─── */
     .section-wrap {
       width: 100%;
-      max-width: 700px;
+      max-width: var(--max);
       animation: fadeUp 0.7s 0.2s ease both;
     }
     .section-wrap .section-label {
@@ -156,178 +215,70 @@
       width: 100%;
     }
 
-    .section-intro {
-      font-size: clamp(0.85rem, 2.2vw, 0.95rem);
-      color: #c8c8d8;
-      font-weight: 300;
-      margin-bottom: 0.9rem;
-    }
-    .wrapped-platform-icon {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-      color: var(--muted);
-      transition: color 0.2s;
-      display: flex;
-      align-items: center;
-    }
-    .wrapped-platform-icon svg { width: 18px; height: 18px; }
-    a.wrapped-item { text-decoration: none; color: inherit; }
-    a.wrapped-item:hover .wrapped-platform-icon { color: var(--accent); }
-
-    .wrapped-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .wrapped-item {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      background: var(--surface);
-      padding: clamp(0.9rem, 2.5vw, 1.1rem) clamp(1rem, 3vw, 1.5rem);
-      transition: background 0.2s;
-      position: relative;
-      cursor: pointer;
-    }
-    .wrapped-item::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(200,255,0,0.04) 0%, transparent 60%);
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-    }
-    .wrapped-item:hover { background: var(--card-hover); }
-    .wrapped-item:hover::after { opacity: 1; }
-
-    .wrapped-rank {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(1.6rem, 5vw, 2.2rem);
-      line-height: 1;
-      color: transparent;
-      -webkit-text-stroke: 1px var(--border);
-      min-width: 2.4rem;
-      text-align: right;
-      letter-spacing: -0.02em;
-      transition: -webkit-text-stroke 0.2s, color 0.2s;
-    }
-    .wrapped-item:hover .wrapped-rank {
-      -webkit-text-stroke: 1px var(--accent);
-    }
-    /* top 1 always gets accent fill */
-    .wrapped-item:first-child .wrapped-rank {
-      color: var(--accent);
-      -webkit-text-stroke: 0px transparent;
-    }
-
-    .wrapped-bar {
-      height: 28px;
-      border-radius: 3px;
-      background: linear-gradient(90deg, rgba(200,255,0,0.15), rgba(200,255,0,0.04));
-      transition: width 0.6s ease;
-      flex-shrink: 0;
-    }
-
-    .wrapped-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .wrapped-name {
-      font-weight: 500;
-      font-size: clamp(0.85rem, 2.2vw, 0.95rem);
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .wrapped-sub {
-      font-size: clamp(0.68rem, 1.6vw, 0.72rem);
-      color: var(--muted);
-      margin-top: 0.15rem;
-    }
-
-    .wrapped-emoji {
-      font-size: 1.1rem;
-      flex-shrink: 0;
-    }
-
-    /* ─── SPOTLIGHT CARDS ─── */
-    .spotlight-grid {
+    /* ─── FAVORITES (compact) ─── */
+    .fav-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
     }
 
-    .spotlight-card {
-      background: var(--surface);
-      padding: clamp(1.4rem, 4vw, 2rem);
+    .fav-card {
+      position: relative;
       display: flex;
       flex-direction: column;
-      gap: 0.7rem;
-      position: relative;
-      overflow: hidden;
-      transition: background 0.2s;
-      text-decoration: none;
+      gap: 0.3rem;
+      padding: 0.95rem 1.1rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       color: inherit;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
     }
-    .spotlight-card::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(200,255,0,0.04) 0%, transparent 60%);
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
+    .fav-card:hover,
+    .fav-card:focus-visible {
+      background: var(--card-hover);
+      border-color: rgba(200, 255, 0, 0.45);
+      transform: translateY(-2px);
+      outline: none;
     }
-    .spotlight-card:hover { background: var(--card-hover); }
-    .spotlight-card:hover::after { opacity: 1; }
 
-    .spotlight-type {
-      font-size: clamp(0.52rem, 1.5vw, 0.58rem);
+    .fav-label {
+      font-size: 0.58rem;
+      font-weight: 500;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
-      background: var(--tag-bg);
-      padding: 0.22rem 0.5rem;
-      border-radius: 3px;
-      align-self: flex-start;
+      padding-right: 1.2rem;   /* keep clear of the arrow */
     }
-
-    .spotlight-giant {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(1.8rem, 5vw, 3rem);
-      line-height: 1;
-      letter-spacing: 0.02em;
+    .fav-title {
+      font-size: clamp(0.95rem, 2.4vw, 1.05rem);
+      font-weight: 500;
+      line-height: 1.25;
       color: var(--text);
     }
-    .spotlight-giant .outline {
-      display: block;
-      color: transparent;
-      -webkit-text-stroke: 1.5px var(--muted);
-    }
-
-    .spotlight-year {
-      font-size: clamp(0.68rem, 1.6vw, 0.72rem);
-      color: var(--accent);
-      letter-spacing: 0.1em;
-    }
-
-    .spotlight-desc {
-      font-size: clamp(0.72rem, 1.8vw, 0.78rem);
-      color: var(--muted);
-      line-height: 1.65;
+    .fav-sub {
+      font-size: 0.72rem;
       font-weight: 300;
+      color: var(--muted);
+    }
+    .fav-arrow {
+      position: absolute;
+      top: 0.9rem;
+      right: 0.95rem;
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: var(--muted);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.2s, transform 0.2s;
+    }
+    .fav-card:hover .fav-arrow,
+    .fav-card:focus-visible .fav-arrow {
+      stroke: var(--accent);
+      transform: translate(1px, -1px);
     }
 
     /* ─── FOOTER ─── */
@@ -346,14 +297,26 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 720px) {
-      .spotlight-grid { grid-template-columns: 1fr; }
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 760px) {
+      .hero { grid-template-columns: 1fr; }
+      .portrait {
+        order: 0;
+        width: min(100%, 380px);
+        margin: 0 auto 12px;
+        left: 6px;             /* keeps the offset frame centered */
+      }
+      .hero-text { order: 1; }
+      .portrait img { aspect-ratio: 4 / 5; }
+    }
+    @media (max-width: 760px) {
+      .fav-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 360px) {
+      .fav-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 600px) {
       body { padding-top: clamp(2rem, 8vw, 3.5rem); }
-    }
-    @media (max-width: 430px) {
-      .wrapped-bar { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::after { animation: none !important; transition: none !important; }
@@ -386,8 +349,23 @@
     </nav>
   </header>
 
-  <!-- BIO -->
-  <div class="bio-wrap">
+  <!-- HERO: PHOTO + INTRO -->
+  <section class="hero">
+    <figure class="portrait">
+      <img src="kevin-drums.jpg" alt="Drum set picture" width="1100" height="1467" />
+    </figure>
+
+    <div class="hero-text">
+      <h2 class="greeting">Hey, I'm <span>Kevin.</span></h2>
+
+      <p class="intro">
+        I've had a strong passion for designing, programming, and machining for most of my life. Most nights, I'm either on Satisfactory or sketching out my next design or program while my 3D printer works through a build in the background. When friends come by, I'd rather be behind my drum set, where a quick jam usually turns into a full session.
+      </p>
+    </div>
+  </section>
+
+  <!-- WHY MACHINING -->
+  <div class="section-wrap bio-wrap" style="animation-delay:0.18s">
     <div class="section-label">— Why Machining</div>
     <div class="bio-card">
       <p>
@@ -399,58 +377,34 @@
   <!-- FAVORITES -->
   <div class="section-wrap" style="animation-delay:0.22s">
     <div class="section-label">— Favorites</div>
-    <div class="spotlight-grid">
+    <div class="fav-grid">
 
-      <a class="spotlight-card" href="https://store.steampowered.com/app/526870/Satisfactory/" target="_blank" rel="noopener">
-        <span class="spotlight-type">Top Game</span>
-        <div class="spotlight-giant">
-          <span>Satisfactory</span>
-        </div>
-        <div class="spotlight-year">Coffee Stain Studios</div>
-        <div class="spotlight-desc">
-          Equal parts engineering puzzle and stress reliever. Planning out a factory, optimizing throughput, watching a mess of belts and machines finally click into place — it scratches the same itch as machining does.
-        </div>
+      <a class="fav-card" href="https://open.spotify.com/track/1N0VdadHaG3W1fROdJjZBV" target="_blank" rel="noopener">
+        <span class="fav-label">Favorite Song</span>
+        <span class="fav-title">Up Up &amp; Away</span>
+        <span class="fav-sub">Ryan Caraveo</span>
+        <svg class="fav-arrow" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4 3h5v5"/></svg>
       </a>
 
-      <a class="spotlight-card" href="https://open.spotify.com/track/5luRtXNAaDFuw9fEeJUaCt" target="_blank" rel="noopener">
-        <span class="spotlight-type">Top Song</span>
-        <div class="spotlight-giant">
-          <span>All of My Soul</span>
-        </div>
-        <div class="spotlight-year">Ryan Caraveo</div>
-        <div class="spotlight-desc">
-          One of those tracks that just hits every time it comes on — the energy, the flow, the production. Been on repeat since the day I found it.
-        </div>
+      <a class="fav-card" href="https://store.steampowered.com/app/526870/Satisfactory/" target="_blank" rel="noopener">
+        <span class="fav-label">Favorite Game</span>
+        <span class="fav-title">Satisfactory</span>
+        <span class="fav-sub">Coffee Stain Studios</span>
+        <svg class="fav-arrow" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4 3h5v5"/></svg>
       </a>
 
-    </div>
-  </div>
-
-  <!-- MOVIES & TV -->
-  <div class="section-wrap" style="animation-delay:0.38s">
-    <div class="section-label">— Screen Picks</div>
-    <div class="spotlight-grid">
-
-      <a class="spotlight-card" href="https://www.imdb.com/title/tt2582802/" target="_blank" rel="noopener">
-        <span class="spotlight-type">All-Time Film</span>
-        <div class="spotlight-giant">
-          <span>Whiplash</span>
-        </div>
-        <div class="spotlight-year">2014 · Damien Chazelle</div>
-        <div class="spotlight-desc">
-          Hits different when you were a percussionist. The obsessive drive to be the best, the chaos of a high-stakes performance, the relationship between a student and an impossible mentor — it takes me right back to band class in a way nothing else does.
-        </div>
+      <a class="fav-card" href="https://www.imdb.com/title/tt2582802/" target="_blank" rel="noopener">
+        <span class="fav-label">Favorite Movie</span>
+        <span class="fav-title">Whiplash</span>
+        <span class="fav-sub">2014 · Damien Chazelle</span>
+        <svg class="fav-arrow" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4 3h5v5"/></svg>
       </a>
 
-      <a class="spotlight-card" href="https://www.imdb.com/title/tt0386676/" target="_blank" rel="noopener">
-        <span class="spotlight-type">All-Time Show</span>
-        <div class="spotlight-giant">
-          <span>The Office</span>
-        </div>
-        <div class="spotlight-year">US · Greg Daniels</div>
-        <div class="spotlight-desc">
-          Every single character is someone I've dealt with in real life. That's the genius of it — the clueless boss, the tryhard, the one sane person stuck in the middle. It's not just funny, it's a documentary about every job I've ever had.
-        </div>
+      <a class="fav-card" href="https://www.imdb.com/title/tt0386676/" target="_blank" rel="noopener">
+        <span class="fav-label">Favorite TV Series</span>
+        <span class="fav-title">The Office</span>
+        <span class="fav-sub">US · Greg Daniels</span>
+        <svg class="fav-arrow" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4 3h5v5"/></svg>
       </a>
 
     </div>
@@ -458,7 +412,6 @@
 
   <!-- FOOTER -->
   <footer>KEVMCG1.GITHUB.IO</footer>
-
 
 </body>
 </html>
