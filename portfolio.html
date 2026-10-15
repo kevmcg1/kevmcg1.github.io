@@ -378,6 +378,11 @@
     }
 
     .card-left { flex: 1; min-width: 0; }
+    /* small looping preview on regular (non-featured) cards */
+    .card-thumb {
+      position: relative; flex: 0 0 200px; aspect-ratio: 16 / 9;
+      background: #0a0a0e; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    }
 
     .card-name {
       font-family: 'DM Sans', sans-serif;
@@ -639,6 +644,7 @@
       .stats { flex-wrap: wrap; }
       .stat { min-width: calc(33.33% - 1px); border-bottom: 1px solid var(--border); }
       .card-body { flex-wrap: wrap; gap: 12px; }
+      .card-thumb { flex: 0 0 100%; }
       .card-right { flex-direction: row; align-items: center; width: 100%; justify-content: flex-start; }
       .fc-body { padding: 16px 16px 18px; }
     }
@@ -837,7 +843,7 @@
       url: '/insert-master/',
       desc: 'Insert Decoder & Builder — a tool for working with machining inserts.',
       tags: ['Featured', 'Web App', 'Tool'],
-      previewScene: 'insert',
+      previewVideo: '/previews/insert-master-preview.mp4',
       updated: 'Mar 2026',
       laptopCompat: true,
       mobileCompat: true,
@@ -848,6 +854,7 @@
       cat: 'web_apps',
       status: 'wip',
       url: '/web_apps/speedsnfeeds.html',
+      previewVideo: '/previews/speeds-and-feeds-preview.mp4',
       desc: 'Enter your material, tool, and machine parameters to get instant feed rate and spindle speed recommendations.',
       tags: ['CNC', 'Calculator', 'Milling', 'Turning'],
       updated: 'Mar 2026',
@@ -860,6 +867,7 @@
       cat: 'web_apps',
       status: 'wip',
       url: '/web_apps/speed_programmer.html',
+      previewVideo: '/previews/speed-programmer-preview.mp4',
       desc: 'Quick programmer for those who are beginners to manual programming, or really just need g-code fast.',
       tags: ['Web App', 'Tool'],
       updated: 'Mar 2026',
@@ -872,6 +880,7 @@
       cat: 'games',
       status: 'wip',
       url: '/web_apps/car_thing.html',
+      previewVideo: '/previews/car-thing-preview.mp4',
       desc: 'Low poly car simulator. Nothing really special to it.',
       tags: ['Web App'],
       previewScene: 'car',
@@ -909,6 +918,7 @@
       cat: 'web_apps',
       status: 'complete',
       url: '/web_apps/reminders.html',
+      previewVideo: '/previews/reminders-preview.mp4',
       desc: 'Easy reminders app.',
       tags: ['Web App', 'Tool'],
       updated: 'Jul 2026',
@@ -1492,6 +1502,7 @@
       card.innerHTML = `
         <div class="card-accent-bar"></div>
         <div class="card-body">
+          ${p.previewVideo && !isRetired ? '<div class="card-thumb"></div>' : ''}
           <div class="card-left">
             <div class="card-name">${p.name}${linkIcon}${retiredTag}</div>
             <div class="card-id">${p.id}</div>
@@ -1513,6 +1524,8 @@
         </div>
       `;
       wrap.appendChild(card);
+      const thumb = card.querySelector('.card-thumb');
+      if (thumb) mountPreview(thumb, p);
     });
     apply();
   })();
