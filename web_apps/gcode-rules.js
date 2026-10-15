@@ -1,7 +1,7 @@
 // ============================================================
-// HAAS CONVERSION LIBRARY
-// haas-rules.js — all shortcuts, NL rules, G/M codes, and
-// converter logic. Exposes window.HaasConverter.
+// G-CODE CONVERSION LIBRARY
+// gcode-rules.js — all shortcuts, NL rules, G/M codes, and
+// converter logic. Exposes window.GcodeConverter.
 // To add a new phrase: add an entry to SHORTCUTS or NL_RULES,
 // then add a matching entry in NL_SUGGESTIONS for autocomplete.
 // ============================================================
@@ -86,7 +86,7 @@
       desc: 'Safety line (metric)', convert: () => 'G00 G17 G21 G40 G49 G80 G90' },
     { name: 'program header', pattern: /^(?:program\s+header|new\s+program|start\s+program)$/i,
       desc: 'New program header block',
-      convert: () => `%\nO0001 (PART NAME)\n(DATE: ${new Date().toLocaleDateString()})\n(PROGRAMMER: )\n(MATERIAL: )\n(MACHINE: HAAS VF-2)` },
+      convert: () => `%\nO0001 (PART NAME)\n(DATE: ${new Date().toLocaleDateString()})\n(PROGRAMMER: )\n(MATERIAL: )\n(MACHINE: VF-2)` },
     { name: 'home z', pattern: /^(?:home\s+z|z\s+home|retract\s+z)$/i,
       desc: 'Home Z (G28)', convert: () => 'G28 G91 Z0.\nG90' },
     { name: 'home all', pattern: /^(?:home\s+all|home\s+xy|home\s+xyz|return\s+home|go\s+home)$/i,
@@ -483,7 +483,7 @@
   // PUBLIC API
   // ----------------------------------------------------------
 
-  window.HaasConverter = {
+  window.GcodeConverter = {
     detectUnits,
     applyUnitFormat,
     getLastMotionModal,

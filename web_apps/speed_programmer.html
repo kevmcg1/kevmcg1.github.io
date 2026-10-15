@@ -6,7 +6,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HAAS SPEED CODER</title>
+<title>SPEED CODER</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -199,7 +199,7 @@
 <div id="app">
   <div id="topbar">
     <div class="top-row">
-      <span class="logo">HAAS SPEED CODER</span>
+      <span class="logo">SPEED CODER</span>
       <div class="sep"></div>
       <span id="units-badge">UNITS ?</span>
       <div class="sep"></div>
@@ -247,10 +247,10 @@
   </div>
 </div>
 
-<script src="haas-rules.js"></script>
+<script src="gcode-rules.js"></script>
 <script>
   // ============================================================
-  // UI CODE  (converter logic lives in haas-rules.js)
+  // UI CODE  (converter logic lives in gcode-rules.js)
   // ============================================================
   const editor = document.getElementById('editor');
   const highlight = document.getElementById('highlight');
@@ -281,23 +281,23 @@
     return line;
   }
 
-  function isHaasCodeLine(line) {
+  function isGcodeLine(line) {
     const trimmed = line.trim();
     if (trimmed === '') return false;
     if (trimmed.startsWith('(')) return false;
     if (trimmed.startsWith('O') && /^O\d+/.test(trimmed)) return false;
     if (trimmed.startsWith('%')) return false;
-    if (HaasConverter.tryConvertLine(trimmed, {}) !== null) return false;
+    if (GcodeConverter.tryConvertLine(trimmed, {}) !== null) return false;
     if (/\bG\d+|\bM\d+|\b[XYZUVW]\s*-?\d/.test(trimmed)) return true;
     if (/\bT\d+|\bS\d+|\bF\d+/.test(trimmed)) return true;
     return false;
   }
 
-  function addSemicolonsToHaasLinesOnly() {
+  function addSemicolonsToGcodeLinesOnly() {
     const lines = editor.value.split('\n');
     let modified = false;
     const newLines = lines.map(line => {
-      if (isHaasCodeLine(line)) {
+      if (isGcodeLine(line)) {
         const newLine = addSemicolonToLine(line);
         if (newLine !== line) modified = true;
         return newLine;
@@ -347,25 +347,25 @@
   }
 
   autoSemicolonBtn.addEventListener('click', toggleAutoSemicolon);
-  addSemicolonsBtn.addEventListener('click', addSemicolonsToHaasLinesOnly);
+  addSemicolonsBtn.addEventListener('click', addSemicolonsToGcodeLinesOnly);
   removeSemicolonsBtn.addEventListener('click', removeAllSemicolons);
 
   function updateUnitsBadge() {
-    currentUnits = HaasConverter.detectUnits(editor.value);
+    currentUnits = GcodeConverter.detectUnits(editor.value);
     const b = document.getElementById('units-badge');
     if (currentUnits === 'inch') { b.textContent = 'INCH (G20)'; b.className = 'inch'; }
     else if (currentUnits === 'metric') { b.textContent = 'METRIC (G21)'; b.className = 'metric'; }
     else { b.textContent = 'UNITS ?'; b.className = ''; }
   }
 
-  function fmtNum(numStr) { return HaasConverter.fmtNum(numStr); }
+  function fmtNum(numStr) { return GcodeConverter.fmtNum(numStr); }
   function applyUnitFormat(str) {
     if (!currentUnits) return str;
-    return HaasConverter.applyUnitFormat(str, currentUnits);
+    return GcodeConverter.applyUnitFormat(str, currentUnits);
   }
-  function parseCoords(str) { return HaasConverter.parseCoords(str); }
-  function tryConvertLine(rawLine, context) { return HaasConverter.tryConvertLine(rawLine, context); }
-  function getAutocompleteSuggestions(prefix) { return HaasConverter.getAutocompleteSuggestions(prefix); }
+  function parseCoords(str) { return GcodeConverter.parseCoords(str); }
+  function tryConvertLine(rawLine, context) { return GcodeConverter.tryConvertLine(rawLine, context); }
+  function getAutocompleteSuggestions(prefix) { return GcodeConverter.getAutocompleteSuggestions(prefix); }
 
   function esc(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -441,7 +441,7 @@
     acItems = suggestions; acIndex = -1;
     let html = '', lastType = null;
     suggestions.forEach((s, i) => {
-      const typeLabel = HaasConverter.TYPE_LABEL[s.type] || s.type;
+      const typeLabel = GcodeConverter.TYPE_LABEL[s.type] || s.type;
       if (s.type !== lastType) {
         html += `<div class="ac-section">${typeLabel}</div>`;
         lastType = s.type;
@@ -539,13 +539,13 @@
       const currentLine=val.slice(lineStart,end);
       hideAutocomplete();
 
-      currentUnits = HaasConverter.detectUnits(val.slice(0, lineStart));
-      const lastMotionModal = HaasConverter.getLastMotionModal(val.slice(0, lineStart));
+      currentUnits = GcodeConverter.detectUnits(val.slice(0, lineStart));
+      const lastMotionModal = GcodeConverter.getLastMotionModal(val.slice(0, lineStart));
       const context = { lastMotionModal };
 
       const cursorOffset = pos - lineStart;
       const isMidLine = cursorOffset > 0 && cursorOffset < currentLine.length;
-      const isPureGcode = HaasConverter.tryConvertLine(currentLine, context) === null
+      const isPureGcode = GcodeConverter.tryConvertLine(currentLine, context) === null
                           && /\bG\d+|\bM\d+|\b[XYZUVW]\s*-?\d|\bT\d+|\bS\d+|\bF\d+/i.test(currentLine)
                           && !/[a-z]{3,}/i.test(currentLine.replace(/\([^)]*\)/g, ''));
 
@@ -605,7 +605,7 @@
   const closeCheatSheetBtn = document.getElementById('close-cheat-sheet');
 
   function renderCheatSheet() {
-    const items = HaasConverter.getCheatSheetItems();
+    const items = GcodeConverter.getCheatSheetItems();
     let html = '';
     let lastCategory = '';
     for (const item of items) {
@@ -776,7 +776,7 @@
   // debug panel is always 100% in sync with the cheat sheet.
   function buildDebugCases() {
     const cases = [];
-    const items = HaasConverter.getCheatSheetItems();
+    const items = GcodeConverter.getCheatSheetItems();
     for (const item of items) {
       // Substitute placeholder tokens with safe example values
       let input = item.code
@@ -814,7 +814,7 @@
     const DEBUG_CASES = buildDebugCases();
 
     for (const tc of DEBUG_CASES) {
-      const result = HaasConverter.tryConvertLine(tc.input, ctx);
+      const result = GcodeConverter.tryConvertLine(tc.input, ctx);
       let ok, isInfo;
       if (tc.expect === undefined) {
         // G-Code / M-Code info rows — no pass/fail, just show output
@@ -861,7 +861,7 @@
 
   // Initial content
   editor.value = `%
-O0001 (EXAMPLE PROGRAM - HAAS VF-2)
+O0001 (EXAMPLE PROGRAM - VF-2)
 (DATE: ${new Date().toLocaleDateString()})
 (MATERIAL: 6061 ALUMINUM)
 
