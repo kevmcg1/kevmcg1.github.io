@@ -904,5 +904,28 @@ G41 feed to Z-.5 at 12.`;
 
   updateLineNumbers();
 </script>
+
+<!-- alpha notice: shown every time this page opens -->
+<style>
+#alphaNotice{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);font-family:'Roboto','Segoe UI',system-ui,sans-serif}
+#alphaNotice[hidden]{display:none}
+#alphaNotice .an-box{max-width:420px;width:100%;background:#161b22;color:#cdd9e5;border:1px solid #2d343f;border-radius:12px;padding:26px 24px 22px;box-shadow:0 20px 60px rgba(0,0,0,.6);text-align:center}
+#alphaNotice h2{font-size:1.05rem;margin:0 0 10px;letter-spacing:.06em;text-transform:uppercase;color:#e5c07b}
+#alphaNotice p{margin:0 0 20px;line-height:1.5;font-size:.95rem}
+#alphaNotice button{font:inherit;font-weight:700;cursor:pointer;background:#e06c75;color:#0d1117;border:0;border-radius:8px;padding:10px 20px}
+#alphaNotice button:hover{filter:brightness(1.1)}
+#alphaNotice button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+</style>
+<div id="alphaNotice" role="alertdialog" aria-modal="true" aria-labelledby="anT" aria-describedby="anP">
+  <div class="an-box">
+    <h2 id="anT">Alpha testing</h2>
+    <p id="anP">This project is being reworked completely and is in alpha testing. Expect bugs/glitches!</p>
+    <button type="button" id="anGo">Continue anyway</button>
+  </div>
+</div>
+<script>
+(function(){var n=document.getElementById('alphaNotice'),b=document.getElementById('anGo');
+b.addEventListener('click',function(){n.hidden=true;});b.focus();})();
+</script>
 </body>
 </html>

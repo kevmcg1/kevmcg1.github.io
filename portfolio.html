@@ -685,6 +685,7 @@
         <div class="drawer-chips">
           <button class="drawer-chip" data-g="cat" data-v="web_apps"  style="--chip-color:#c8ff00" onclick="toggleDrawer(this)">Web Apps</button>
           <button class="drawer-chip" data-g="cat" data-v="shop_work" style="--chip-color:#e8e8e8" onclick="toggleDrawer(this)">Shop Work</button>
+          <button class="drawer-chip" data-g="cat" data-v="games" style="--chip-color:#7ab8ff" onclick="toggleDrawer(this)">Games</button>
         </div>
       </div>
       <div class="drawer-section">
@@ -717,6 +718,10 @@
         </button>
         <button class="chip" data-g="cat" data-v="shop_work" style="--chip-color:#e8e8e8" onclick="toggle(this)">
           <span class="chip-dot"></span><span class="chip-label">Shop Work</span>
+          <span class="chip-check">✓</span>
+        </button>
+        <button class="chip" data-g="cat" data-v="games" style="--chip-color:#7ab8ff" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Games</span>
           <span class="chip-check">✓</span>
         </button>
       </div>
@@ -786,6 +791,7 @@
       <div class="stat"><div class="stat-n" id="sTotal">0</div><div class="stat-l">Showing</div></div>
       <div class="stat"><div class="stat-n" id="sWebApps">0</div><div class="stat-l">Web Apps</div></div>
       <div class="stat"><div class="stat-n" id="sShopWork">0</div><div class="stat-l">Shop Work</div></div>
+      <div class="stat"><div class="stat-n" id="sGames">0</div><div class="stat-l">Games</div></div>
     </div>
   </main>
 </div>
@@ -797,10 +803,12 @@
   const CAT_COLOR = {
     web_apps:  '#c8ff00',
     shop_work: '#e8e8e8',
+    games:     '#7ab8ff',
   };
   const CAT_LABEL = {
     web_apps:  'Web App',
     shop_work: 'Shop Work',
+    games:     'Game',
   };
   const STATUS_COLOR = {
     complete: '#c8ff00',
@@ -861,7 +869,7 @@
     {
       id: 'PROJ-004',
       name: 'Car Thing',
-      cat: 'web_apps',
+      cat: 'games',
       status: 'wip',
       url: '/web_apps/car_thing.html',
       desc: 'Low poly car simulator. Nothing really special to it.',
@@ -923,7 +931,7 @@
     {
       id: 'PROJ-009',
       name: 'Snowboard Game',
-      cat: 'web_apps',
+      cat: 'games',
       status: 'complete',
       url: '/snowboard/',
       desc: 'Snowboarding game!',
@@ -944,6 +952,7 @@
   const CHIP_BG = {
     web_apps:  'rgba(200,255,0,0.1)',
     shop_work: 'rgba(232,232,232,0.08)',
+    games:     'rgba(122,184,255,0.1)',
     complete:  'rgba(200,255,0,0.1)',
     active:    'rgba(232,232,232,0.08)',
     wip:       'rgba(138,138,154,0.12)',
@@ -973,7 +982,7 @@
 
   function apply() {
     const cards = document.querySelectorAll('.project-card, .featured-card');
-    let vis=0, webApps=0, shopWork=0, visFeat=0, visReg=0;
+    let vis=0, webApps=0, shopWork=0, games=0, visFeat=0, visReg=0;
     cards.forEach(c => {
       const ok = (F.cat.size===0 || F.cat.has(c.dataset.cat)) && (F.status.size===0 || F.status.has(c.dataset.status));
       c.classList.toggle('hide', !ok);
@@ -982,6 +991,7 @@
         if (c.classList.contains('featured-card')) visFeat++; else visReg++;
         if (c.dataset.cat==='web_apps') webApps++;
         if (c.dataset.cat==='shop_work') shopWork++;
+        if (c.dataset.cat==='games') games++;
       }
     });
     const fs = document.getElementById('featured');
@@ -992,6 +1002,7 @@
     document.getElementById('sTotal').textContent = vis;
     document.getElementById('sWebApps').textContent = webApps;
     document.getElementById('sShopWork').textContent = shopWork;
+    document.getElementById('sGames').textContent = games;
     document.getElementById('empty').classList.toggle('show', vis===0);
     const bar = document.getElementById('tagBar');
     bar.innerHTML='';
@@ -1383,7 +1394,7 @@
 
   // ── Shared markup ──
   function compatHTML(p) {
-    if (p.cat === 'web_apps' && (p.laptopCompat !== undefined || p.mobileCompat !== undefined)) {
+    if ((p.cat === 'web_apps' || p.cat === 'games') && (p.laptopCompat !== undefined || p.mobileCompat !== undefined)) {
       const laptopSymbol = p.laptopCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
       const mobileSymbol = p.mobileCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
       return `
