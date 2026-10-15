@@ -7,6 +7,30 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+  /* Seasonal theme, picked from the visitor's own date before the first paint (portfolio page only):
+       Halloween   Oct 1 – Nov 1        Christmas  Dec 1 – Dec 31      New Year  Jan 1 – Jan 2
+       St. Patrick's Day  Mar 17 only   4th of July  Jul 4 only
+     Preview any of them with ?season=halloween|christmas|newyear|stpatricks|july4  (or ?season=off to see the normal look). */
+  (function () {
+    var NAMES = { halloween: 1, christmas: 1, newyear: 1, stpatricks: 1, july4: 1 };
+    function seasonFor(d) {
+      var m = d.getMonth() + 1, day = d.getDate();
+      if (m === 10 || (m === 11 && day === 1)) return 'halloween';
+      if (m === 12) return 'christmas';
+      if (m === 1 && day <= 2) return 'newyear';
+      if (m === 3 && day === 17) return 'stpatricks';
+      if (m === 7 && day === 4) return 'july4';
+      return '';
+    }
+    var s = seasonFor(new Date());
+    try {
+      var q = new URLSearchParams(location.search).get('season');
+      if (q === 'off') s = ''; else if (q && NAMES[q]) s = q;
+    } catch (e) {}
+    if (s) document.documentElement.setAttribute('data-season', s);
+  })();
+  </script>
   <title>Project Registry — Compatibility Overview</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,18 +43,60 @@
       --text:      #e8e8e8;
       --muted:     #8a8a9a;
       --accent:    #c8ff00;
+      --accent-rgb: 200,255,0;
+      --accent-hover: #d6ff3a;
+      --accent2:   #8a8a9a;
       --card-hover:#17171c;
       --tag-bg:    #1a1a22;
       --radius:    10px;
 
       /* category colors */
-      --cat-web:   #c8ff00;
+      --cat-web:   var(--accent);
       --cat-shop:  #e8e8e8;
-      --status-complete: #c8ff00;
+      --status-complete: var(--accent);
       --status-active:   #e8e8e8;
       --status-wip:      #8a8a9a;
       --status-retired:  #5a5a66;
     }
+
+
+    /* ── SEASONAL THEMES (set by the date script in <head>) ── */
+    [data-season="halloween"] { --bg-top:#150b20; --bg-bottom:#07040d; --surface:#1a1126; --border:#31204a; --text:#f0e8f7; --muted:#a591bd; --accent:#ff8a1f; --accent-rgb:255,138,31; --accent-hover:#ffa347; --accent2:#a66bff; --card-hover:#21162f; --tag-bg:#271a3a; }
+    [data-season="christmas"]  { --bg-top:#0c1712; --bg-bottom:#050a08; --surface:#112019; --border:#244636; --text:#f2f7f3; --muted:#8fb0a0; --accent:#ff4d5a; --accent-rgb:255,77,90; --accent-hover:#ff7280; --accent2:#3ddc84; --card-hover:#162a20; --tag-bg:#1a3226; }
+    [data-season="newyear"]    { --bg-top:#100e1a; --bg-bottom:#06050c; --surface:#16132a; --border:#2d2850; --text:#f3f1fb; --muted:#9a95bd; --accent:#ffd24a; --accent-rgb:255,210,74; --accent-hover:#ffe07a; --accent2:#c9d3ff; --card-hover:#1c1836; --tag-bg:#221e40; }
+    [data-season="stpatricks"] { --bg-top:#08150c; --bg-bottom:#040a06; --surface:#0f1d13; --border:#1f4128; --text:#eef8f0; --muted:#86ad90; --accent:#3ddc6a; --accent-rgb:61,220,106; --accent-hover:#6af08e; --accent2:#ffd24a; --card-hover:#14261a; --tag-bg:#183222; }
+    [data-season="july4"]      { --bg-top:#0a0f22; --bg-bottom:#04060f; --surface:#101734; --border:#26325f; --text:#f2f4fc; --muted:#8f9ac4; --accent:#ff4d5e; --accent-rgb:255,77,94; --accent-hover:#ff7584; --accent2:#4d8dff; --card-hover:#152043; --tag-bg:#1a2650; }
+
+    .season-banner {
+      display: none; align-items: center; gap: 10px; width: fit-content; max-width: 100%;
+      margin-bottom: 18px; padding: 8px 16px; border-radius: 999px;
+      border: 1px solid rgba(var(--accent-rgb), 0.55);
+      background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.16), transparent);
+      color: var(--text); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+      box-shadow: 0 0 22px rgba(var(--accent-rgb), 0.18);
+    }
+    [data-season] .season-banner { display: inline-flex; }
+    .season-banner b { color: var(--accent); font-weight: 500; }
+    [data-season] .main-header h1 span { -webkit-text-stroke-color: var(--accent2); }
+
+    /* floating decorations: sparse, above the page, never block a click */
+    #seasonFx { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+    #seasonFx i {
+      position: absolute; top: -8vh; font-style: normal; line-height: 1; opacity: 0.85;
+      filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.35));
+      animation: seasonFall linear infinite;
+    }
+    #seasonFx.twinkle i { top: auto; animation-name: seasonTwinkle; animation-timing-function: ease-in-out; }
+    @keyframes seasonFall {
+      0%   { transform: translate3d(0, -8vh, 0) rotate(0deg); }
+      50%  { transform: translate3d(var(--sway, 24px), 54vh, 0) rotate(var(--spin, 180deg)); }
+      100% { transform: translate3d(calc(var(--sway, 24px) * -0.6), 112vh, 0) rotate(calc(var(--spin, 180deg) * 2)); }
+    }
+    @keyframes seasonTwinkle {
+      0%, 100% { transform: scale(0.55); opacity: 0.15; }
+      50%      { transform: scale(1.15); opacity: 0.95; }
+    }
+    @media (prefers-reduced-motion: reduce) { #seasonFx { display: none; } }
 
     html { scroll-behavior: smooth; }
 
@@ -275,7 +341,7 @@
       background: rgba(13,13,15,0.72); backdrop-filter: blur(4px);
       border: 1px solid rgba(255,255,255,0.08);
     }
-    .pv-badge { left: 12px; color: var(--accent); border-color: rgba(200,255,0,0.35); }
+    .pv-badge { left: 12px; color: var(--accent); border-color: rgba(var(--accent-rgb),0.35); }
 
     .fc-body { flex: 1; padding: 20px 22px 22px; display: flex; flex-direction: column; }
     .fc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
@@ -307,7 +373,7 @@
       text-decoration: none; cursor: pointer;
       transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
     }
-    .open-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(200,255,0,0.28); background: #d6ff3a; }
+    .open-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(var(--accent-rgb),0.28); background: var(--accent-hover); }
     .open-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
     .open-btn.disabled {
       background: transparent; color: var(--muted); border-color: var(--border);
@@ -342,7 +408,7 @@
     .project-card::after {
       content: '';
       position: absolute; inset: 0;
-      background: linear-gradient(90deg, rgba(200,255,0,0.04) 0%, transparent 60%);
+      background: linear-gradient(90deg, rgba(var(--accent-rgb),0.04) 0%, transparent 60%);
       opacity: 0;
       transition: opacity 0.3s;
       pointer-events: none;
@@ -488,8 +554,8 @@
       line-height: 1;
     }
     .compat-check {
-      color: #c8ff00;
-      text-shadow: 0 0 2px #c8ff0030;
+      color: var(--accent);
+      text-shadow: 0 0 2px rgba(var(--accent-rgb),0.19);
     }
     .compat-x {
       color: #a0a0b4;
@@ -689,7 +755,7 @@
       <div class="drawer-section">
         <div class="drawer-section-title">Category</div>
         <div class="drawer-chips">
-          <button class="drawer-chip" data-g="cat" data-v="web_apps"  style="--chip-color:#c8ff00" onclick="toggleDrawer(this)">Web Apps</button>
+          <button class="drawer-chip" data-g="cat" data-v="web_apps"  style="--chip-color:var(--accent)" onclick="toggleDrawer(this)">Web Apps</button>
           <button class="drawer-chip" data-g="cat" data-v="shop_work" style="--chip-color:#e8e8e8" onclick="toggleDrawer(this)">Shop Work</button>
           <button class="drawer-chip" data-g="cat" data-v="games" style="--chip-color:#7ab8ff" onclick="toggleDrawer(this)">Games</button>
         </div>
@@ -697,7 +763,7 @@
       <div class="drawer-section">
         <div class="drawer-section-title">Status</div>
         <div class="drawer-chips">
-          <button class="drawer-chip" data-g="status" data-v="complete" style="--chip-color:#c8ff00" onclick="toggleDrawer(this)">Complete</button>
+          <button class="drawer-chip" data-g="status" data-v="complete" style="--chip-color:var(--accent)" onclick="toggleDrawer(this)">Complete</button>
           <button class="drawer-chip" data-g="status" data-v="active"   style="--chip-color:#e8e8e8" onclick="toggleDrawer(this)">Active</button>
           <button class="drawer-chip" data-g="status" data-v="wip"      style="--chip-color:#8a8a9a" onclick="toggleDrawer(this)">In Progress</button>
           <button class="drawer-chip" data-g="status" data-v="retired"  style="--chip-color:#5a5a66" onclick="toggleDrawer(this)">Retired</button>
@@ -718,7 +784,7 @@
     <div class="filter-section">
       <div class="filter-title">Category</div>
       <div class="chip-list">
-        <button class="chip" data-g="cat" data-v="web_apps" style="--chip-color:#c8ff00" onclick="toggle(this)">
+        <button class="chip" data-g="cat" data-v="web_apps" style="--chip-color:var(--accent)" onclick="toggle(this)">
           <span class="chip-dot"></span><span class="chip-label">Web Apps</span>
           <span class="chip-check">✓</span>
         </button>
@@ -736,7 +802,7 @@
     <div class="filter-section">
       <div class="filter-title">Status</div>
       <div class="chip-list">
-        <button class="chip" data-g="status" data-v="complete" style="--chip-color:#c8ff00" onclick="toggle(this)">
+        <button class="chip" data-g="status" data-v="complete" style="--chip-color:var(--accent)" onclick="toggle(this)">
           <span class="chip-dot"></span><span class="chip-label">Complete</span>
           <span class="chip-check">✓</span>
         </button>
@@ -760,6 +826,7 @@
 
   <!-- MAIN -->
   <main class="main">
+    <div class="season-banner" id="seasonBanner" role="status" aria-live="polite"></div>
     <div class="main-header">
       <h1>All<br><span>Projects</span></h1>
       <div class="header-underline"></div>
@@ -807,8 +874,10 @@
   document.getElementById('ds').textContent =
     new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'}).toUpperCase();
 
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const ACCENT_RGB = cssVar('--accent-rgb') || '200,255,0';
   const CAT_COLOR = {
-    web_apps:  '#c8ff00',
+    web_apps:  cssVar('--cat-web') || '#c8ff00',
     shop_work: '#e8e8e8',
     games:     '#7ab8ff',
   };
@@ -818,7 +887,7 @@
     games:     'Game',
   };
   const STATUS_COLOR = {
-    complete: '#c8ff00',
+    complete: cssVar('--status-complete') || '#c8ff00',
     active:   '#e8e8e8',
     wip:      '#8a8a9a',
     retired:  '#5a5a66',
@@ -963,10 +1032,10 @@
 
   const F = { cat: new Set(), status: new Set() };
   const CHIP_BG = {
-    web_apps:  'rgba(200,255,0,0.1)',
+    web_apps:  `rgba(${ACCENT_RGB},0.1)`,
     shop_work: 'rgba(232,232,232,0.08)',
     games:     'rgba(122,184,255,0.1)',
-    complete:  'rgba(200,255,0,0.1)',
+    complete:  `rgba(${ACCENT_RGB},0.1)`,
     active:    'rgba(232,232,232,0.08)',
     wip:       'rgba(138,138,154,0.12)',
     retired:   'rgba(90,90,102,0.15)',
@@ -1059,7 +1128,7 @@
      ════════════════════════════════════════════════════════════ */
   const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const LOOP = 15;           // seconds
-  const ACC = '#c8ff00', MUT = '#8a8a9a', INK = '#0d0d0f';
+  const ACC = cssVar('--accent') || '#c8ff00', MUT = '#8a8a9a', INK = '#0d0d0f';
   let uid = 0;
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1218,7 +1287,7 @@
         <rect width="640" height="360" fill="url(#${u}g)"/>
         ${lt}
         <path class="im-out" d="M320 105 L400 200 L320 295 L240 200 Z" pathLength="100"
-              fill="rgba(200,255,0,0.06)" stroke="${ACC}" stroke-width="3" stroke-linejoin="round" stroke-dasharray="100" stroke-dashoffset="0"/>
+              fill="rgba(${ACCENT_RGB},0.06)" stroke="${ACC}" stroke-width="3" stroke-linejoin="round" stroke-dasharray="100" stroke-dashoffset="0"/>
         <path class="im-face" d="M320 131 L377.6 200 L320 269 L262.4 200 Z" fill="none" stroke="${MUT}" stroke-width="1.5" stroke-dasharray="4 4"/>
         <circle class="im-hole" cx="320" cy="200" r="15" fill="#0a0a0e" stroke="${ACC}" stroke-width="2"/>
         ${co}${ch}
@@ -1532,6 +1601,45 @@
       wrap.appendChild(card);
     });
     apply();
+  })();
+
+  /* ── Seasonal banner + floating decorations (only while a season is active) ── */
+  (function seasonFx() {
+    const season = document.documentElement.getAttribute('data-season');
+    if (!season) return;
+    const T = {
+      halloween:  { text: '<b>Happy Halloween</b> · enjoy the spooky season', icon: '🎃', bits: ['🎃','🦇','👻','🕸️','🎃','🦇'], mode: 'fall' },
+      christmas:  { text: '<b>Happy Holidays</b> · merry &amp; bright',       icon: '🎄', bits: ['❄️','❄️','🎄','⭐','❄️','🎁'], mode: 'fall' },
+      newyear:    { text: '<b>Happy New Year</b> · cheers to a great one',     icon: '🎆', bits: ['🎆','🎉','✨','🥂','🎇','✨'], mode: 'twinkle' },
+      stpatricks: { text: "<b>Happy St. Patrick's Day</b> · lucky you",        icon: '☘️', bits: ['🍀','☘️','🍀','🌈','🍀','☘️'], mode: 'fall' },
+      july4:      { text: '<b>Happy 4th of July</b> · stars &amp; stripes',    icon: '🎆', bits: ['🎆','⭐','🎇','🇺🇸','✨','⭐'], mode: 'twinkle' }
+    }[season];
+    if (!T) return;
+    const banner = document.getElementById('seasonBanner');
+    if (banner) banner.innerHTML = '<span aria-hidden="true">' + T.icon + '</span><span>' + T.text + '</span>';
+    if (REDUCED) return;
+    const fx = document.createElement('div');
+    fx.id = 'seasonFx'; fx.setAttribute('aria-hidden', 'true');
+    if (T.mode === 'twinkle') fx.classList.add('twinkle');
+    const small = window.innerWidth < 700, n = small ? 9 : 16;
+    for (let k = 0; k < n; k++) {
+      const el = document.createElement('i');
+      el.textContent = T.bits[k % T.bits.length];
+      const size = 16 + Math.random() * 16;
+      el.style.left = (Math.random() * 98) + 'vw';
+      el.style.fontSize = size + 'px';
+      if (T.mode === 'twinkle') {
+        el.style.top = (4 + Math.random() * 88) + 'vh';
+        el.style.animationDuration = (2.2 + Math.random() * 3.2) + 's';
+      } else {
+        el.style.animationDuration = (11 + Math.random() * 12) + 's';
+        el.style.setProperty('--sway', (Math.random() * 70 - 35) + 'px');
+        el.style.setProperty('--spin', (Math.random() * 360 - 180) + 'deg');
+      }
+      el.style.animationDelay = (-Math.random() * 20) + 's';
+      fx.appendChild(el);
+    }
+    document.body.appendChild(fx);
   })();
 </script>
 </body>
