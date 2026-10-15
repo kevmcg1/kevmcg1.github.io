@@ -95,27 +95,35 @@
         const pushables = []; 
         
         const zoom = 15; 
-        const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
+        const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false, ' ': false };
         
-        // Time Scale (0.2 = 80% decrease in speed)
-        const TIME_SCALE = 0.2;
-
-        let speed = 0;
-        // Increased maxSpeed and acceleration by 20%
-        const maxSpeed = (0.22 * 1.2) * TIME_SCALE;       
-        const acceleration = (0.006 * 1.2) * TIME_SCALE;  
-        const friction = 1.0 - (0.04 * TIME_SCALE);      
-        
-        let rotationAngle = 0;       
-        let steeringInput = 0;       
-        const maxSteering = 0.05 * TIME_SCALE;   
-        const steeringSens = 0.004 * TIME_SCALE;  
-        
-        let steeringVisualAngle = 0; 
-        let currentPitch = 0;
-        let currentRoll = 0;
-
-        const GRAVITY = -0.015 * TIME_SCALE * TIME_SCALE; 
+        /* Vehicle physics. 1 scene unit is about 1 metre. Everything is in real seconds and the
+           simulation runs on a fixed 120 Hz step, so the car drives identically on a 60 Hz phone, a
+           144 Hz monitor or a slow machine that drops frames. */
+        const STEP = 1 / 120;
+        const MAX_FRAME = 0.1;           // never try to catch up more than this after a stall (tab switch, etc.)
+        const WHEELBASE = 2.5;
+        const MAX_SPEED = 30;            // top speed forward (about 108 km/h)
+        const MAX_REVERSE = 9;
+        const ENGINE_ACCEL = 14;         // pull away from a stop; tapers off toward top speed
+        const REVERSE_ACCEL = 8;
+        const BRAKE_DECEL = 34;
+        const ROLL_RESIST = 1.4;         // rolling resistance, u/s^2
+        const AERO_DRAG = 0.0035;        // quadratic drag
+        const GRIP = 9;                  // how fast sideways slip is killed (1/s)
+        const HANDBRAKE_GRIP = 1.6;      // rear grip with the handbrake: the car slides
+        const MAX_STEER = 0.62;          // front wheel angle at a standstill, rad
+        const STEER_RATE = 3.2;          // how fast the wheels turn, rad/s
+        const STEER_RETURN = 5.0;
+        const GRAVITY = -30;
+        let vel = null;                  // car velocity (x, z), set in init
+        let heading = 0;
+        let steerAngle = 0;
+        let lastAccel = 0, lastLat = 0;
+        let currentPitch = 0, currentRoll = 0;
+        let simTime = 0, lastNow = 0, acc = 0;
+        let spinAngle = 0;
+        const camFollow = { x: 0, z: 0 };
         const FLOOR_Y = 0.75; 
 
         function createCheckerTexture() {
@@ -193,6 +201,7 @@
             floor.receiveShadow = true;
             scene.add(floor);
 
+            vel = new THREE.Vector2(0, 0);
             createCar();
             createPushables();
 
@@ -293,92 +302,125 @@
             });
         }
 
-        function handleMovement() {
-            const fwd = keys.w || keys.arrowup;
-            const bwd = keys.s || keys.arrowdown;
+        function stepCar(dt) {
+            const fwdKey = keys.w || keys.arrowup;
+            const bwdKey = keys.s || keys.arrowdown;
             const left = keys.a || keys.arrowleft;
             const right = keys.d || keys.arrowright;
+            const handbrake = keys[' '];
 
-            if (left) steeringInput += steeringSens;
-            else if (right) steeringInput -= steeringSens;
-            else steeringInput *= (1.0 - (0.15 * TIME_SCALE));
-            
-            steeringInput = Math.max(-maxSteering, Math.min(maxSteering, steeringInput));
-            
-            const turningEffectiveness = Math.abs(speed) / (maxSpeed || 0.001);
-            rotationAngle += steeringInput * turningEffectiveness;
+            // heading basis: forward and right on the ground plane
+            const fx = Math.sin(heading), fz = Math.cos(heading);
+            const rx = fz, rz = -fx;
+            let vf = vel.x * fx + vel.y * fz;       // along the car
+            let vr = vel.x * rx + vel.y * rz;       // sideways slip
 
-            const targetVisualSteering = (steeringInput / (maxSteering || 0.001)) * 0.5;
-            steeringVisualAngle += (targetVisualSteering - steeringVisualAngle) * (0.15 * TIME_SCALE);
-
-            let accelerationForce = 0;
-            if (fwd) {
-                accelerationForce = acceleration;
-                speed += accelerationForce;
-            } else if (bwd) {
-                accelerationForce = -acceleration;
-                speed += accelerationForce;
-            } else {
-                const prevSpeed = speed;
-                speed *= friction;
-                accelerationForce = speed - prevSpeed;
+            // --- throttle, brake, resistance ---
+            let a = 0;
+            if (fwdKey && !bwdKey) {
+                if (vf < -0.5) a = BRAKE_DECEL;                               // still rolling backwards: brake first
+                else a = ENGINE_ACCEL * Math.max(0, 1 - vf / MAX_SPEED);      // power tapers toward top speed
+            } else if (bwdKey && !fwdKey) {
+                if (vf > 0.5) a = -BRAKE_DECEL;                               // rolling forwards: this is the brake
+                else a = -REVERSE_ACCEL * Math.max(0, 1 - (-vf) / MAX_REVERSE);
             }
+            if (handbrake) a -= Math.sign(vf) * Math.min(Math.abs(vf) / dt, 18);
+            const drag = ROLL_RESIST * Math.sign(vf) + AERO_DRAG * vf * Math.abs(vf);
+            if (!(fwdKey || bwdKey) || handbrake) {
+                // coasting: resistance can slow the car to a stop but never push it the other way
+                const dv = drag * dt;
+                if (Math.abs(dv) >= Math.abs(vf)) vf = 0; else vf -= dv;
+            } else {
+                a -= drag;
+            }
+            vf += a * dt;
+            lastAccel += (a - lastAccel) * Math.min(1, 10 * dt);
 
-            speed = Math.max(-maxSpeed / 2, Math.min(maxSpeed, speed));
-            if (Math.abs(speed) < 0.0001 * TIME_SCALE) speed = 0;
+            // --- steering: a bicycle model. Wheels turn quickly at low speed and less at speed ---
+            const limit = MAX_STEER / (1 + Math.abs(vf) / 14);
+            const want = left ? limit : right ? -limit : 0;
+            const rate = (left || right) ? STEER_RATE : STEER_RETURN;
+            const dSteer = want - steerAngle;
+            steerAngle += Math.sign(dSteer) * Math.min(Math.abs(dSteer), rate * dt);
+            const yawRate = Math.max(-2.6, Math.min(2.6, (vf / WHEELBASE) * Math.tan(steerAngle)));
+            heading += yawRate * dt;
 
-            vehicleGroup.rotation.y = rotationAngle;
-            vehicleGroup.position.x += Math.sin(rotationAngle) * speed;
-            vehicleGroup.position.z += Math.cos(rotationAngle) * speed;
+            // --- tyres: sideways velocity is scrubbed away, less so on the handbrake ---
+            vr *= Math.exp(-(handbrake ? HANDBRAKE_GRIP : GRIP) * dt);
+            lastLat += (yawRate * vf - lastLat) * Math.min(1, 10 * dt);
 
-            const carPos = vehicleGroup.position.clone();
+            // rebuild the world velocity from the new heading
+            const nfx = Math.sin(heading), nfz = Math.cos(heading);
+            vel.x = nfx * vf + nfz * vr;
+            vel.y = nfz * vf - nfx * vr;
+            vehicleGroup.position.x += vel.x * dt;
+            vehicleGroup.position.z += vel.y * dt;
+            vehicleGroup.rotation.y = heading;
+            spinAngle += (vf / 0.5) * dt;
+
+            // --- the cubes ---
+            const carPos = vehicleGroup.position;
             const carRadius = 2.0;
-
-            pushables.forEach(cube => {
-                const dist = carPos.distanceTo(cube.position);
-                if (dist < carRadius + 0.75) {
-                    const diff = cube.position.clone().sub(carPos).normalize();
-                    const impact = Math.abs(speed) * 2.5;
-                    cube.userData.velocity.add(diff.multiplyScalar(impact));
-                    cube.userData.velocity.y += impact * 0.5;
-                    cube.userData.rotVel.set(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(impact * 2);
+            const sp = Math.hypot(vel.x, vel.y);
+            let hits = 0;
+            for (let i = 0; i < pushables.length; i++) {
+                const cube = pushables[i];
+                const u = cube.userData;
+                const dx = cube.position.x - carPos.x, dz = cube.position.z - carPos.z;
+                // quick reject before the real distance test
+                if (Math.abs(dx) < carRadius + 2.5 && Math.abs(dz) < carRadius + 2.5) {
+                    const dist = Math.hypot(dx, dz, cube.position.y - carPos.y);
+                    if (dist < carRadius + 0.75) {
+                        const inv = 1 / (dist || 1);
+                        const push = sp * 0.95 + 2.5;
+                        u.velocity.x += dx * inv * push * 0.6 + vel.x * 0.5;
+                        u.velocity.z += dz * inv * push * 0.6 + vel.y * 0.5;
+                        u.velocity.y += 2 + sp * 0.18;
+                        u.rotVel.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(2 + sp * 0.4);
+                        hits++;
+                    }
                 }
-
-                if (cube.position.y > FLOOR_Y) {
-                    cube.userData.velocity.y += GRAVITY;
-                } else if (cube.position.y < FLOOR_Y) {
+                u.velocity.y += GRAVITY * dt;
+                cube.position.x += u.velocity.x * dt;
+                cube.position.y += u.velocity.y * dt;
+                cube.position.z += u.velocity.z * dt;
+                if (cube.position.y < FLOOR_Y) {
                     cube.position.y = FLOOR_Y;
-                    cube.userData.velocity.y *= -0.3; 
-                    cube.userData.velocity.x *= friction; 
-                    cube.userData.velocity.z *= friction; 
-                    cube.userData.rotVel.multiplyScalar(0.9); 
+                    u.velocity.y *= -0.3;
+                    const f = Math.exp(-5 * dt);                 // ground friction
+                    u.velocity.x *= f; u.velocity.z *= f;
+                    u.rotVel.multiplyScalar(Math.exp(-6 * dt));
                 }
+                cube.rotation.x += u.rotVel.x * dt;
+                cube.rotation.y += u.rotVel.y * dt;
+                cube.rotation.z += u.rotVel.z * dt;
+                const damp = Math.exp(-0.5 * dt);
+                u.velocity.x *= damp; u.velocity.z *= damp;
+                u.rotVel.multiplyScalar(damp);
+            }
+            // ploughing through cubes costs speed
+            if (hits) { const k = Math.exp(-0.35 * hits * dt * 6); vel.x *= k; vel.y *= k; }
+        }
 
-                cube.position.add(cube.userData.velocity);
-                cube.rotation.x += cube.userData.rotVel.x;
-                cube.rotation.y += cube.userData.rotVel.y;
-                cube.rotation.z += cube.userData.rotVel.z;
-
-                const damping = 1.0 - (0.02 * TIME_SCALE);
-                cube.userData.velocity.multiplyScalar(damping);
-                cube.userData.rotVel.multiplyScalar(damping);
-            });
-
-            const camOffset = new THREE.Vector3(80, 80, 80); 
-            camera.position.copy(vehicleGroup.position).add(camOffset);
-            sunLight.target = vehicleGroup;
-            sunLight.position.copy(vehicleGroup.position).add(new THREE.Vector3(40, 100, 20));
-
-            const targetPitch = -accelerationForce * (25 / TIME_SCALE); 
-            currentPitch += (targetPitch - currentPitch) * (0.05 * TIME_SCALE);
-            const targetRoll = (steeringInput / (maxSteering || 0.001)) * Math.abs(speed) * (1.8 / TIME_SCALE);
-            currentRoll += (targetRoll - currentRoll) * (0.05 * TIME_SCALE);
-
+        function updateVisuals(frameDt) {
+            // body pitch under acceleration and roll in corners, eased in real time
+            const targetPitch = -lastAccel * 0.0045;
+            currentPitch += (targetPitch - currentPitch) * Math.min(1, 7 * frameDt);
+            const targetRoll = -lastLat * 0.006;
+            currentRoll += (targetRoll - currentRoll) * Math.min(1, 7 * frameDt);
             carBodyGroup.rotation.x = currentPitch;
             carBodyGroup.rotation.z = currentRoll;
+            wheels.forEach(wheel => { wheel.rotation.x = spinAngle; });
+            frontWheelGroups.forEach(group => { group.rotation.y = steerAngle; });
 
-            wheels.forEach(wheel => { wheel.rotation.x += speed * (5 / TIME_SCALE); });
-            frontWheelGroups.forEach(group => { group.rotation.y = steeringVisualAngle; });
+            // the camera trails the car a touch instead of being bolted to it
+            const k = 1 - Math.exp(-9 * frameDt);
+            camFollow.x += (vehicleGroup.position.x - camFollow.x) * k;
+            camFollow.z += (vehicleGroup.position.z - camFollow.z) * k;
+            camera.position.set(camFollow.x + 80, 80, camFollow.z + 80);
+            camera.lookAt(camFollow.x, 0, camFollow.z);
+            sunLight.target = vehicleGroup;
+            sunLight.position.copy(vehicleGroup.position).add(new THREE.Vector3(40, 100, 20));
         }
 
         function onWindowResize() {
@@ -389,9 +431,15 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function animate() {
+        function animate(now) {
             requestAnimationFrame(animate);
-            handleMovement();
+            now = (now === undefined ? performance.now() : now) / 1000;
+            if (!lastNow) lastNow = now;
+            const frameDt = Math.min(MAX_FRAME, Math.max(0, now - lastNow));
+            lastNow = now;
+            acc += frameDt;
+            while (acc >= STEP) { stepCar(STEP); acc -= STEP; }
+            updateVisuals(frameDt);
             renderer.render(scene, camera);
         }
 
