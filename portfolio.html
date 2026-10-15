@@ -378,6 +378,11 @@
     }
 
     .card-left { flex: 1; min-width: 0; }
+    /* small looping preview on regular (non-featured) cards */
+    .card-thumb {
+      position: relative; flex: 0 0 200px; aspect-ratio: 16 / 9;
+      background: #0a0a0e; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    }
 
     .card-name {
       font-family: 'DM Sans', sans-serif;
@@ -639,6 +644,7 @@
       .stats { flex-wrap: wrap; }
       .stat { min-width: calc(33.33% - 1px); border-bottom: 1px solid var(--border); }
       .card-body { flex-wrap: wrap; gap: 12px; }
+      .card-thumb { flex: 0 0 100%; }
       .card-right { flex-direction: row; align-items: center; width: 100%; justify-content: flex-start; }
       .fc-body { padding: 16px 16px 18px; }
     }
@@ -685,6 +691,7 @@
         <div class="drawer-chips">
           <button class="drawer-chip" data-g="cat" data-v="web_apps"  style="--chip-color:#c8ff00" onclick="toggleDrawer(this)">Web Apps</button>
           <button class="drawer-chip" data-g="cat" data-v="shop_work" style="--chip-color:#e8e8e8" onclick="toggleDrawer(this)">Shop Work</button>
+          <button class="drawer-chip" data-g="cat" data-v="games" style="--chip-color:#7ab8ff" onclick="toggleDrawer(this)">Games</button>
         </div>
       </div>
       <div class="drawer-section">
@@ -717,6 +724,10 @@
         </button>
         <button class="chip" data-g="cat" data-v="shop_work" style="--chip-color:#e8e8e8" onclick="toggle(this)">
           <span class="chip-dot"></span><span class="chip-label">Shop Work</span>
+          <span class="chip-check">✓</span>
+        </button>
+        <button class="chip" data-g="cat" data-v="games" style="--chip-color:#7ab8ff" onclick="toggle(this)">
+          <span class="chip-dot"></span><span class="chip-label">Games</span>
           <span class="chip-check">✓</span>
         </button>
       </div>
@@ -786,6 +797,7 @@
       <div class="stat"><div class="stat-n" id="sTotal">0</div><div class="stat-l">Showing</div></div>
       <div class="stat"><div class="stat-n" id="sWebApps">0</div><div class="stat-l">Web Apps</div></div>
       <div class="stat"><div class="stat-n" id="sShopWork">0</div><div class="stat-l">Shop Work</div></div>
+      <div class="stat"><div class="stat-n" id="sGames">0</div><div class="stat-l">Games</div></div>
     </div>
   </main>
 </div>
@@ -797,10 +809,12 @@
   const CAT_COLOR = {
     web_apps:  '#c8ff00',
     shop_work: '#e8e8e8',
+    games:     '#7ab8ff',
   };
   const CAT_LABEL = {
     web_apps:  'Web App',
     shop_work: 'Shop Work',
+    games:     'Game',
   };
   const STATUS_COLOR = {
     complete: '#c8ff00',
@@ -829,7 +843,7 @@
       url: '/insert-master/',
       desc: 'Insert Decoder & Builder — a tool for working with machining inserts.',
       tags: ['Featured', 'Web App', 'Tool'],
-      previewScene: 'insert',
+      previewVideo: '/previews/insert-master-preview.mp4',
       updated: 'Mar 2026',
       laptopCompat: true,
       mobileCompat: true,
@@ -840,6 +854,7 @@
       cat: 'web_apps',
       status: 'wip',
       url: '/web_apps/speedsnfeeds.html',
+      previewVideo: '/previews/speeds-and-feeds-preview.mp4',
       desc: 'Enter your material, tool, and machine parameters to get instant feed rate and spindle speed recommendations.',
       tags: ['CNC', 'Calculator', 'Milling', 'Turning'],
       updated: 'Mar 2026',
@@ -852,6 +867,7 @@
       cat: 'web_apps',
       status: 'wip',
       url: '/web_apps/speed_programmer.html',
+      previewVideo: '/previews/speed-programmer-preview.mp4',
       desc: 'Quick programmer for those who are beginners to manual programming, or really just need g-code fast.',
       tags: ['Web App', 'Tool'],
       updated: 'Mar 2026',
@@ -861,9 +877,10 @@
     {
       id: 'PROJ-004',
       name: 'Car Thing',
-      cat: 'web_apps',
+      cat: 'games',
       status: 'wip',
       url: '/web_apps/car_thing.html',
+      previewVideo: '/previews/car-thing-preview.mp4',
       desc: 'Low poly car simulator. Nothing really special to it.',
       tags: ['Web App'],
       previewScene: 'car',
@@ -901,6 +918,7 @@
       cat: 'web_apps',
       status: 'complete',
       url: '/web_apps/reminders.html',
+      previewVideo: '/previews/reminders-preview.mp4',
       desc: 'Easy reminders app.',
       tags: ['Web App', 'Tool'],
       updated: 'Jul 2026',
@@ -923,7 +941,7 @@
     {
       id: 'PROJ-009',
       name: 'Snowboard Game',
-      cat: 'web_apps',
+      cat: 'games',
       status: 'complete',
       url: '/snowboard/',
       desc: 'Snowboarding game!',
@@ -944,6 +962,7 @@
   const CHIP_BG = {
     web_apps:  'rgba(200,255,0,0.1)',
     shop_work: 'rgba(232,232,232,0.08)',
+    games:     'rgba(122,184,255,0.1)',
     complete:  'rgba(200,255,0,0.1)',
     active:    'rgba(232,232,232,0.08)',
     wip:       'rgba(138,138,154,0.12)',
@@ -973,7 +992,7 @@
 
   function apply() {
     const cards = document.querySelectorAll('.project-card, .featured-card');
-    let vis=0, webApps=0, shopWork=0, visFeat=0, visReg=0;
+    let vis=0, webApps=0, shopWork=0, games=0, visFeat=0, visReg=0;
     cards.forEach(c => {
       const ok = (F.cat.size===0 || F.cat.has(c.dataset.cat)) && (F.status.size===0 || F.status.has(c.dataset.status));
       c.classList.toggle('hide', !ok);
@@ -982,6 +1001,7 @@
         if (c.classList.contains('featured-card')) visFeat++; else visReg++;
         if (c.dataset.cat==='web_apps') webApps++;
         if (c.dataset.cat==='shop_work') shopWork++;
+        if (c.dataset.cat==='games') games++;
       }
     });
     const fs = document.getElementById('featured');
@@ -992,6 +1012,7 @@
     document.getElementById('sTotal').textContent = vis;
     document.getElementById('sWebApps').textContent = webApps;
     document.getElementById('sShopWork').textContent = shopWork;
+    document.getElementById('sGames').textContent = games;
     document.getElementById('empty').classList.toggle('show', vis===0);
     const bar = document.getElementById('tagBar');
     bar.innerHTML='';
@@ -1383,7 +1404,7 @@
 
   // ── Shared markup ──
   function compatHTML(p) {
-    if (p.cat === 'web_apps' && (p.laptopCompat !== undefined || p.mobileCompat !== undefined)) {
+    if ((p.cat === 'web_apps' || p.cat === 'games') && (p.laptopCompat !== undefined || p.mobileCompat !== undefined)) {
       const laptopSymbol = p.laptopCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
       const mobileSymbol = p.mobileCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
       return `
@@ -1481,6 +1502,7 @@
       card.innerHTML = `
         <div class="card-accent-bar"></div>
         <div class="card-body">
+          ${p.previewVideo && !isRetired ? '<div class="card-thumb"></div>' : ''}
           <div class="card-left">
             <div class="card-name">${p.name}${linkIcon}${retiredTag}</div>
             <div class="card-id">${p.id}</div>
@@ -1502,6 +1524,8 @@
         </div>
       `;
       wrap.appendChild(card);
+      const thumb = card.querySelector('.card-thumb');
+      if (thumb) mountPreview(thumb, p);
     });
     apply();
   })();
