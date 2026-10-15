@@ -216,6 +216,8 @@
       margin-bottom: 26px;
       opacity: 0; animation: fadeUp 0.7s ease forwards 0.28s;
     }
+    .more-grid { margin-bottom: 14px; }
+    .more-grid:empty { display: none; }
     .featured.hide, .featured-card.hide, .section-label.hide { display: none; }
 
     .featured-head {
@@ -378,11 +380,6 @@
     }
 
     .card-left { flex: 1; min-width: 0; }
-    /* small looping preview on regular (non-featured) cards */
-    .card-thumb {
-      position: relative; flex: 0 0 200px; aspect-ratio: 16 / 9;
-      background: #0a0a0e; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
-    }
 
     .card-name {
       font-family: 'DM Sans', sans-serif;
@@ -644,7 +641,6 @@
       .stats { flex-wrap: wrap; }
       .stat { min-width: calc(33.33% - 1px); border-bottom: 1px solid var(--border); }
       .card-body { flex-wrap: wrap; gap: 12px; }
-      .card-thumb { flex: 0 0 100%; }
       .card-right { flex-direction: row; align-items: center; width: 100%; justify-content: flex-start; }
       .fc-body { padding: 16px 16px 18px; }
     }
@@ -785,6 +781,7 @@
 
     <div class="section-label" id="moreHead">More Projects</div>
 
+    <div class="featured-grid more-grid" id="moreGrid"></div>
     <div class="cards-wrap" id="cardsWrap"></div>
 
     <div class="empty" id="empty">
@@ -954,6 +951,8 @@
   ];
 
   const isFeatured = p => (p.tags || []).some(t => String(t).toLowerCase() === 'featured');
+  // non-featured, non-retired projects with a preview clip get a big card in More Projects
+  const isBigMore = p => !isFeatured(p) && p.status !== 'retired' && !!p.previewVideo;
   const FEAT_COUNT = DATA.filter(isFeatured).length;
 
   document.getElementById('totalCount').textContent = DATA.length + ' Projects';
@@ -998,7 +997,7 @@
       c.classList.toggle('hide', !ok);
       if (ok) {
         vis++;
-        if (c.classList.contains('featured-card')) visFeat++; else visReg++;
+        if (c.classList.contains('featured-card') && !c.classList.contains('more-card')) visFeat++; else visReg++;
         if (c.dataset.cat==='web_apps') webApps++;
         if (c.dataset.cat==='shop_work') shopWork++;
         if (c.dataset.cat==='games') games++;
@@ -1424,12 +1423,12 @@
     const feats = DATA.filter(isFeatured);
     if (!feats.length) { sec.remove(); document.getElementById('moreHead').remove(); return; }
 
-    feats.forEach((p, i) => {
+    const bigCard = (p, i, grid, isFeat) => {
       const catColor = CAT_COLOR[p.cat] || '#fff';
       const statusColor = STATUS_COLOR[p.status] || '#8a8a9a';
       const isRetired = p.status === 'retired';
       const card = document.createElement('article');
-      card.className = 'featured-card' + (isRetired ? ' retired' : '');
+      card.className = 'featured-card' + (isFeat ? '' : ' more-card') + (isRetired ? ' retired' : '');
       card.style.animationDelay = `${0.08*i + 0.35}s`;
       card.style.setProperty('--cat-color', catColor);
       card.dataset.cat = p.cat;
@@ -1444,7 +1443,7 @@
 
       card.innerHTML = `
         <div class="fc-preview">
-          <span class="pv-badge">★ Featured</span>
+          ${isFeat ? '<span class="pv-badge">★ Featured</span>' : ''}
         </div>
         <div class="fc-body">
           <div class="fc-top">
@@ -1474,14 +1473,18 @@
       `;
       grid.appendChild(card);
       mountPreview(card.querySelector('.fc-preview'), p);
-    });
+    };
+    feats.forEach((p, i) => bigCard(p, i, grid, true));
+    // the other projects that have a preview get the same big card, just not under Featured
+    const moreGrid = document.getElementById('moreGrid');
+    DATA.filter(isBigMore).forEach((p, i) => bigCard(p, i + feats.length, moreGrid, false));
   })();
 
   // ── Regular list (featured projects live in the Featured section instead) ──
   (function buildCards(){
     const wrap = document.getElementById('cardsWrap');
     DATA.forEach((p, i) => {
-      if (isFeatured(p)) return;
+      if (isFeatured(p) || isBigMore(p)) return;
       const catColor = CAT_COLOR[p.cat] || '#fff';
       const statusColor = STATUS_COLOR[p.status] || '#8a8a9a';
       const card = document.createElement(p.url ? 'a' : 'div');
@@ -1502,7 +1505,6 @@
       card.innerHTML = `
         <div class="card-accent-bar"></div>
         <div class="card-body">
-          ${p.previewVideo && !isRetired ? '<div class="card-thumb"></div>' : ''}
           <div class="card-left">
             <div class="card-name">${p.name}${linkIcon}${retiredTag}</div>
             <div class="card-id">${p.id}</div>
@@ -1524,8 +1526,6 @@
         </div>
       `;
       wrap.appendChild(card);
-      const thumb = card.querySelector('.card-thumb');
-      if (thumb) mountPreview(thumb, p);
     });
     apply();
   })();
