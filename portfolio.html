@@ -211,6 +211,110 @@
     }
     .result-count em { color: var(--accent); font-style: normal; }
 
+    /* ── FEATURED ── */
+    .featured {
+      margin-bottom: 26px;
+      opacity: 0; animation: fadeUp 0.7s ease forwards 0.28s;
+    }
+    .featured.hide, .featured-card.hide, .section-label.hide { display: none; }
+
+    .featured-head {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+    }
+    .featured-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .featured-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.7rem; font-weight: 400; line-height: 1;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .featured-title i { font-style: normal; color: var(--accent); font-size: 1.1rem; }
+
+    .featured-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+      gap: 14px;
+    }
+
+    .featured-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      position: relative;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.5s ease both;
+    }
+    .featured-card:hover {
+      border-color: #2e2e3a;
+      transform: translateY(-2px);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+    }
+    .featured-card.retired > * { opacity: 0.4; filter: grayscale(1); transition: opacity 0.2s, filter 0.2s; }
+    .featured-card.retired:hover > * { opacity: 0.7; }
+
+    /* preview area */
+    .fc-preview {
+      position: relative; aspect-ratio: 16 / 9;
+      background: #0a0a0e; overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+    .pv-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .pv-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pv-badge {
+      position: absolute; top: 12px; z-index: 2;
+      font-size: 0.55rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;
+      padding: 5px 10px; border-radius: 4px;
+      background: rgba(13,13,15,0.72); backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .pv-badge { left: 12px; color: var(--accent); border-color: rgba(200,255,0,0.35); }
+
+    .fc-body { flex: 1; padding: 20px 22px 22px; display: flex; flex-direction: column; }
+    .fc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+    .fc-name {
+      font-size: 1.15rem; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.1;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .fc-desc {
+      font-size: 0.86rem; font-weight: 300; color: #c8c8d8;
+      margin-top: 10px; line-height: 1.7;
+    }
+    .fc-footer {
+      margin-top: auto; padding-top: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px; flex-wrap: wrap;
+    }
+    .fc-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+    .fc-meta .compat-row { margin-top: 0; border-top: none; padding-top: 0; }
+
+    .open-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 24px;
+      background: var(--accent); color: #0d0d0f;
+      border: 1px solid var(--accent); border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem; font-weight: 500;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      text-decoration: none; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+    }
+    .open-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(200,255,0,0.28); background: #d6ff3a; }
+    .open-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+    .open-btn.disabled {
+      background: transparent; color: var(--muted); border-color: var(--border);
+      cursor: default; pointer-events: none;
+    }
+
+    .section-label {
+      font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+      margin: 4px 0 12px; display: flex; align-items: center; gap: 8px;
+      opacity: 0; animation: fadeUp 0.7s ease forwards 0.3s;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
     /* ── PROJECT CARDS ── */
     .cards-wrap {
       opacity: 0; animation: fadeUp 0.7s ease forwards 0.3s;
@@ -346,7 +450,7 @@
       color: var(--muted);
     }
 
-    /* ── COMPATIBILITY INDICATORS (NEW) ── */
+    /* ── COMPATIBILITY INDICATORS ── */
     .compat-row {
       display: flex;
       gap: 14px;
@@ -536,15 +640,23 @@
       .stat { min-width: calc(33.33% - 1px); border-bottom: 1px solid var(--border); }
       .card-body { flex-wrap: wrap; gap: 12px; }
       .card-right { flex-direction: row; align-items: center; width: 100%; justify-content: flex-start; }
+      .fc-body { padding: 16px 16px 18px; }
     }
     @media (max-width: 480px) {
       .main { padding: 16px 14px 60px; } .card-body { padding: 14px 16px; }
       .card-name { font-size: 0.88rem; } .card-desc { font-size: 0.78rem; }
       .stats { flex-wrap: wrap; } .stat { min-width: 50%; }
       .header-meta { gap: 10px; } .meta-div { display: none; }
+      .fc-name { font-size: 1rem; }
+      .pv-badge { top: 8px; left: 8px; padding: 3px 7px; font-size: 0.5rem; }
+      .fc-footer { flex-direction: column; align-items: flex-start; }
+      .fc-meta { justify-content: flex-start; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::after { animation: none !important; transition: none !important; }
+      /* these start at opacity 0 and rely on the fade-in, so keep them visible when it's off */
+      .main-header, .tag-bar, .result-count, .featured, .section-label,
+      .cards-wrap, .stats { opacity: 1 !important; }
     }
   </style>
 </head>
@@ -652,6 +764,16 @@
     <div class="tag-bar" id="tagBar"></div>
     <div class="result-count" id="rc"><em id="vc">0</em> projects shown</div>
 
+    <!-- FEATURED: any project whose tags include "Featured" -->
+    <section class="featured" id="featured" aria-label="Featured projects">
+      <div class="featured-head">
+        <span class="featured-title"><i>★</i> Featured</span>
+      </div>
+      <div class="featured-grid" id="featuredGrid"></div>
+    </section>
+
+    <div class="section-label" id="moreHead">More Projects</div>
+
     <div class="cards-wrap" id="cardsWrap"></div>
 
     <div class="empty" id="empty">
@@ -693,8 +815,11 @@
     retired:  'Retired',
   };
 
-  // ── PROJECTS with compatibility flags (only for web_apps) ──
-  // Set status: 'retired' to tag a project as retired and dim its card.
+  // ── PROJECTS ──
+  // • Add 'Featured' to a project's tags to show it in the big Featured cards at the top.
+  // • Featured previews: set previewScene to 'snowboard' | 'insert' | 'car' | 'generic' (default),
+  //   or set previewVideo: '/previews/your-clip.mp4' (and optionally previewPoster) to use a recorded clip instead.
+  // • Set status: 'retired' to tag a project as retired and dim its card.
   const DATA = [
     {
       id: 'PROJ-001',
@@ -703,7 +828,8 @@
       status: 'complete',
       url: '/insert-master/',
       desc: 'Insert Decoder & Builder — a tool for working with machining inserts.',
-      tags: ['Web App', 'Tool'],
+      tags: ['Featured', 'Web App', 'Tool'],
+      previewScene: 'insert',
       updated: 'Mar 2026',
       laptopCompat: true,
       mobileCompat: true,
@@ -740,6 +866,7 @@
       url: '/web_apps/car_thing.html',
       desc: 'Low poly car simulator. Nothing really special to it.',
       tags: ['Web App'],
+      previewScene: 'car',
       updated: 'Apr 2026',
       laptopCompat: true,
       mobileCompat: false,
@@ -787,7 +914,8 @@
       status: 'complete',
       url: '/shop-tool-sim/',
       desc: 'For learning about shop tools!',
-      tags: ['Web App', 'Tool'],
+      tags: ['Featured', 'Web App', 'Tool'],
+      previewVideo: '/previews/shop-tool-sim-preview.mp4',
       updated: 'Sept 2026',
       laptopCompat: true,
       mobileCompat: false,
@@ -799,12 +927,16 @@
       status: 'complete',
       url: '/snowboard/',
       desc: 'Snowboarding game!',
-      tags: ['Web App'],
+      tags: ['Featured', 'Web App'],
+      previewVideo: '/previews/snowboard-preview.mp4',
       updated: 'Sept 2026',
       laptopCompat: true,
       mobileCompat: false,
     },
   ];
+
+  const isFeatured = p => (p.tags || []).some(t => String(t).toLowerCase() === 'featured');
+  const FEAT_COUNT = DATA.filter(isFeatured).length;
 
   document.getElementById('totalCount').textContent = DATA.length + ' Projects';
 
@@ -840,17 +972,22 @@
   }
 
   function apply() {
-    const cards = document.querySelectorAll('.project-card');
-    let vis=0, webApps=0, shopWork=0;
+    const cards = document.querySelectorAll('.project-card, .featured-card');
+    let vis=0, webApps=0, shopWork=0, visFeat=0, visReg=0;
     cards.forEach(c => {
       const ok = (F.cat.size===0 || F.cat.has(c.dataset.cat)) && (F.status.size===0 || F.status.has(c.dataset.status));
       c.classList.toggle('hide', !ok);
       if (ok) {
         vis++;
+        if (c.classList.contains('featured-card')) visFeat++; else visReg++;
         if (c.dataset.cat==='web_apps') webApps++;
         if (c.dataset.cat==='shop_work') shopWork++;
       }
     });
+    const fs = document.getElementById('featured');
+    if (fs) fs.classList.toggle('hide', visFeat === 0);
+    const mh = document.getElementById('moreHead');
+    if (mh) mh.classList.toggle('hide', !(FEAT_COUNT > 0 && visFeat > 0 && visReg > 0));
     document.getElementById('vc').textContent = vis;
     document.getElementById('sTotal').textContent = vis;
     document.getElementById('sWebApps').textContent = webApps;
@@ -889,9 +1026,441 @@
     if (ftb) ftb.classList.toggle('has-filters', hasAny);
   }
 
+  /* ════════════════════════════════════════════════════════════
+     ANIMATED PREVIEWS
+     Each featured card plays a 15-second looping scene built in the
+     page itself (SVG + Web Animations API). Scenes pause when they
+     scroll out of view, and show a still frame if the visitor prefers
+     reduced motion. To use a recorded clip instead, set previewVideo.
+     ════════════════════════════════════════════════════════════ */
+  const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const LOOP = 15;           // seconds
+  const ACC = '#c8ff00', MUT = '#8a8a9a', INK = '#0d0d0f';
+  let uid = 0;
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function makeAnimator() {
+    const list = [];
+    const ok = !REDUCED && typeof Element.prototype.animate === 'function';
+    return {
+      list,
+      // timeline: frames = [[seconds, {css}], ...] across the 15s loop
+      tl(el, frames, ease) {
+        if (!el || !ok) return;
+        const kfs = frames.map(([t, s]) => Object.assign({ offset: Math.max(0, Math.min(1, t / LOOP)) }, s));
+        if (kfs[0].offset > 0) kfs.unshift(Object.assign({}, kfs[0], { offset: 0 }));
+        if (kfs[kfs.length - 1].offset < 1) kfs.push(Object.assign({}, kfs[kfs.length - 1], { offset: 1 }));
+        kfs.forEach(k => { k.easing = ease || 'linear'; });
+        list.push(el.animate(kfs, { duration: LOOP * 1000, iterations: Infinity }));
+      },
+      // short repeating loop (scrolling, spinning wheels, snow…)
+      loop(el, frames, ms, delay) {
+        if (!el || !ok) return;
+        list.push(el.animate(frames, { duration: ms, iterations: Infinity, easing: 'linear', delay: delay || 0 }));
+      },
+    };
+  }
+  const origin = (els, o) => els.forEach(e => { e.style.transformBox = 'fill-box'; e.style.transformOrigin = o; });
+
+  const SVG_OPEN = 'class="pv-svg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"';
+
+  /* ── Scene: Snowboard ── */
+  function sceneSnowboard(host, p, A) {
+    const slope = 0.28125;   // ridge and rider line share this slope
+    const tree = (x, gy, s, fill) => {
+      const h = 74 * s, w = 15 * s;
+      return `<rect x="${x - 2*s}" y="${gy - 8*s}" width="${4*s}" height="${12*s}" fill="#2a1a12"/>
+        <polygon points="${x},${gy - h} ${x - w},${gy - h*0.52} ${x + w},${gy - h*0.52}" fill="${fill}"/>
+        <polygon points="${x},${gy - h*0.72} ${x - w*1.4},${gy - h*0.2} ${x + w*1.4},${gy - h*0.2}" fill="${fill}"/>
+        <polygon points="${x},${gy - h} ${x - w*0.45},${gy - h*0.8} ${x + w*0.45},${gy - h*0.8}" fill="#eef4fa"/>`;
+    };
+    let trees = '', bumps = '', flakes = '';
+    for (let i = -1; i <= 5; i++) {
+      const x1 = i*160 + 20, x2 = i*160 + 105;
+      trees += tree(x1, 120 + slope*x1, 1, '#16392a') + tree(x2, 120 + slope*x2, 0.78, '#10291f');
+      const bx = i*160 + 60;
+      bumps += `<ellipse cx="${bx}" cy="${168 + slope*bx}" rx="26" ry="3.2" fill="#f4f8fc" opacity=".85"/>
+                <ellipse cx="${bx+80}" cy="${232 + slope*(bx+80)}" rx="18" ry="2.6" fill="#f4f8fc" opacity=".7"/>`;
+    }
+    for (let i = 0; i < 18; i++) {
+      const x = (i * 97) % 700 - 30, r = 1 + (i % 3) * 0.8;
+      flakes += `<circle class="sb-flake" cx="${x}" cy="-10" r="${r}" fill="#fff" opacity=".8"/>`;
+    }
+    const popStyle = `font-family="Bebas Neue, sans-serif" font-size="50" letter-spacing="2" text-anchor="middle" fill="${ACC}" stroke="${INK}" stroke-width="5" paint-order="stroke" style="opacity:0"`;
+    host.insertAdjacentHTML('afterbegin', `
+      <svg ${SVG_OPEN} aria-hidden="true">
+        <defs><linearGradient id="sbSky${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0a0f1f"/><stop offset="1" stop-color="#2b3a5e"/></linearGradient></defs>
+        <rect width="640" height="360" fill="url(#sbSky${uid})"/>
+        <circle cx="530" cy="62" r="22" fill="#e8e8e8" opacity=".92"/>
+        <polygon points="0,200 90,105 170,185 260,92 360,200 450,118 560,205 640,140 640,360 0,360" fill="#1a2440"/>
+        <g class="sb-scroll">${trees}</g>
+        <polygon points="0,120 640,300 640,360 0,360" fill="#dfe9f3"/>
+        <polygon points="0,150 640,330 640,360 0,360" fill="#cfdcea" opacity=".65"/>
+        <g class="sb-scroll">${bumps}</g>
+        <path d="M0 190 L640 370" stroke="#aebfd4" stroke-width="2" opacity=".7"/>
+        <g transform="translate(320 280) rotate(15.7)">
+          <ellipse cx="0" cy="4" rx="28" ry="3" fill="#7f93ac" opacity=".55"/>
+          <circle class="sb-sp" cx="-34" cy="-3" r="2.6" fill="#fff"/>
+          <circle class="sb-sp" cx="-34" cy="-6" r="2" fill="#fff"/>
+          <circle class="sb-sp" cx="-34" cy="-1" r="1.6" fill="#fff"/>
+          <g class="sb-rider">
+            <rect x="-28" y="-5" width="56" height="6" rx="3" fill="${ACC}"/>
+            <path d="M-9 -5 L-5 -24 M9 -5 L8 -24" stroke="#1d2433" stroke-width="6" stroke-linecap="round" fill="none"/>
+            <path d="M0 -22 L0 -44" stroke="#e8e8e8" stroke-width="10" stroke-linecap="round" fill="none"/>
+            <path d="M-2 -40 L-17 -31 M2 -40 L17 -34" stroke="#e8e8e8" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+            <circle cx="0" cy="-53" r="6.5" fill="#f1c9a5"/>
+            <path d="M-7.5 -53 a7.5 7.5 0 0 1 15 0 z" fill="#1d2433"/>
+            <rect x="1" y="-55" width="7" height="3.6" rx="1.6" fill="${ACC}"/>
+          </g>
+        </g>
+        <text class="sb-pop" x="320" y="150" ${popStyle}>360°</text>
+        <text class="sb-pop" x="320" y="150" ${popStyle}>GRAB!</text>
+        ${flakes}
+      </svg>`);
+    const q = s => [...host.querySelectorAll(s)];
+    uid++;
+
+    // scenery slides up the slope (one tree-period every 5s → 3 seamless loops per 15s)
+    q('.sb-scroll').forEach(g => A.loop(g, [{ transform: 'translate(0px,0px)' }, { transform: 'translate(-160px,-45px)' }], 5000));
+
+    // rider: carve → 360 jump → carve → grab jump → carve
+    const rider = host.querySelector('.sb-rider');
+    rider.style.transformOrigin = '0px -26px';
+    const R = (y, r) => ({ transform: `translateY(${y}px) rotate(${r}deg)` });
+    A.tl(rider, [
+      [0, R(0, -3)], [1.8, R(-1, 3)], [3.5, R(0, -3)],
+      [3.9, R(3, -6)], [4.3, R(-14, -30)], [5.2, R(-64, -190)], [6.1, R(-14, -330)], [6.4, R(0, -360)],
+      [6.41, R(0, 0)], [8, R(-1, 3)], [9.5, R(0, -3)],
+      [10, R(3, -5)], [10.6, R(-30, 8)], [11.4, R(-46, -14)], [12.2, R(-26, 6)], [12.7, R(0, -2)],
+      [13.8, R(-1, 3)], [15, R(0, -3)],
+    ], 'ease-in-out');
+
+    // trick call-outs
+    const pops = q('.sb-pop');
+    origin(pops, 'center');
+    const pop = (el, t0, t1) => A.tl(el, [
+      [0, { opacity: 0, transform: 'scale(.5)' }], [t0, { opacity: 0, transform: 'scale(.5)' }],
+      [t0 + .25, { opacity: 1, transform: 'scale(1.15)' }], [t0 + .5, { opacity: 1, transform: 'scale(1)' }],
+      [t1, { opacity: 1, transform: 'scale(1)' }], [t1 + .3, { opacity: 0, transform: 'scale(1)' }],
+    ], 'ease-out');
+    pop(pops[0], 4.9, 6.1);
+    pop(pops[1], 11.0, 12.2);
+
+    // snow spray + falling flakes
+    q('.sb-sp').forEach((c, i) => A.loop(c,
+      [{ transform: 'translate(0px,0px)', opacity: .9 }, { transform: 'translate(-26px,-8px)', opacity: 0 }], 700, -i * 230));
+    q('.sb-flake').forEach((c, i) => {
+      const dur = 3200 + (i % 4) * 500;
+      A.loop(c, [{ transform: 'translate(0px,0px)' }, { transform: 'translate(-40px,390px)' }], dur, -((i * 377) % dur));
+    });
+  }
+
+  /* ── Scene: Insert Master (decode "CNMG 120408") ── */
+  function sceneInsert(host, p, A) {
+    const u = 'im' + (uid++);
+    const letters = [['C',150,3.0],['N',200,4.5],['M',250,6.0],['G',300,7.5],['12',385,9.0],['04',445,10.2],['08',505,11.4]];
+    const callouts = [
+      { t: 3.0, ax: 320, ay: 109, lx: 440, ly: 128, end: false, label: '80° DIAMOND' },
+      { t: 4.5, ax: 280, ay: 152, lx: 196, ly: 134, end: true,  label: '0° CLEARANCE' },
+      { t: 6.0, ax: 280, ay: 248, lx: 196, ly: 272, end: true,  label: '±0.08 TOLERANCE' },
+      { t: 7.5, ax: 334, ay: 200, lx: 440, ly: 206, end: false, label: 'HOLE + BREAKER' },
+    ];
+    const chips = [
+      { t: 9.0,  x: 130, label: 'IC 12.7 MM' },
+      { t: 10.2, x: 260, label: 'THK 4.76 MM' },
+      { t: 11.4, x: 390, label: 'NOSE R 0.8' },
+    ];
+    const lt = letters.map(([s, x]) =>
+      `<text class="im-l" x="${x}" y="84" text-anchor="middle" font-family="Bebas Neue, sans-serif" font-size="40" letter-spacing="2" fill="${ACC}">${s}</text>`).join('');
+    const co = callouts.map(c => {
+      const ex = c.end ? c.lx + 6 : c.lx - 6;
+      return `<g class="im-co">
+        <line x1="${c.ax}" y1="${c.ay}" x2="${ex}" y2="${c.ly - 4}" stroke="${ACC}" stroke-width="1.3"/>
+        <circle cx="${c.ax}" cy="${c.ay}" r="3.2" fill="${ACC}"/>
+        <text x="${c.lx}" y="${c.ly}" text-anchor="${c.end ? 'end' : 'start'}" font-family="DM Sans, sans-serif" font-size="15" font-weight="500" letter-spacing="1.4" fill="#e8e8e8">${c.label}</text>
+      </g>`;
+    }).join('');
+    const ch = chips.map(c => `<g class="im-chip">
+        <rect x="${c.x}" y="322" width="120" height="26" rx="5" fill="none" stroke="${ACC}" stroke-width="1.2"/>
+        <text x="${c.x + 60}" y="340" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="12.5" font-weight="500" letter-spacing="1.2" fill="#e8e8e8">${c.label}</text>
+      </g>`).join('');
+    host.insertAdjacentHTML('afterbegin', `
+      <svg ${SVG_OPEN} aria-hidden="true">
+        <defs><pattern id="${u}g" width="32" height="32" patternUnits="userSpaceOnUse">
+          <path d="M32 0H0V32" fill="none" stroke="#1b1b22" stroke-width="1"/></pattern></defs>
+        <rect width="640" height="360" fill="#0a0a0e"/>
+        <rect width="640" height="360" fill="url(#${u}g)"/>
+        ${lt}
+        <path class="im-out" d="M320 105 L400 200 L320 295 L240 200 Z" pathLength="100"
+              fill="rgba(200,255,0,0.06)" stroke="${ACC}" stroke-width="3" stroke-linejoin="round" stroke-dasharray="100" stroke-dashoffset="0"/>
+        <path class="im-face" d="M320 131 L377.6 200 L320 269 L262.4 200 Z" fill="none" stroke="${MUT}" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <circle class="im-hole" cx="320" cy="200" r="15" fill="#0a0a0e" stroke="${ACC}" stroke-width="2"/>
+        ${co}${ch}
+      </svg>`);
+    const q = s => [...host.querySelectorAll(s)];
+    const END = 14, GONE = 14.8;
+
+    A.tl(host.querySelector('.im-out'), [
+      [0, { opacity: 0, strokeDashoffset: '100' }], [0.15, { opacity: 1, strokeDashoffset: '100' }],
+      [2.0, { opacity: 1, strokeDashoffset: '0' }], [END, { opacity: 1, strokeDashoffset: '0' }],
+      [GONE, { opacity: 0, strokeDashoffset: '0' }],
+    ], 'ease-in-out');
+    A.tl(host.querySelector('.im-face'), [
+      [0, { opacity: 0 }], [1.6, { opacity: 0 }], [2.4, { opacity: 1 }], [END, { opacity: 1 }], [GONE, { opacity: 0 }],
+    ]);
+    const hole = host.querySelector('.im-hole');
+    origin([hole], 'center');
+    A.tl(hole, [
+      [0, { opacity: 0, transform: 'scale(0)' }], [2.0, { opacity: 0, transform: 'scale(0)' }],
+      [2.7, { opacity: 1, transform: 'scale(1)' }], [END, { opacity: 1, transform: 'scale(1)' }], [GONE, { opacity: 0, transform: 'scale(1)' }],
+    ], 'ease-out');
+
+    // each code letter lights up as its meaning is explained
+    q('.im-l').forEach((el, i) => {
+      const t = letters[i][2];
+      A.tl(el, [
+        [0, { fill: MUT }], [t, { fill: MUT }], [t + .35, { fill: ACC }], [END, { fill: ACC }], [GONE, { fill: MUT }],
+      ]);
+    });
+    q('.im-co').forEach((el, i) => {
+      const t = callouts[i].t, dx = callouts[i].end ? -10 : 10;
+      A.tl(el, [
+        [0, { opacity: 0, transform: `translateX(${dx}px)` }], [t, { opacity: 0, transform: `translateX(${dx}px)` }],
+        [t + .45, { opacity: 1, transform: 'translateX(0px)' }], [END, { opacity: 1, transform: 'translateX(0px)' }],
+        [GONE, { opacity: 0, transform: 'translateX(0px)' }],
+      ], 'ease-out');
+    });
+    q('.im-chip').forEach((el, i) => {
+      const t = chips[i].t;
+      A.tl(el, [
+        [0, { opacity: 0, transform: 'translateY(8px)' }], [t, { opacity: 0, transform: 'translateY(8px)' }],
+        [t + .45, { opacity: 1, transform: 'translateY(0px)' }], [END, { opacity: 1, transform: 'translateY(0px)' }],
+        [GONE, { opacity: 0, transform: 'translateY(0px)' }],
+      ], 'ease-out');
+    });
+  }
+
+  /* ── Scene: Car Thing (low-poly drive from day to dusk) ── */
+  function sceneCar(host, p, A) {
+    const u = 'car' + (uid++);
+    let mtn = '', hills = '', dashes = '';
+    for (let i = 0; i < 4; i++) { const x = i*300; mtn += `<polygon points="${x},290 ${x+70},205 ${x+130},250 ${x+210},185 ${x+300},290" fill="#1b2238"/>`; }
+    for (let i = 0; i < 5; i++) { const x = i*240; hills += `<polygon points="${x},296 ${x+60},262 ${x+130},282 ${x+190},258 ${x+240},296" fill="#141a2b"/>`; }
+    for (let i = 0; i < 10; i++) dashes += `<rect x="${i*80}" y="326" width="42" height="5" rx="2" fill="#e8e8e8" opacity=".7"/>`;
+    const wheel = x => `<g transform="translate(${x} -14)"><g class="car-wheel">
+        <polygon points="14,0 7,12.1 -7,12.1 -14,0 -7,-12.1 7,-12.1" fill="#0a0a0e" stroke="#3a3a46" stroke-width="1.5"/>
+        <polygon points="7,0 3.5,6 -3.5,6 -7,0 -3.5,-6 3.5,-6" fill="${MUT}"/>
+        <path d="M-14 0H14M-7 -12.1L7 12.1M-7 12.1L7 -12.1" stroke="${MUT}" stroke-width="1.2"/></g></g>`;
+    host.insertAdjacentHTML('afterbegin', `
+      <svg ${SVG_OPEN} aria-hidden="true">
+        <defs>
+          <linearGradient id="${u}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101428"/><stop offset="1" stop-color="#2b3560"/></linearGradient>
+          <linearGradient id="${u}b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${ACC}" stop-opacity=".65"/><stop offset="1" stop-color="${ACC}" stop-opacity="0"/></linearGradient>
+        </defs>
+        <rect width="640" height="360" fill="url(#${u}s)"/>
+        <circle class="car-sun" cx="470" cy="118" r="30" fill="${ACC}" opacity=".9"/>
+        <g class="car-mtn">${mtn}</g>
+        <g class="car-hills">${hills}</g>
+        <rect y="290" width="640" height="70" fill="#17171c"/>
+        <rect y="290" width="640" height="3" fill="#2a2a34"/>
+        <g class="car-dashes">${dashes}</g>
+        <rect class="car-dusk" width="640" height="360" fill="#2a0f4a" opacity="0"/>
+        <g transform="translate(300 292)">
+          <ellipse cx="0" cy="1" rx="102" ry="5" fill="#000" opacity=".45"/>
+          <polygon class="car-beam" points="94,-34 340,-6 340,-62" fill="url(#${u}b)" opacity="0"/>
+          <g class="car-bob">
+            <polygon points="-94,-18 -94,-40 -58,-46 94,-42 100,-22 94,-18" fill="${ACC}"/>
+            <polygon points="-94,-28 100,-28 100,-22 94,-18 -94,-18" fill="#a3d100"/>
+            <polygon points="-26,-46 -8,-70 44,-70 66,-44" fill="#b6e600"/>
+            <polygon points="-17,-48 -4,-65 16,-65 16,-48" fill="#1a1f33"/>
+            <polygon points="20,-48 20,-65 38,-65 54,-48" fill="#232a44"/>
+            <rect x="92" y="-37" width="8" height="6" fill="#fff7c2"/>
+            <rect x="-97" y="-38" width="4" height="6" fill="#ff4d4d"/>
+            ${wheel(-58)}${wheel(58)}
+          </g>
+        </g>
+      </svg>`);
+    const q = s => [...host.querySelectorAll(s)];
+    A.loop(host.querySelector('.car-mtn'),    [{ transform: 'translateX(0px)' }, { transform: 'translateX(-300px)' }], 15000);
+    A.loop(host.querySelector('.car-hills'),  [{ transform: 'translateX(0px)' }, { transform: 'translateX(-240px)' }], 4000);
+    A.loop(host.querySelector('.car-dashes'), [{ transform: 'translateX(0px)' }, { transform: 'translateX(-80px)' }], 400);
+    q('.car-wheel').forEach(w => A.loop(w, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], 450));
+    A.loop(host.querySelector('.car-bob'),
+      [{ transform: 'translateY(0px)' }, { transform: 'translateY(-1.6px)' }, { transform: 'translateY(0px)' }], 650);
+    // day → dusk → day, with headlights fading up
+    A.tl(host.querySelector('.car-dusk'), [[0, { opacity: 0 }], [7, { opacity: .45 }], [8, { opacity: .45 }], [14.6, { opacity: 0 }]], 'ease-in-out');
+    A.tl(host.querySelector('.car-sun'),  [[0, { transform: 'translateY(0px)' }], [7.5, { transform: 'translateY(80px)' }], [15, { transform: 'translateY(0px)' }]], 'ease-in-out');
+    A.tl(host.querySelector('.car-beam'), [[0, { opacity: 0 }], [5.5, { opacity: 0 }], [7.5, { opacity: .75 }], [12, { opacity: .75 }], [14, { opacity: 0 }]], 'ease-in-out');
+  }
+
+  /* ── Scene: generic app walkthrough (fallback for any featured project) ── */
+  function sceneGeneric(host, p, A) {
+    const u = 'gn' + (uid++);
+    const side = [0,1,2,3].map(i => `<rect class="gn-side" x="94" y="${104 + i*26}" width="76" height="10" rx="5" fill="#2a2a34"/>`).join('');
+    const rows = [0,1,2].map(i => `<rect class="gn-row" x="196" y="${96 + i*30}" width="${360 - i*60}" height="14" rx="7" fill="#22222b"/>`).join('');
+    const barsSvg = [34,52,24,58,40,30].map((h, i) => `<rect class="gn-bar" x="${214 + i*52}" y="${296 - h}" width="30" height="${h}" rx="3" fill="${ACC}" opacity=".85"/>`).join('');
+    host.insertAdjacentHTML('afterbegin', `
+      <svg ${SVG_OPEN} aria-hidden="true">
+        <defs><pattern id="${u}g" width="32" height="32" patternUnits="userSpaceOnUse">
+          <path d="M32 0H0V32" fill="none" stroke="#1b1b22" stroke-width="1"/></pattern></defs>
+        <rect width="640" height="360" fill="#0a0a0e"/>
+        <rect width="640" height="360" fill="url(#${u}g)"/>
+        <g class="gn-all">
+          <rect x="70" y="44" width="500" height="272" rx="12" fill="#111114" stroke="#2a2a34"/>
+          <path d="M70 74H570" stroke="#2a2a34"/>
+          <circle cx="90" cy="59" r="4" fill="#3a3a46"/><circle cx="106" cy="59" r="4" fill="#3a3a46"/><circle cx="122" cy="59" r="4" fill="#3a3a46"/>
+          <text x="320" y="63" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="12" letter-spacing="2" fill="${MUT}">${esc(p.name).toUpperCase()}</text>
+          <rect x="84" y="88" width="96" height="214" rx="6" fill="#17171c"/>
+          ${side}${rows}
+          <g class="gn-btn"><rect x="196" y="196" width="110" height="30" rx="8" fill="${ACC}"/>
+            <text x="251" y="216" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="12" font-weight="500" letter-spacing="2" fill="${INK}">RUN</text></g>
+          <g class="gn-res"><rect x="196" y="240" width="360" height="62" rx="8" fill="#17171c" stroke="#2a2a34"/>${barsSvg}</g>
+          <polygon class="gn-cursor" points="0,0 0,16 4.5,12 8,19 11,17.5 7.5,11 13,11" fill="#fff" stroke="${INK}" stroke-width="1.2" transform="translate(236 212)"/>
+        </g>
+      </svg>`);
+    const q = s => [...host.querySelectorAll(s)];
+    A.tl(host.querySelector('.gn-all'), [[0, { opacity: 0 }], [0.3, { opacity: 1 }], [14, { opacity: 1 }], [14.8, { opacity: 0 }]]);
+
+    const reveal = (els, t0, step, from) => {
+      origin(els, 'left center');
+      els.forEach((el, i) => {
+        const t = t0 + i * step;
+        A.tl(el, [[0, { opacity: 0, transform: from }], [t, { opacity: 0, transform: from }], [t + .5, { opacity: 1, transform: 'scale(1)' }]], 'ease-out');
+      });
+    };
+    reveal(q('.gn-side'), 0.5, 0.2, 'scaleX(0)');
+    reveal(q('.gn-row'), 1.2, 0.4, 'scaleX(0)');
+    const btn = host.querySelector('.gn-btn');
+    origin([btn], 'center');
+    A.tl(btn, [[0, { opacity: 0, transform: 'scale(.8)' }], [2.6, { opacity: 0, transform: 'scale(.8)' }], [3.0, { opacity: 1, transform: 'scale(1)' }],
+               [5.1, { transform: 'scale(1)' }], [5.25, { transform: 'scale(.93)' }], [5.45, { transform: 'scale(1)' }]], 'ease-out');
+    const res = host.querySelector('.gn-res');
+    A.tl(res, [[0, { opacity: 0 }], [5.6, { opacity: 0 }], [6.1, { opacity: 1 }]], 'ease-out');
+    const bars = q('.gn-bar');
+    origin(bars, 'center bottom');
+    bars.forEach((b, i) => {
+      const t = 6.2 + i * 0.35;
+      A.tl(b, [[0, { transform: 'scaleY(0)' }], [t, { transform: 'scaleY(0)' }], [t + .6, { transform: 'scaleY(1)' }]], 'ease-out');
+    });
+    // cursor: waits, glides to RUN, clicks, then drifts over the results
+    A.tl(host.querySelector('.gn-cursor'), [
+      [0, { transform: 'translate(520px,120px)' }], [3.0, { transform: 'translate(520px,120px)' }],
+      [5.0, { transform: 'translate(236px,212px)' }], [8.6, { transform: 'translate(236px,212px)' }],
+      [10.4, { transform: 'translate(360px,262px)' }], [13, { transform: 'translate(430px,200px)' }],
+    ], 'ease-in-out');
+  }
+
+  const SCENES = { snowboard: sceneSnowboard, insert: sceneInsert, car: sceneCar, generic: sceneGeneric };
+
+  // play only while on screen
+  function setPlaying(host, on) {
+    (host.__anims || []).forEach(a => { try { on ? a.play() : a.pause(); } catch (e) {} });
+    if (host.__video) { on ? host.__video.play().catch(() => {}) : host.__video.pause(); }
+  }
+  const io = 'IntersectionObserver' in window
+    ? new IntersectionObserver(es => es.forEach(e => setPlaying(e.target, e.isIntersecting)), { threshold: 0.2 })
+    : null;
+
+  function mountPreview(host, p) {
+    const A = makeAnimator();
+    if (p.previewVideo) {
+      const v = document.createElement('video');
+      v.className = 'pv-video';
+      v.src = p.previewVideo;
+      v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+      if (p.previewPoster) v.poster = p.previewPoster;
+      host.insertBefore(v, host.firstChild);
+      if (!REDUCED) host.__video = v;
+    } else {
+      (SCENES[p.previewScene] || SCENES.generic)(host, p, A);
+    }
+    host.__anims = A.list;
+    if (io) io.observe(host);
+    else if (host.__video) host.__video.play().catch(() => {});
+  }
+
+  // ── Shared markup ──
+  function compatHTML(p) {
+    if (p.cat === 'web_apps' && (p.laptopCompat !== undefined || p.mobileCompat !== undefined)) {
+      const laptopSymbol = p.laptopCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
+      const mobileSymbol = p.mobileCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
+      return `
+        <div class="compat-row">
+          <div class="compat-item"><span class="compat-label">Laptop</span> ${laptopSymbol}</div>
+          <div class="compat-item"><span class="compat-label">Mobile</span> ${mobileSymbol}</div>
+        </div>
+      `;
+    }
+    return '';
+  }
+
+  // ── Featured cards (big, with animated preview + Open button bottom-left) ──
+  (function buildFeatured(){
+    const sec = document.getElementById('featured');
+    const grid = document.getElementById('featuredGrid');
+    const feats = DATA.filter(isFeatured);
+    if (!feats.length) { sec.remove(); document.getElementById('moreHead').remove(); return; }
+
+    feats.forEach((p, i) => {
+      const catColor = CAT_COLOR[p.cat] || '#fff';
+      const statusColor = STATUS_COLOR[p.status] || '#8a8a9a';
+      const isRetired = p.status === 'retired';
+      const card = document.createElement('article');
+      card.className = 'featured-card' + (isRetired ? ' retired' : '');
+      card.style.animationDelay = `${0.08*i + 0.35}s`;
+      card.style.setProperty('--cat-color', catColor);
+      card.dataset.cat = p.cat;
+      card.dataset.status = p.status;
+
+      const tagPills = (p.tags||[]).filter(t => String(t).toLowerCase() !== 'featured')
+        .map(t => `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`).join('');
+      const retiredTag = isRetired ? `<span class="retired-tag">Retired</span>` : '';
+      const openBtn = p.url
+        ? `<a class="open-btn" href="${p.url}" aria-label="Open ${p.name}">Open <span aria-hidden="true">↗</span></a>`
+        : `<span class="open-btn disabled">Coming soon</span>`;
+
+      card.innerHTML = `
+        <div class="fc-preview">
+          <span class="pv-badge">★ Featured</span>
+        </div>
+        <div class="fc-body">
+          <div class="fc-top">
+            <div>
+              <div class="fc-name">${p.name}${retiredTag}</div>
+              <div class="card-id">${p.id}</div>
+            </div>
+            <span class="cat-badge">${CAT_LABEL[p.cat] || p.cat}</span>
+          </div>
+          <div class="fc-desc">${p.desc}</div>
+          <div class="card-tags">${tagPills}</div>
+          <div class="card-updated">
+            <div class="card-updated-dot"></div>
+            Last updated: ${p.updated || '—'}
+          </div>
+          <div class="fc-footer">
+            ${openBtn}
+            <div class="fc-meta">
+              <div class="status-row">
+                <div class="status-dot" style="--status-color:${statusColor}"></div>
+                ${STATUS_LABEL[p.status]||p.status}
+              </div>
+              ${compatHTML(p)}
+            </div>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+      mountPreview(card.querySelector('.fc-preview'), p);
+    });
+  })();
+
+  // ── Regular list (featured projects live in the Featured section instead) ──
   (function buildCards(){
     const wrap = document.getElementById('cardsWrap');
     DATA.forEach((p, i) => {
+      if (isFeatured(p)) return;
       const catColor = CAT_COLOR[p.cat] || '#fff';
       const statusColor = STATUS_COLOR[p.status] || '#8a8a9a';
       const card = document.createElement(p.url ? 'a' : 'div');
@@ -907,19 +1476,7 @@
       const tagPills = (p.tags||[]).map(t => `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`).join('');
       const linkIcon = p.url ? `<span class="card-link-icon">↗</span>` : '';
       const retiredTag = isRetired ? `<span class="retired-tag">Retired</span>` : '';
-
-      // --- Compatibility markup: only for web_apps ---
-      let compatMarkup = '';
-      if (p.cat === 'web_apps' && (p.laptopCompat !== undefined || p.mobileCompat !== undefined)) {
-        const laptopSymbol = p.laptopCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
-        const mobileSymbol = p.mobileCompat ? '<span class="compat-symbol compat-check">✓</span>' : '<span class="compat-symbol compat-x">✗</span>';
-        compatMarkup = `
-          <div class="compat-row">
-            <div class="compat-item"><span class="compat-label">Laptop</span> ${laptopSymbol}</div>
-            <div class="compat-item"><span class="compat-label">Mobile</span> ${mobileSymbol}</div>
-          </div>
-        `;
-      }
+      const compatMarkup = compatHTML(p);
 
       card.innerHTML = `
         <div class="card-accent-bar"></div>
