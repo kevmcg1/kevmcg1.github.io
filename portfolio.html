@@ -1704,10 +1704,10 @@
       el.style.animationDelay = (-Math.random() * 20) + 's';
       fx.appendChild(el);
     }
-    document.body.appendChild(fx);
+    // particles removed: the floating decorations are no longer added to the page
   })();
 
-  /* ── Experimental tilt: switch + a little scroll-driven lean ── */
+  /* ── Experimental tilt: switch (static tilt, no scroll lean) ── */
   (function tiltUi() {
     const root = document.documentElement, btn = document.getElementById('tiltToggle');
     const sync = () => { const on = root.getAttribute('data-tilt') === 'on'; if (btn) { btn.setAttribute('aria-pressed', String(on)); btn.querySelector('.tt-l').textContent = 'Tilt: ' + (on ? 'on' : 'off'); } };
@@ -1720,12 +1720,9 @@
     function lean() {
       ticking = false;
       if (root.getAttribute('data-tilt') !== 'on') return;
-      const max = Math.max(1, document.documentElement.scrollHeight - innerHeight), p = Math.min(1, Math.max(0, scrollY / max));
-      root.style.setProperty('--tilt-x', REDUCED ? '0deg' : ((0.5 - p) * 3).toFixed(2) + 'deg');
-      root.style.setProperty('--tilt-main-y', (-3.5 + (p - 0.5) * 1.2).toFixed(2) + 'deg');
+      // fixed tilt: it does not change with scroll (values come from the CSS defaults)
+      root.style.removeProperty('--tilt-x'); root.style.removeProperty('--tilt-main-y');
     }
-    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(lean); } }, { passive: true });
-    addEventListener('resize', lean);
     sync(); lean();
   })();
 </script>
