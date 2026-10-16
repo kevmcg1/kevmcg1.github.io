@@ -585,9 +585,22 @@
             }
         }
     </style>
+    <style id="sim-chrome">
+        /* shared header and footer, same as Shop Tool Sim */
+        .site-head, .foot { --bar:#08090a; --line:#222428; --ink:#ececee; --muted:#8a8f97; --accent:#5b93ea; box-sizing: border-box; align-self: stretch; width: auto; font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.4; background: var(--bar); }
+        .site-head { display: flex; justify-content: center; align-items: center; padding: 0; border-bottom: 1px solid var(--line); font-size: 12.5px; margin: -20px -20px 20px; }
+        .site-head a { display: block; width: 100%; padding: 6px 14px; text-align: center; color: var(--ink); text-decoration: none; border-bottom: 0; transition: color .2s ease, background-color .2s ease; }
+        .site-head a:hover, .site-head a:focus-visible { color: var(--accent); background: rgba(255,255,255,.04); text-decoration: underline; text-underline-offset: 3px; outline: none; }
+        .foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; text-align: center; gap: 6px 18px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); margin: 20px -20px -20px; }
+        .foot a { color: var(--ink); text-decoration: none; border-bottom: 1px solid transparent; }
+        .foot a:hover, .foot a:focus-visible { color: var(--accent); border-bottom-color: currentColor; outline: none; }
+        @media (max-width: 640px) { .foot { padding: 8px 10px; } }
+    </style>
 </head>
 
 <body data-theme="dark">
+<header class="site-head" role="banner"><a href="https://kevmcg1.github.io/portfolio" target="_top" aria-label="Back to the portfolio at kevmcg1.github.io">KEVMCG1.GITHUB.IO</a></header>
+
 
     <div class="caliper-container">
         <div class="title-container">
@@ -1151,6 +1164,7 @@
         createTicks();
         updateReading();
     </script>
+<footer class="foot"><span>Shop Tool Sim is released under GitHub’s <a href="https://github.com/github/choosealicense.com/blob/gh-pages/_licenses/cc0-1.0.txt" target="_blank" rel="license noopener noreferrer">Creative Commons Zero v1.0 Universal</a> license. All rights reserved.</span></footer>
 </body>
 
 </html>
