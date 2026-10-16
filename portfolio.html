@@ -29,6 +29,11 @@
       if (q === 'off') s = ''; else if (q && NAMES[q]) s = q;
     } catch (e) {}
     if (s) document.documentElement.setAttribute('data-season', s);
+    /* Experimental tilted UI (portfolio page only): on by default, remembered once switched off.  ?tilt=off|on overrides for a visit. */
+    var tilt = 'on';
+    try { if (localStorage.getItem('portfolio-tilt') === 'off') tilt = 'off'; } catch (e) {}
+    try { var tq = new URLSearchParams(location.search).get('tilt'); if (tq === 'off' || tq === 'on') tilt = tq; } catch (e) {}
+    document.documentElement.setAttribute('data-tilt', tilt);
   })();
   </script>
   <title>Project Registry — Compatibility Overview</title>
@@ -97,6 +102,29 @@
       50%      { transform: scale(1.15); opacity: 0.95; }
     }
     @media (prefers-reduced-motion: reduce) { #seasonFx { display: none; } }
+
+    /* ── EXPERIMENTAL: tilted HUD look (a nod to the Division's UI). The page leans one way and the sidebar the other.
+          Off switch: the button at the bottom right (remembered), or ?tilt=off.  Only on screens wide enough for the sidebar. ── */
+    .tilt-toggle { display: none; }
+    @media (min-width: 769px) {
+      html[data-tilt="on"] .page { overflow-x: clip; }
+      html[data-tilt="on"] .page { perspective: 1700px; perspective-origin: 50% 38%; }
+      html[data-tilt="on"] .main {
+        transform: rotateY(var(--tilt-main-y, -3.5deg)) rotateX(var(--tilt-x, 0deg));
+        transform-origin: 0% 50%; will-change: transform;
+      }
+      html[data-tilt="on"] .sidebar { transform: rotateY(5deg); transform-origin: 100% 50%; }
+      .tilt-toggle {
+        display: inline-flex; align-items: center; gap: 8px; position: fixed; right: 14px; bottom: 14px; z-index: 60;
+        padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(17,17,20,0.88);
+        color: var(--muted); font: 500 0.6rem/1 'DM Sans', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
+        backdrop-filter: blur(6px);
+      }
+      .tilt-toggle:hover { color: var(--text); border-color: var(--accent); }
+      .tilt-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+      html[data-tilt="on"] .tilt-toggle .dot { background: var(--accent); box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.7); }
+    }
+    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; } }
 
     html { scroll-behavior: smooth; }
 
@@ -313,7 +341,9 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       overflow: hidden;
-      display: flex; flex-direction: column;
+      /* the preview takes 70% of the card and the details 30%, at every screen size */
+      display: grid; grid-template-rows: 7fr 3fr;
+      aspect-ratio: 4 / 5;
       position: relative;
       transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
       animation: fadeUp 0.5s ease both;
@@ -328,7 +358,7 @@
 
     /* preview area */
     .fc-preview {
-      position: relative; aspect-ratio: 16 / 9;
+      position: relative; min-height: 0;
       background: #0a0a0e; overflow: hidden;
       border-bottom: 1px solid var(--border);
     }
@@ -343,28 +373,35 @@
     }
     .pv-badge { left: 12px; color: var(--accent); border-color: rgba(var(--accent-rgb),0.35); }
 
-    .fc-body { flex: 1; padding: 20px 22px 22px; display: flex; flex-direction: column; }
+    .fc-body { min-height: 0; overflow: hidden; container-type: size; padding: 12px 16px 14px; display: flex; flex-direction: column; }
     .fc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
     .fc-name {
       font-size: 1.15rem; font-weight: 500;
       text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.1;
       display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     }
-    .fc-desc {
-      font-size: 0.86rem; font-weight: 300; color: #c8c8d8;
-      margin-top: 10px; line-height: 1.7;
+    .featured-card .fc-desc {
+      font-size: 0.82rem; font-weight: 300; color: #c8c8d8;
+      margin-top: 6px; line-height: 1.45;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
     }
+    /* the details area is a fixed 30% of the card, so what it shows follows the room it has */
+    @container (min-height: 170px) { .featured-card .fc-desc { -webkit-line-clamp: 3; } }
+    @container (max-height: 169px) { .fc-body .card-tags, .fc-body .card-updated { display: none; } }
+    @container (max-height: 139px) { .fc-body .card-id { display: none; } .fc-body .fc-meta .compat-row { display: none; } .fc-body .fc-name { font-size: 1.02rem; } .fc-body .fc-top { align-items: center; } }
+    @container (max-height: 104px) { .featured-card .fc-desc { -webkit-line-clamp: 1; margin-top: 4px; } .fc-body .fc-footer { padding-top: 4px; } .fc-body .open-btn { padding: 6px 14px; } }
+    @media (max-width: 700px) { .featured-card { aspect-ratio: auto; height: clamp(440px, 118vw, 640px); } }
     .fc-footer {
-      margin-top: auto; padding-top: 20px;
+      margin-top: auto; padding-top: 10px;
       display: flex; align-items: center; justify-content: space-between;
-      gap: 14px; flex-wrap: wrap;
+      gap: 8px 12px; flex-wrap: wrap;
     }
     .fc-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
     .fc-meta .compat-row { margin-top: 0; border-top: none; padding-top: 0; }
 
     .open-btn {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 11px 24px;
+      padding: 8px 18px;
       background: var(--accent); color: #0d0d0f;
       border: 1px solid var(--accent); border-radius: 8px;
       font-family: 'DM Sans', sans-serif;
@@ -721,7 +758,7 @@
       .header-meta { gap: 10px; } .meta-div { display: none; }
       .fc-name { font-size: 1rem; }
       .pv-badge { top: 8px; left: 8px; padding: 3px 7px; font-size: 0.5rem; }
-      .fc-footer { flex-direction: column; align-items: flex-start; }
+      .fc-footer { flex-direction: row; align-items: center; }
       .fc-meta { justify-content: flex-start; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -870,6 +907,8 @@
   </main>
 </div>
 
+
+<button type="button" class="tilt-toggle" id="tiltToggle" aria-pressed="true" title="Experimental: a tilted, HUD-style layout. Click to turn it off or on."><span class="dot"></span><span class="tt-l">Tilt: on</span></button>
 <script>
   document.getElementById('ds').textContent =
     new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'}).toUpperCase();
@@ -1018,6 +1057,32 @@
       tags: ['Featured', 'Web App'],
       previewVideo: '/previews/snowboard-preview.mp4',
       updated: 'Sept 2026',
+      laptopCompat: true,
+      mobileCompat: false,
+    },
+    {
+      id: 'PROJ-010',
+      name: 'Triangle Thing',
+      cat: 'web_apps',
+      status: 'complete',
+      url: '/triangle/',
+      previewVideo: '/previews/triangle-preview.mp4',
+      desc: 'Drag, type or lock any side or angle and watch every measurement, formula and trig value update live.',
+      tags: ['Web App', 'Tool'],
+      updated: 'Oct 2026',
+      laptopCompat: true,
+      mobileCompat: true,
+    },
+    {
+      id: 'PROJ-011',
+      name: '3D File to STEP File',
+      cat: 'web_apps',
+      status: 'wip',
+      url: '/3d-to-step/',
+      previewVideo: '/previews/3d-to-step-preview.mp4',
+      desc: 'Convert STL, OBJ, PLY, 3MF and GLB meshes to STEP in your browser, with automatic repair, undo/redo and a report of what was fixed and where.',
+      tags: ['Web App', 'Tool'],
+      updated: 'Oct 2026',
       laptopCompat: true,
       mobileCompat: false,
     },
@@ -1640,6 +1705,28 @@
       fx.appendChild(el);
     }
     document.body.appendChild(fx);
+  })();
+
+  /* ── Experimental tilt: switch + a little scroll-driven lean ── */
+  (function tiltUi() {
+    const root = document.documentElement, btn = document.getElementById('tiltToggle');
+    const sync = () => { const on = root.getAttribute('data-tilt') === 'on'; if (btn) { btn.setAttribute('aria-pressed', String(on)); btn.querySelector('.tt-l').textContent = 'Tilt: ' + (on ? 'on' : 'off'); } };
+    if (btn) btn.addEventListener('click', () => {
+      const next = root.getAttribute('data-tilt') === 'on' ? 'off' : 'on';
+      root.setAttribute('data-tilt', next); try { localStorage.setItem('portfolio-tilt', next); } catch (e) {}
+      sync(); lean();
+    });
+    let ticking = false;
+    function lean() {
+      ticking = false;
+      if (root.getAttribute('data-tilt') !== 'on') return;
+      const max = Math.max(1, document.documentElement.scrollHeight - innerHeight), p = Math.min(1, Math.max(0, scrollY / max));
+      root.style.setProperty('--tilt-x', REDUCED ? '0deg' : ((0.5 - p) * 3).toFixed(2) + 'deg');
+      root.style.setProperty('--tilt-main-y', (-3.5 + (p - 0.5) * 1.2).toFixed(2) + 'deg');
+    }
+    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(lean); } }, { passive: true });
+    addEventListener('resize', lean);
+    sync(); lean();
   })();
 </script>
 </body>
