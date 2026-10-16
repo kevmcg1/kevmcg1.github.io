@@ -16,6 +16,7 @@
     --radius: 12px;
     --radius-sm: 8px;
     --transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
+    --on-accent: #0a0a0a;   /* label colour on accent fills: dark text passes 4.5:1 on every theme's accent */
   }
 
   /* Midnight (default) */
@@ -174,7 +175,7 @@
     margin: 0 16px 12px;
     padding: 11px 14px;
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     border: none;
     border-radius: var(--radius-sm);
     font-size: 14px;
@@ -281,7 +282,7 @@
   }
   .ri-check:hover { border-color: var(--accent); }
   .ri-check.done { background: var(--accent); border-color: var(--accent); }
-  .ri-check.done i { color: #fff; font-size: 9px; opacity: 1; }
+  .ri-check.done i { color: var(--on-accent); font-size: 9px; opacity: 1; }
   [data-theme="carbon"] .ri-check.done i { color: #0a0a0a; }
   .ri-check i { opacity: 0; font-size: 9px; }
 
@@ -438,12 +439,12 @@
   }
   .detail-check:hover { border-color: var(--accent); }
   .detail-check.done { background: var(--accent); border-color: var(--accent); }
-  .detail-check i { opacity: 0; color: #fff; font-size: 12px; }
+  .detail-check i { opacity: 0; color: var(--on-accent); font-size: 12px; }
   [data-theme="carbon"] .detail-check.done i { color: #0a0a0a; }
   .detail-check.done i { opacity: 1; }
 
   .detail-title-input {
-    flex: 1;
+    flex: 1; min-width: 0;
     background: transparent;
     border: none;
     outline: none;
@@ -541,7 +542,7 @@
     display: flex; align-items: center; justify-content: center; transition: var(--transition);
   }
   .cl-check:hover { border-color: var(--accent); }
-  .cl-check i { opacity: 0; font-size: 9px; color: #fff; }
+  .cl-check i { opacity: 0; font-size: 9px; color: var(--on-accent); }
   .cl-check.done { background: var(--accent); border-color: var(--accent); }
   .cl-check.done i { opacity: 1; }
   [data-theme="carbon"] .cl-check.done i { color: #0a0a0a; }
@@ -666,7 +667,8 @@
   .icon-choice:hover { background: var(--bg-hover); color: var(--text); }
   .icon-choice.sel { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
-  .urgency-pills { display: flex; gap: 7px; }
+  .urgency-pills { display: flex; flex-wrap: wrap; gap: 7px; min-width: 0; }
+  .field-control { min-width: 0; }
   .urg-pill {
     padding: 7px 13px; border-radius: 20px; font-size: 12.5px; font-weight: 500;
     background: var(--bg-elev-2); border: 1px solid var(--border);
@@ -748,7 +750,7 @@
   .btn:hover { background: var(--bg-hover); }
   .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
   .btn-danger:hover { filter: brightness(1.1); background: var(--danger); }
-  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   [data-theme="carbon"] .btn-primary { color: #0a0a0a; }
   .btn-primary:hover { filter: brightness(1.1); }
 
@@ -839,7 +841,8 @@
   /* ---- Tablets & phones: single pane, stacked field rows ---- */
   @media (max-width: 720px) {
     html, body { font-size: 15px; }
-    .app { grid-template-columns: 1fr; }
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .sidebar, .main { min-width: 0; }
     .sidebar { border-right: none; }
     .sidebar.mobile-hidden { display: none; }
     .main.mobile-hidden { display: none; }
@@ -1237,7 +1240,9 @@ function parseNaturalLanguage(text) {
   let work = ' ' + text + ' ';
   const now = new Date();
   let m;
-  const strip = re => { const mm = work.match(re); if (mm) work = work.replace(mm[0], ' '); return mm; };
+  // strip(re, ok): remove the first match, but only when ok(match) says it is a real value (so "feb 30" or "25:00" are left alone)
+  const strip = (re, ok) => { const mm = work.match(re); if (!mm || (ok && !ok(mm))) return null; work = work.replace(mm[0], ' '); return mm; };
+  const dim = (y, m) => new Date(y, m + 1, 0).getDate();
 
   /* ---- REPEAT (produces a free-text label) ---- */
   const normUnit = u => ({ min: 'minute', mins: 'minute', minute: 'minute', hr: 'hour', hrs: 'hour', hour: 'hour', day: 'day', week: 'week', month: 'month', year: 'year' }[u.toLowerCase()] || u.toLowerCase());
@@ -1287,8 +1292,11 @@ function parseNaturalLanguage(text) {
     const n = parseInt(m[1]), d = new Date(now), u = m[2].toLowerCase();
     if (u === 'day') d.setDate(d.getDate()+n);
     else if (u === 'week') d.setDate(d.getDate()+n*7);
-    else if (u === 'month') d.setMonth(d.getMonth()+n);
-    else if (u === 'year') d.setFullYear(d.getFullYear()+n);
+    else if (u === 'month' || u === 'year') {
+      // land on the same day, or the last day of a shorter month (31 Jan + 1 month = 28/29 Feb, never 3 Mar)
+      const t = new Date(now.getFullYear() + (u === 'year' ? n : 0), now.getMonth() + (u === 'month' ? n : 0), 1);
+      d.setTime(new Date(t.getFullYear(), t.getMonth(), Math.min(now.getDate(), dim(t.getFullYear(), t.getMonth()))).getTime());
+    }
     setD(d);
   }
   else if ((m = strip(/\b(?:next\s+|this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i))) {
@@ -1299,19 +1307,28 @@ function parseNaturalLanguage(text) {
     d.setDate(d.getDate() + diff);
     setD(d);
   }
-  else if ((m = strip(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i))) {
+  else if ((m = strip(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i, x => {
+      const mi = months.indexOf(x[1].toLowerCase().slice(0,3)), di = parseInt(x[2]);
+      return di >= 1 && di <= 31 && di <= dim(now.getFullYear() + 4, mi) + (mi === 1 ? 0 : 0) && (mi !== 1 || di <= 29);
+    }))) {
     mo = months.indexOf(m[1].toLowerCase().slice(0,3));
     dd = parseInt(m[2]);
     yy = now.getFullYear();
     if (new Date(yy, mo, dd) < new Date(now.getFullYear(), now.getMonth(), now.getDate())) yy++;
+    while (dd > dim(yy, mo)) yy++;   // 29 Feb waits for the next leap year
     res.dateSet = true;
   }
-  else if ((m = strip(/\bon\s+the\s+(\d{1,2})(?:st|nd|rd|th)\b/i))) {
+  else if ((m = strip(/\bon\s+the\s+(\d{1,2})(?:st|nd|rd|th)\b/i, x => parseInt(x[1]) >= 1 && parseInt(x[1]) <= 31))) {
     dd = parseInt(m[1]); mo = now.getMonth(); yy = now.getFullYear();
     if (dd < now.getDate()) mo++;
+    while (dd > dim(yy, mo)) mo++;   // the next month that actually has that day
     res.dateSet = true;
   }
-  else if ((m = strip(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/))) {
+  else if ((m = strip(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/, x => {
+      const mi = parseInt(x[1]) - 1, di = parseInt(x[2]);
+      const yi = x[3] ? (x[3].length === 2 ? 2000 + parseInt(x[3]) : parseInt(x[3])) : now.getFullYear();
+      return mi >= 0 && mi <= 11 && di >= 1 && di <= dim(yi, mi);
+    }))) {
     mo = parseInt(m[1]) - 1; dd = parseInt(m[2]);
     yy = m[3] ? (m[3].length === 2 ? 2000 + parseInt(m[3]) : parseInt(m[3])) : now.getFullYear();
     res.dateSet = true;
@@ -1319,10 +1336,10 @@ function parseNaturalLanguage(text) {
 
   /* ---- TIME ---- */
   let hh = null, mi = null;
-  if ((m = strip(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i))) {
+  if ((m = strip(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i, x => { const h = parseInt(x[1]), mn = x[2] ? parseInt(x[2]) : 0; return h >= 1 && h <= 12 && mn <= 59; }))) {
     hh = parseInt(m[1]) % 12; if (m[3].toLowerCase() === 'pm') hh += 12;
     mi = m[2] ? parseInt(m[2]) : 0; res.timeSet = true;
-  } else if ((m = strip(/\bat\s+(\d{1,2}):(\d{2})\b/i))) {
+  } else if ((m = strip(/\b(?:at\s+)?(\d{1,2}):(\d{2})\b/i, x => parseInt(x[1]) <= 23 && parseInt(x[2]) <= 59))) {
     hh = parseInt(m[1]); mi = parseInt(m[2]); res.timeSet = true;
   } else if (strip(/\b(noon|midday)\b/i)) { hh = 12; mi = 0; res.timeSet = true; }
   else if (strip(/\bmidnight\b/i)) { hh = 0; mi = 0; res.timeSet = true; }
@@ -1352,7 +1369,8 @@ function parseNaturalLanguage(text) {
     res.due = toLocalInput(res._exact); // "in N minutes/hours" — already exact
   } else if (res.dateSet || res.timeSet) {
     const d = new Date(now);
-    if (res.dateSet) { d.setFullYear(yy); d.setMonth(mo); d.setDate(dd); }
+    // built in one step: setting year, month and day one at a time overflows on the 29th-31st
+    if (res.dateSet) { d.setTime(new Date(yy, mo, dd, d.getHours(), d.getMinutes()).getTime()); }
     if (res.timeSet && hh !== null) d.setHours(hh, mi, 0, 0); else d.setHours(9, 0, 0, 0);
     // only-a-time that already passed today rolls to tomorrow
     if (res.timeSet && !res.dateSet && d < now) d.setDate(d.getDate() + 1);
@@ -1587,7 +1605,7 @@ function itemEl(r) {
     <div class="ri-body">
       <div class="ri-title">
         ${r.icon ? `<i class="fa-solid ${r.icon}" style="color:var(--accent);font-size:11px;"></i>` : ''}
-        ${escapeHtml(r.title) || '<span style="color:var(--text-faint)">Untitled</span>'}
+        ${r.title.trim() ? escapeHtml(r.title) : '<span style="color:var(--text-faint)">Untitled</span>'}
       </div>
       <div class="ri-meta">
         <span class="urg-dot-wrap"><span class="urg-dot u-${r.urgency}"></span></span>
@@ -2693,9 +2711,9 @@ if (/[?&]dev\b/.test(location.search)) document.addEventListener('DOMContentLoad
         for (let d = 1; d <= 31; d++) {
           const text = `on the ${d}${suffix(d)}`;
           let y = cy, mo = cm; if (d < cd) mo++;
-          const when = new RD(y, mo, 1); const ok = d <= dim(when.getFullYear(), when.getMonth());
+          let when = new RD(y, mo, 1); while (d > dim(when.getFullYear(), when.getMonth())) when = new RD(when.getFullYear(), when.getMonth() + 1, 1);   // next month that has that day
           const p = parseWith(clock, text);
-          if (ok) eq(text, 'due', LI(when.getFullYear(), when.getMonth(), d, 9, 0), p.due); else eq(text, 'due (day does not exist that month: should not guess)', null, p.due);
+          eq(text, 'due', LI(when.getFullYear(), when.getMonth(), d, 9, 0), p.due);
         }
         // M/D and M/D/Y
         for (let m = 1; m <= 12; m++) for (const d of (wide ? [1, 2, 5, 9, 10, 12, 15, 20, 28, 29, 30, 31] : [1, 15, 28])) {
@@ -2746,7 +2764,9 @@ if (/[?&]dev\b/.test(location.search)) document.addEventListener('DOMContentLoad
         for (const L of LISTS) for (const lead of leads) for (const sep of [', ', ' and ', '; ']) {
           if (L.length === 1 && sep !== ', ') continue;
           const body = sep === ' and ' ? (L.length > 1 ? L.slice(0, -1).join(', ') + ' and ' + L[L.length - 1] : L[0]) : L.join(sep);
-          const t = `${lead} ${body}`; eq(t, 'checklist items', L, parseWith(clock, t).checklist);
+          // without a comma, "and" stays inside one item on purpose ("mac and cheese")
+          const expItems = (sep === ' and ' && L.length === 2) ? [body] : L;
+          const t = `${lead} ${body}`; eq(t, 'checklist items', expItems, parseWith(clock, t).checklist);
         }
         await tick();
       }
@@ -2896,7 +2916,7 @@ if (/[?&]dev\b/.test(location.search)) document.addEventListener('DOMContentLoad
         const sc = ti.scrollWidth <= ti.clientWidth + 1 || getComputedStyle(ti).textOverflow === 'ellipsis' || getComputedStyle(ti).overflow !== 'visible'; truthy(JSON.stringify(t).slice(0, 30), 'long title is clipped, not overflowing', sc, 'ellipsis/clip', 'warn');
         // detail round trip
         reminders = [Object.assign(r, { notes: t })]; selectedId = r.id; renderDetail();
-        eq(JSON.stringify(t).slice(0, 30), 'title input keeps exact text', t, document.getElementById('d-title').value);
+        eq(JSON.stringify(t).slice(0, 30), 'title input keeps exact text (a one-line box drops line breaks)', t.replace(/[\r\n]/g, ''), document.getElementById('d-title').value);
         eq(JSON.stringify(t).slice(0, 30), 'notes keep exact text', t, document.getElementById('d-notes').value);
       }
       await tick();
@@ -3009,9 +3029,10 @@ if (/[?&]dev\b/.test(location.search)) document.addEventListener('DOMContentLoad
         }
         settings.groupCompleted = true;
         reminders = ['a', 'b', 'c'].map((id, k) => Object.assign(newReminder(), { id, title: id, completed: k === 2 })); render(); performReorder('a', null);
-        eq('grouped: move active to end of its group', ['b', 'a', 'c'], reminders.map(x => x.id));
+        eq('grouped: move active to end of its group', 'order', ['b', 'a', 'c'], reminders.map(x => x.id));
         // settings dialog controls
         for (const th of THEMES) { renderThemeGrid(); document.querySelector(`#themeGrid [data-theme-id="${th.id}"]`).click(); eq(th.id, 'theme swatch click applies', th.id, document.body.dataset.theme); }
+        syncSettingToggles();
         for (const id of ['densityToggle', 'groupToggle', 'confirmDelToggle', 'spellcheckToggle']) { const before = $(id).classList.contains('on'); $(id).click(); eq(id, 'toggle flips', !before, $(id).classList.contains('on')); $(id).click(); eq(id, 'toggle flips back', before, $(id).classList.contains('on')); }
         // overlays open and close
         for (const [openBtn, ov, closers] of [['settingsBtn', 'settingsOverlay', ['settingsClose']], ['helpBtn', 'helpOverlay', ['helpClose', 'helpDone']], ['notifStatus', 'notifOverlay', ['notifClose', 'notifDismiss']], ['wipeBtn', 'wipeOverlay', ['wipeCancel']]]) {
