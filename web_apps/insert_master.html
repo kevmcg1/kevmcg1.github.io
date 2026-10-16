@@ -429,6 +429,10 @@
         .dim-select:focus { border-color: var(--accent); }
 
         .hidden { display: none !important; }
+        .dev-opt { display: block; font-size: 0.78rem; color: var(--muted); margin: 0 0 14px; }
+        .dev-summary table, #dev-fails table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 14px; }
+        .dev-summary td, .dev-summary th, #dev-fails td, #dev-fails th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); word-break: break-word; }
+        .dev-pass { color: var(--accent); } .dev-fail { color: #ff8080; } .dev-warn { color: #ffc266; }
 
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(14px); }
@@ -457,6 +461,7 @@
             <button onclick="switchMode('decoder')" id="tab-decoder" class="tab-active">Decoder</button>
             <button onclick="switchMode('info')"    id="tab-info">Reference</button>
             <button onclick="switchMode('builder')" id="tab-builder">Builder</button>
+            <button onclick="switchMode('dev')"     id="tab-dev" class="hidden">Dev</button>
         </div>
 
         <!-- ── DECODER ── -->
@@ -608,6 +613,21 @@
             </div>
         </div>
 
+
+        <!-- ── DEV: verifies every code character against what the decoder actually displays (open with ?dev) ── -->
+        <div id="mode-dev" class="panel hidden">
+            <div class="info-topbar">
+                <div>
+                    <h3>Dev: Display Verifier</h3>
+                    <p>Feeds every letter and digit, in every position, in metric and imperial codes, through the real decoder, Reference tables and Builder, and compares what is displayed with the expected value.</p>
+                </div>
+                <button onclick="runDevVerify()" id="dev-run-btn" class="unit-toggle">Run all checks</button>
+            </div>
+            <label class="dev-opt"><input type="checkbox" id="dev-full"> Also test every known shape × relief × tolerance × type combination (about 47,000 decodes, slower)</label>
+            <div id="dev-summary" class="dev-summary"></div>
+            <div id="dev-fails"></div>
+        </div>
+
     </main>
 
     <script>
@@ -706,7 +726,7 @@
         const BAR_COLORS = ['#c8ff00','#e8e8e8','#c8ff00','#8a8a9a','#c8ff00','#e8e8e8','#8a8a9a','#c8ff00','#e8e8e8'];
 
         function switchMode(mode) {
-            ['decoder', 'info', 'builder'].forEach(m => {
+            ['decoder', 'info', 'builder', 'dev'].forEach(m => {
                 document.getElementById(`mode-${m}`).classList.add('hidden');
                 const t = document.getElementById(`tab-${m}`);
                 t.classList.remove('tab-active');
@@ -911,6 +931,182 @@
         function updateBuilderUI() {
             const code = `${buildState.shape}${buildState.relief}${buildState.tolerance}${buildState.hole}${buildState.size}${buildState.thick}${buildState.rad}${buildState.edge}${buildState.hand}`;
             document.getElementById('builder-output').innerText = code;
+        }
+
+        /* ── DEV VERIFIER ──
+           Drives the real decode() / renderTables() / builder with every possible character and compares what ends up
+           on screen with an expected value built here from DATA and plain unit maths (not by calling the page's own formatters). */
+        if (/[?&]dev\b/.test(location.search)) document.addEventListener('DOMContentLoaded', () => document.getElementById('tab-dev').classList.remove('hidden'));
+
+        async function runDevVerify() {
+            const btn = document.getElementById('dev-run-btn'), out = document.getElementById('dev-summary'), failsEl = document.getElementById('dev-fails');
+            btn.disabled = true; out.innerHTML = 'Running…'; failsEl.innerHTML = '';
+            const saved = { input: document.getElementById('decoder-input').value, unit: currentUnit, state: { ...buildState } };
+            const groups = {}, issues = [];
+            const tick = () => new Promise(r => setTimeout(r, 0));
+            const rec = (group, input, field, expected, actual, level) => {
+                const g = groups[group] || (groups[group] = { pass: 0, fail: 0, warn: 0 });
+                if (level === 'pass') { g.pass++; return; }
+                g[level]++; issues.push({ group, input, field, expected, actual, level });
+            };
+            const check = (group, input, field, expected, actual) => rec(group, input, field, expected, actual, expected === actual ? 'pass' : 'fail');
+
+            const LET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', DIG = '0123456789';
+            const two = n => String(n).padStart(2, '0');
+            const read = code => {
+                document.getElementById('decoder-input').value = code; decode();
+                const o = { badge: document.getElementById('standard-badge').innerText, f: {} };
+                document.querySelectorAll('#decode-grid .decode-card').forEach(c => {
+                    o.f[c.querySelector('.decode-label').textContent.trim()] = c.querySelector('.decode-val').textContent.trim();
+                });
+                return o;
+            };
+            const exp = {
+                shape: c => DATA.shape[c] ? `${DATA.shape[c].desc} (${DATA.shape[c].angle})` : `Unknown (${c})`,
+                relief: c => DATA.relief[c] ? `${DATA.relief[c].desc} — ${DATA.relief[c].note}` : `Unknown (${c})`,
+                tol: c => DATA.tolerance[c] ? `${DATA.tolerance[c].desc} · IC: ${DATA.tolerance[c].ic}` : `Unknown (${c})`,
+                hole: c => DATA.hole[c] ? DATA.hole[c].desc : `Unknown (${c})`,
+                edge: c => DATA.edge[c] ? DATA.edge[c].desc : `Unknown (${c})`,
+                hand: c => DATA.hand[c] ? DATA.hand[c].desc : `Unknown (${c})`
+            };
+            const clean = (group, code, o) => { if (/NaN|undefined|null/.test(Object.values(o.f).join('|'))) rec(group, code, 'garbage text on screen', 'no NaN/undefined', JSON.stringify(o.f), 'fail'); else rec(group, code, 'no garbage text', '', '', 'pass'); };
+            const BASE_ISO = { s: '12', t: '04', r: '08', e: 'E', h: 'N' }, BASE_ANSI = '432';
+
+            // 1. every letter A-Z in each letter position, metric (10 char), metric (no edge/hand) and imperial codes
+            const letterRows = [['shape', 0, 'Shape'], ['relief', 1, 'Relief'], ['tol', 2, 'Tolerance'], ['hole', 3, 'Type']];
+            for (const [key, pos, label] of letterRows) for (const L of LET) {
+                const mk = tail => { const a = ['C', 'N', 'M', 'G']; a[pos] = L; return a.join('') + tail; };
+                for (const [fmtName, code, badge] of [['ISO 12-char', mk('120408EN'), 'Metric (ISO)'], ['ISO 10-char', mk('120408'), 'Metric (ISO)'], ['ANSI', mk(BASE_ANSI), 'Imperial (ANSI)']]) {
+                    const o = read(code);
+                    check('Letters: shape/relief/tolerance/type · ' + fmtName, code, label, exp[key](L), o.f[label]);
+                    check('Letters: shape/relief/tolerance/type · ' + fmtName, code, 'standard badge', badge, o.badge);
+                }
+            }
+            await tick();
+            // 2. every letter in the edge and hand positions
+            for (const [key, idx, label] of [['edge', 0, 'Edge Condition'], ['hand', 1, 'Cutting Hand']]) for (const L of LET) {
+                const tail = idx === 0 ? L + 'N' : 'E' + L, code = 'CNMG120408' + tail, o = read(code);
+                check('Letters: edge and hand', code, label, exp[key](L), o.f[label]);
+            }
+            await tick();
+            // 3. metric size / thickness / nose radius: every two-digit value 00-99 in 10-char and 12-char codes
+            const MM = (tbl, k) => tbl.iso[k];
+            const dimSets = [['size', 'Size (I.C.)', DATA.size, 0, 2], ['thick', 'Thickness', DATA.thickness, 2, 2], ['rad', 'Nose Radius', DATA.radius, 4, 2]];
+            for (const [key, label, tbl, at] of dimSets) for (let n = 0; n < 100; n++) {
+                const v = two(n), d = ['12', '04', '08']; d[at / 2] = v;
+                for (const suffix of ['', 'EN']) {
+                    const code = 'CNMG' + d.join('') + suffix, o = read(code);
+                    const known = tbl.iso[v] !== undefined;
+                    const fmt = key === 'rad' ? 1 : 2;
+                    const expected = known ? `${tbl.iso[v].toFixed(fmt)} mm` : `${key === 'rad' ? (n / 10).toFixed(1) : n.toFixed(2)} mm`;
+                    rec('Metric dimensions (00-99)' + (suffix ? ' · with edge/hand' : ''), code, label + (known ? '' : ' (not a standard code, raw number shown)'),
+                        expected, o.f[label], o.f[label] === expected ? (known ? 'pass' : 'warn') : 'fail');
+                    clean('Metric dimensions (00-99)' + (suffix ? ' · with edge/hand' : ''), code, o);
+                }
+            }
+            // keys the reference tables list that a digit-only code can never enter
+            for (const [name, tbl] of [['size', DATA.size.iso], ['thickness', DATA.thickness.iso], ['radius', DATA.radius.iso]])
+                for (const k of Object.keys(tbl)) if (!/^[0-9]{2}$/.test(k)) rec('Table codes the decoder cannot read', k, 'DATA.' + name + '.iso key', 'decodable', 'decoder only accepts two digits', 'fail');
+            await tick();
+            // 3b. 8-character metric code (no nose radius, edge/hand letters instead)
+            for (const code of ['CNMG1204EN', 'CNMG1204ER', 'TNMG1604EL']) {
+                const o = read(code);
+                clean('Metric code without nose radius (8-digit style)', code, o);
+            }
+            // 4. imperial codes: every digit 0-9 in size, thickness and radius
+            for (const [key, label, per, tableKey] of [['s', 'Size (I.C.)', 25.4 / 8, 'size'], ['t', 'Thickness', 25.4 / 16, 'thickness'], ['r', 'Nose Radius', 25.4 / 64, 'radius']]) for (let n = 0; n < 10; n++) {
+                const digits = { s: '4', t: '3', r: '2' }; digits[key] = String(n);
+                const code = 'CNMG' + digits.s + digits.t + digits.r, o = read(code);
+                const den = key === 's' ? 8 : key === 't' ? 16 : 64;
+                const expected = `${n}/${den}" (${(n * per).toFixed(2)} mm)`;
+                check('Imperial digits (0-9)', code, label, expected, o.f[label]);
+                clean('Imperial digits (0-9)', code, o);
+                const tk = DATA[tableKey].ansi[String(n)];
+                if (tk !== undefined) check('Imperial digits vs Reference table mm', code, label + ' mm', tk.toFixed(2), (o.f[label].match(/\(([\d.]+) mm\)/) || [])[1]);
+            }
+            for (const [name, tbl] of [['size', DATA.size.ansi], ['thickness', DATA.thickness.ansi]])
+                for (const k of Object.keys(tbl)) if (!/^[0-9]$/.test(k)) rec('Table codes the decoder cannot read', k, 'DATA.' + name + '.ansi key', 'decodable', 'decoder only accepts one digit', 'warn');
+            await tick();
+            // 5. Reference tab, both unit modes
+            for (const unit of ['ansi', 'iso']) {
+                currentUnit = unit; renderTables();
+                const G = 'Reference tables · ' + (unit === 'ansi' ? 'Inch' : 'Metric');
+                const cells = id => [...document.querySelectorAll(`#${id} tbody tr`)].map(tr => [...tr.children].map(td => td.textContent.trim()));
+                const fmtDim = (mm, f) => unit === 'ansi' ? `${(mm / 25.4).toFixed(f.i)}"` : `${mm.toFixed(f.m)} mm`;
+                for (const [id, tbl, f] of [['table-size', DATA.size, { i: 3, m: 2 }], ['table-thick', DATA.thickness, { i: 3, m: 2 }]]) {
+                    const rows = cells(id), ik = Object.keys(tbl.iso), ak = Object.keys(tbl.ansi);
+                    check(G, id, 'row count', String(ik.length), String(rows.length));
+                    ik.forEach((k, i) => {
+                        check(G, `${id} ${k}`, 'metric code', k, (rows[i] || [])[0]);
+                        check(G, `${id} ${k}`, 'imperial code', ak[i] || '—', (rows[i] || [])[1]);
+                        check(G, `${id} ${k}`, 'value', fmtDim(tbl.iso[k], f), (rows[i] || [])[2]);
+                        if (ak[i] !== undefined) rec('Reference: metric and imperial code agree', `${id} ${k} ↔ ${ak[i]}`, 'mm',
+                            tbl.iso[k].toFixed(1), tbl.ansi[ak[i]].toFixed(1), tbl.iso[k].toFixed(1) === tbl.ansi[ak[i]].toFixed(1) ? 'pass' : 'fail');
+                    });
+                }
+                const rr = cells('table-radius'), rk = Object.keys(DATA.radius.iso);
+                check(G, 'table-radius', 'row count', String(rk.length), String(rr.length));
+                rk.forEach((k, i) => {
+                    check(G, `table-radius ${k}`, 'code', k, (rr[i] || [])[0]);
+                    check(G, `table-radius ${k}`, 'value', unit === 'ansi' ? `${(DATA.radius.iso[k] / 25.4).toFixed(4)}"` : `${DATA.radius.iso[k].toFixed(1)} mm`, (rr[i] || [])[1]);
+                });
+                const listCheck = (id, tbl, cols) => {
+                    const rows = cells(id), keys = Object.keys(tbl);
+                    check(G, id, 'row count', String(keys.length), String(rows.length));
+                    keys.forEach((k, i) => { check(G, `${id} ${k}`, 'code', k, (rows[i] || [])[0]); cols(tbl[k]).forEach((e, j) => check(G, `${id} ${k}`, 'column ' + (j + 1), e, (rows[i] || [])[j + 1])); });
+                };
+                listCheck('table-shape', DATA.shape, v => [v.desc, v.angle]);
+                listCheck('table-relief', DATA.relief, v => [v.desc, v.note]);
+                listCheck('table-tolerance', DATA.tolerance, v => [v.ic, v.th, v.desc]);
+                listCheck('table-type', DATA.hole, v => [v.desc]);
+                listCheck('table-edge', DATA.edge, v => [v.desc]);
+                listCheck('table-hand', DATA.hand, v => [v.desc]);
+            }
+            await tick();
+            // 6. Builder: every option, built code and decoded back
+            initBuilder();
+            const sets = [['shape', DATA.shape, 'Shape', exp.shape], ['relief', DATA.relief, 'Relief', exp.relief], ['tolerance', DATA.tolerance, 'Tolerance', exp.tol], ['hole', DATA.hole, 'Type', exp.hole],
+                          ['size', DATA.size.iso, 'Size (I.C.)'], ['thick', DATA.thickness.iso, 'Thickness'], ['rad', DATA.radius.iso, 'Nose Radius'], ['edge', DATA.edge, 'Edge Condition', exp.edge], ['hand', DATA.hand, 'Cutting Hand', exp.hand]];
+            const order = ['shape', 'relief', 'tolerance', 'hole', 'size', 'thick', 'rad', 'edge', 'hand'];
+            for (const [key, tbl, label, expFn] of sets) for (const k of Object.keys(tbl)) {
+                buildState = { shape: 'C', relief: 'N', tolerance: 'M', hole: 'G', size: '12', thick: '04', rad: '08', edge: 'E', hand: 'N' };
+                buildState[key] = k; updateBuilderUI();
+                const code = document.getElementById('builder-output').innerText;
+                check('Builder: code built from each option', `${key}=${k}`, 'code', order.map(o => buildState[o]).join(''), code);
+                if (!/^[A-Z]{4}[0-9]{6}[A-Z]{2}$/.test(code)) { rec('Builder: built code decodes back', code, label, 'a code the decoder accepts', 'rejected', 'fail'); continue; }
+                const o = read(code);
+                const expected = expFn ? expFn(k) : (key === 'rad' ? `${tbl[k].toFixed(1)} mm` : `${tbl[k].toFixed(2)} mm`);
+                check('Builder: built code decodes back', code, label, expected, o.f[label]);
+            }
+            await tick();
+            // 7. optional: every known letter combination
+            if (document.getElementById('dev-full').checked) {
+                const sk = Object.keys(DATA.shape), rk = Object.keys(DATA.relief), tk = Object.keys(DATA.tolerance), hk = Object.keys(DATA.hole);
+                let n = 0;
+                for (const a of sk) { for (const b of rk) { for (const c of tk) for (const d of hk) for (const tail of ['120408EN', BASE_ANSI]) {
+                    const code = a + b + c + d + tail, o = read(code);
+                    const ok = o.f.Shape === exp.shape(a) && o.f.Relief === exp.relief(b) && o.f.Tolerance === exp.tol(c) && o.f.Type === exp.hole(d);
+                    if (ok) rec('Every known letter combination', '', '', '', '', 'pass'); else rec('Every known letter combination', code, 'Shape/Relief/Tolerance/Type', [exp.shape(a), exp.relief(b), exp.tol(c), exp.hole(d)].join(' | '), [o.f.Shape, o.f.Relief, o.f.Tolerance, o.f.Type].join(' | '), 'fail');
+                    n++; }
+                } await tick(); }
+            }
+            // restore the page
+            currentUnit = saved.unit; document.getElementById('unit-toggle-btn').innerText = `Units: ${currentUnit === 'ansi' ? 'ANSI (Inch)' : 'ISO (Metric)'}`;
+            buildState = saved.state; initBuilder(); renderTables();
+            document.getElementById('decoder-input').value = saved.input; decode();
+
+            const esc = t => String(t == null ? '' : t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+            let tp = 0, tf = 0, tw = 0;
+            const rows = Object.entries(groups).map(([g, v]) => { tp += v.pass; tf += v.fail; tw += v.warn;
+                return `<tr><td>${esc(g)}</td><td class="dev-pass">${v.pass}</td><td class="${v.fail ? 'dev-fail' : ''}">${v.fail}</td><td class="${v.warn ? 'dev-warn' : ''}">${v.warn}</td></tr>`; }).join('');
+            out.innerHTML = `<p class="${tf ? 'dev-fail' : 'dev-pass'}"><b>${tf ? tf + ' mismatches' : 'All checks match'}</b> · ${tp} passed · ${tw} warnings</p>
+                <table><tr><th>Check</th><th>Pass</th><th>Fail</th><th>Warn</th></tr>${rows}</table>`;
+            issues.sort((a, b) => (a.level === 'fail' ? 0 : 1) - (b.level === 'fail' ? 0 : 1));
+            const show = issues.slice(0, 400);
+            failsEl.innerHTML = issues.length ? `<table><tr><th></th><th>Check</th><th>Input</th><th>Field</th><th>Expected</th><th>Displayed</th></tr>${show.map(i =>
+                `<tr><td class="${i.level === 'fail' ? 'dev-fail' : 'dev-warn'}">${i.level}</td><td>${esc(i.group)}</td><td>${esc(i.input)}</td><td>${esc(i.field)}</td><td>${esc(i.expected)}</td><td>${esc(i.actual)}</td></tr>`).join('')}</table>${issues.length > show.length ? `<p>…and ${issues.length - show.length} more (see console)</p>` : ''}` : '';
+            window.__devIssues = issues; console.log('Insert Master verifier', { passed: tp, failed: tf, warnings: tw }, issues);
+            btn.disabled = false;
         }
 
         document.addEventListener('DOMContentLoaded', () => {

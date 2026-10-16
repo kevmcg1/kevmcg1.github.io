@@ -62,9 +62,9 @@
       /* category colors */
       --cat-web:   var(--accent);
       --cat-shop:  #e8e8e8;
-      --status-complete: var(--accent);
+      --status-complete: #3ddc6a;
       --status-active:   #e8e8e8;
-      --status-wip:      #8a8a9a;
+      --status-wip:      #ff9f1c;
       --status-retired:  #5a5a66;
     }
 
@@ -814,9 +814,9 @@
       <div class="drawer-section">
         <div class="drawer-section-title">Status</div>
         <div class="drawer-chips">
-          <button class="drawer-chip" data-g="status" data-v="complete" style="--chip-color:var(--accent)" onclick="toggleDrawer(this)">Complete</button>
+          <button class="drawer-chip" data-g="status" data-v="complete" style="--chip-color:#3ddc6a" onclick="toggleDrawer(this)">Complete</button>
           <button class="drawer-chip" data-g="status" data-v="active"   style="--chip-color:#e8e8e8" onclick="toggleDrawer(this)">Active</button>
-          <button class="drawer-chip" data-g="status" data-v="wip"      style="--chip-color:#8a8a9a" onclick="toggleDrawer(this)">In Progress</button>
+          <button class="drawer-chip" data-g="status" data-v="wip"      style="--chip-color:#ff9f1c" onclick="toggleDrawer(this)">In Progress</button>
           <button class="drawer-chip" data-g="status" data-v="retired"  style="--chip-color:#5a5a66" onclick="toggleDrawer(this)">Retired</button>
         </div>
       </div>
@@ -853,7 +853,7 @@
     <div class="filter-section">
       <div class="filter-title">Status</div>
       <div class="chip-list">
-        <button class="chip" data-g="status" data-v="complete" style="--chip-color:var(--accent)" onclick="toggle(this)">
+        <button class="chip" data-g="status" data-v="complete" style="--chip-color:#3ddc6a" onclick="toggle(this)">
           <span class="chip-dot"></span><span class="chip-label">Complete</span>
           <span class="chip-check">✓</span>
         </button>
@@ -861,7 +861,7 @@
           <span class="chip-dot"></span><span class="chip-label">Active</span>
           <span class="chip-check">✓</span>
         </button>
-        <button class="chip" data-g="status" data-v="wip" style="--chip-color:#8a8a9a" onclick="toggle(this)">
+        <button class="chip" data-g="status" data-v="wip" style="--chip-color:#ff9f1c" onclick="toggle(this)">
           <span class="chip-dot"></span><span class="chip-label">In Progress</span>
           <span class="chip-check">✓</span>
         </button>
@@ -941,9 +941,9 @@
     games:     'Game',
   };
   const STATUS_COLOR = {
-    complete: cssVar('--status-complete') || '#c8ff00',
+    complete: cssVar('--status-complete') || '#3ddc6a',
     active:   '#e8e8e8',
-    wip:      '#8a8a9a',
+    wip:      '#ff9f1c',
     retired:  '#5a5a66',
   };
   const STATUS_LABEL = {
