@@ -146,7 +146,31 @@
         background: repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px);
         mix-blend-mode: screen;
       }
-      html[data-tilt="on"] .sidebar { transform: rotateY(5deg); transform-origin: 100% 50%; }
+      /* the left side mirrors it: hinged on its right edge, the left side swung out toward the viewer */
+      html[data-tilt="on"] .sidebar {
+        transform: rotateY(11deg) scale(0.94); transform-origin: 100% 50%;
+        background: rgba(18,18,22,0.5);
+        backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1);
+        border-right-color: rgba(var(--accent-rgb), 0.35);
+        box-shadow: inset -1px 0 0 rgba(255,255,255,0.04), 0 18px 40px rgba(0,0,0,0.35);
+        animation: arBoot 0.9s steps(1, end) both;
+      }
+      html[data-tilt="on"] .sidebar::before {
+        content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+        background: repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px);
+        mix-blend-mode: screen;
+      }
+      html[data-tilt="on"] .chip {
+        background: rgba(18,18,22,0.55); border-color: rgba(255,255,255,0.09);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      }
+      html[data-tilt="on"] .chip:hover {
+        border-color: rgba(var(--accent-rgb), 0.85); background: rgba(var(--accent-rgb), 0.08); color: var(--text);
+        box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.3), 0 0 18px rgba(var(--accent-rgb), 0.2);
+      }
+      html[data-tilt="on"] .chip.on { box-shadow: inset 3px 0 0 var(--chip-color, var(--accent)), 0 0 14px rgba(var(--accent-rgb), 0.12); }
+      html[data-tilt="on"] .filter-title::after { background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.6), rgba(255,255,255,0.06) 60%); }
+      html[data-tilt="on"] .sidebar-logo .title-underline { background: linear-gradient(90deg, var(--accent) 0%, transparent 100%); opacity: 0.7; }
 
       /* panels: dark, see-through, square-cornered */
       html[data-tilt="on"] .featured-card,
@@ -191,7 +215,7 @@
     }
     /* the projection flickers on when it appears */
     @keyframes arBoot { 0% { opacity: 0; } 12% { opacity: 0.55; } 20% { opacity: 0.15; } 32% { opacity: 0.85; } 40% { opacity: 0.5; } 52%, 100% { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; animation: none; } }
+    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; animation: none; } html[data-tilt="on"] .sidebar { animation: none; } }
 
     html { scroll-behavior: smooth; }
 
