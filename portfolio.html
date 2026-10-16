@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="fa/css/all.min.css">
 <link rel="preload" href="fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/dm-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 
@@ -432,9 +433,8 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       overflow: hidden;
-      /* the preview takes 70% of the card and the details 30%, at every screen size */
-      display: grid; grid-template-rows: 7fr 3fr;
-      aspect-ratio: 4 / 5;
+      /* the preview keeps a fixed shape; the details below grow so the whole description always shows */
+      display: grid; grid-template-rows: auto 1fr;
       position: relative;
       transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
       animation: fadeUp 0.5s ease both;
@@ -449,7 +449,7 @@
 
     /* preview area */
     .fc-preview {
-      position: relative; min-height: 0;
+      position: relative; min-height: 0; aspect-ratio: 8 / 7;
       background: #0a0a0e; overflow: hidden;
       border-bottom: 1px solid var(--border);
     }
@@ -464,7 +464,7 @@
     }
     .pv-badge { left: 12px; color: var(--accent); border-color: rgba(var(--accent-rgb),0.35); }
 
-    .fc-body { min-height: 0; overflow: hidden; container-type: size; padding: 12px 16px 14px; display: flex; flex-direction: column; }
+    .fc-body { min-height: 0; padding: 12px 16px 14px; display: flex; flex-direction: column; }
     .fc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
     .fc-name {
       font-size: 1.15rem; font-weight: 500;
@@ -474,14 +474,9 @@
     .featured-card .fc-desc {
       font-size: 0.82rem; font-weight: 300; color: #c8c8d8;
       margin-top: 6px; line-height: 1.45;
-      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
     }
-    /* the details area is a fixed 30% of the card, so what it shows follows the room it has */
-    @container (min-height: 170px) { .featured-card .fc-desc { -webkit-line-clamp: 3; } }
-    @container (max-height: 169px) { .fc-body .card-tags, .fc-body .card-updated { display: none; } }
-    @container (max-height: 139px) { .fc-body .card-id { display: none; } .fc-body .fc-meta .compat-row { display: none; } .fc-body .fc-name { font-size: 1.02rem; } .fc-body .fc-top { align-items: center; } }
-    @container (max-height: 104px) { .featured-card .fc-desc { -webkit-line-clamp: 1; margin-top: 4px; } .fc-body .fc-footer { padding-top: 4px; } .fc-body .open-btn { padding: 6px 14px; } }
-    @media (max-width: 700px) { .featured-card { aspect-ratio: auto; height: clamp(440px, 118vw, 640px); } }
+    /* keep the details short: name, full description, Open and status */
+    .fc-body .card-tags, .fc-body .card-updated, .fc-body .card-id, .fc-body .fc-meta .compat-row { display: none; }
     .fc-footer {
       margin-top: auto; padding-top: 10px;
       display: flex; align-items: center; justify-content: space-between;
@@ -501,6 +496,8 @@
       text-decoration: none; cursor: pointer;
       transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
     }
+    /* Open buttons use a plain Font Awesome icon only, never an emoji or arrow character */
+    .open-btn .fa-solid { font-size: 0.72em; color: currentColor; }
     .open-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(var(--accent-rgb),0.28); background: var(--accent-hover); }
     .open-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
     .open-btn.disabled {
@@ -1668,7 +1665,7 @@
         .map(t => `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`).join('');
       const retiredTag = isRetired ? `<span class="retired-tag">Retired</span>` : '';
       const openBtn = p.url
-        ? `<a class="open-btn" href="${p.url}" aria-label="Open ${p.name}">Open <span aria-hidden="true">↗</span></a>`
+        ? `<a class="open-btn" href="${p.url}" aria-label="Open ${p.name}">Open <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>`
         : `<span class="open-btn disabled">Coming soon</span>`;
 
       card.innerHTML = `
