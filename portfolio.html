@@ -30,7 +30,7 @@
     } catch (e) {}
     /* The holiday theme is off by default; the button at the bottom right turns it on (remembered). ?season=name forces it on for a visit. */
     var forced = false, seasonOff = false;
-    try { forced = !!new URLSearchParams(location.search).get('season'); seasonOff = !forced && localStorage.getItem('portfolio-season') !== 'on';   // off by default; the button turns it on } catch (e) {}
+    try { forced = !!new URLSearchParams(location.search).get('season'); seasonOff = !forced && localStorage.getItem('portfolio-season') !== 'on'; } catch (e) { seasonOff = true; }   // off by default; the button turns it on
     if (s) document.documentElement.setAttribute('data-season-name', s);
     if (s && !seasonOff) document.documentElement.setAttribute('data-season', s);
     /* Experimental tilted UI (portfolio page only): off by default, remembered once switched on.  ?tilt=off|on overrides for a visit. */
@@ -1115,9 +1115,9 @@
     web_apps:  `rgba(${ACCENT_RGB},0.1)`,
     shop_work: 'rgba(232,232,232,0.08)',
     games:     'rgba(122,184,255,0.1)',
-    complete:  `rgba(${ACCENT_RGB},0.1)`,
+    complete:  'rgba(61,220,106,0.12)',
     active:    'rgba(232,232,232,0.08)',
-    wip:       'rgba(138,138,154,0.12)',
+    wip:       'rgba(255,159,28,0.12)',
     retired:   'rgba(90,90,102,0.15)',
   };
 
