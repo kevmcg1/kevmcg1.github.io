@@ -34,9 +34,11 @@
     try { forced = !!new URLSearchParams(location.search).get('season'); seasonOff = !forced && localStorage.getItem('portfolio-season') !== 'on'; } catch (e) { seasonOff = true; }   // off by default; the button turns it on
     if (s) document.documentElement.setAttribute('data-season-name', s);
     if (s && !seasonOff) document.documentElement.setAttribute('data-season', s);
-    /* Experimental tilted UI (portfolio page only): off by default, remembered once switched on.  ?tilt=off|on overrides for a visit. */
-    var tilt = 'off';   // off by default; the button at the bottom right turns it on (remembered)
-    try { if (localStorage.getItem('portfolio-tilt') === 'on') tilt = 'on'; } catch (e) {}
+    /* Tilted UI (portfolio page only): on by default for laptops and desktops (a mouse and room to hover), off by default for phones and tablets.
+       A choice made with the button at the bottom right is remembered.  ?tilt=off|on overrides for a visit. */
+    var tilt = 'off';
+    try { if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) tilt = 'on'; } catch (e) {}
+    try { var ts = localStorage.getItem('portfolio-tilt'); if (ts === 'on' || ts === 'off') tilt = ts; } catch (e) {}
     try { var tq = new URLSearchParams(location.search).get('tilt'); if (tq === 'off' || tq === 'on') tilt = tq; } catch (e) {}
     document.documentElement.setAttribute('data-tilt', tilt);
   })();
@@ -136,10 +138,9 @@
       /* the projection: hinged on its left edge, the right side swung out toward the viewer */
       html[data-tilt="on"] .main {
         position: relative;
-        transform: rotateY(var(--tilt-main-y, -11deg)) rotateX(var(--tilt-x, 0deg)) scale(0.92);
+        transform: rotateY(-11deg) scale(var(--tilt-s, 0.92));   /* fixed angle; only the scale is fitted (by script) so no card runs off the screen */
         transform-origin: 0% 480px; will-change: transform;
         padding-right: 64px;
-        animation: arBoot 0.9s steps(1, end) both;
       }
       /* scanlines and a soft edge glow over the whole projection, never blocking a click */
       html[data-tilt="on"] .main::before {
@@ -149,13 +150,13 @@
       }
       /* the left side mirrors it: hinged on its right edge, the left side swung out toward the viewer */
       html[data-tilt="on"] .sidebar {
-        transform: rotateY(11deg) scale(0.94); transform-origin: 100% 50%;
+        transform: rotateY(11deg) scale(var(--tilt-sb, 0.94)); transform-origin: 100% 50%;
         background: rgba(18,18,22,0.5);
         backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1);
         border-right-color: rgba(var(--accent-rgb), 0.35);
         box-shadow: inset -1px 0 0 rgba(255,255,255,0.04), 0 18px 40px rgba(0,0,0,0.35);
-        animation: arBoot 0.9s steps(1, end) both;
       }
+
       html[data-tilt="on"] .sidebar::before {
         content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
         background: repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px);
@@ -214,9 +215,7 @@
       .tilt-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
       html[data-tilt="on"] .tilt-toggle .dot { background: var(--accent); box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.7); }
     }
-    /* the projection flickers on when it appears */
-    @keyframes arBoot { 0% { opacity: 0; } 12% { opacity: 0.55; } 20% { opacity: 0.15; } 32% { opacity: 0.85; } 40% { opacity: 0.5; } 52%, 100% { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; animation: none; } html[data-tilt="on"] .sidebar { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; } }
 
     html { scroll-behavior: smooth; }
 
@@ -1810,23 +1809,40 @@
     sync();
   })();
 
-  /* ── Experimental tilt: switch (static tilt, no scroll lean) ── */
+  /* ── Tilt: a fixed angle (never changes with scroll). The only thing script adjusts is the scale, shrinking the tilted grid just enough
+        that its right edge (the side swung toward the viewer) always stays on screen, so no card is cut off. ── */
   (function tiltUi() {
     const root = document.documentElement, btn = document.getElementById('tiltToggle');
+    const main = document.querySelector('.main'), MARGIN = 14, S_MAX = 0.92, S_MIN = 0.45;
     const sync = () => { const on = root.getAttribute('data-tilt') === 'on'; if (btn) { btn.setAttribute('aria-pressed', String(on)); btn.querySelector('.tt-l').textContent = 'Tilt: ' + (on ? 'on' : 'off'); } };
+    const side = document.querySelector('.sidebar');
+    const right = () => { let r = 0; for (const c of main.children) { if (!c.offsetParent && getComputedStyle(c).position !== 'fixed') continue; const b = c.getBoundingClientRect(); if (b.width) r = Math.max(r, b.right); } return r; };
+    const left = () => side.getBoundingClientRect().left;
+    // largest scale (up to max) at which over() is still false; the properties are set and measured synchronously, so nothing is ever painted mid-search
+    function shrink(prop, max, over) {
+      root.style.setProperty(prop, max); main.getBoundingClientRect();
+      if (!over()) return;
+      let lo = S_MIN, hi = max;
+      for (let k = 0; k < 9; k++) { const m = (lo + hi) / 2; root.style.setProperty(prop, m); main.getBoundingClientRect(); if (over()) hi = m; else lo = m; }
+      root.style.setProperty(prop, lo.toFixed(4));
+    }
+    function fit() {
+      if (!main || !side) return;
+      const tilted = root.getAttribute('data-tilt') === 'on' && getComputedStyle(main).transform !== 'none';
+      if (!tilted) { root.style.removeProperty('--tilt-s'); root.style.removeProperty('--tilt-sb'); return; }
+      const lim = document.documentElement.clientWidth - MARGIN;
+      shrink('--tilt-s', S_MAX, () => right() > lim);
+      shrink('--tilt-sb', 0.94, () => left() < 2);
+    }
     if (btn) btn.addEventListener('click', () => {
       const next = root.getAttribute('data-tilt') === 'on' ? 'off' : 'on';
       root.setAttribute('data-tilt', next); try { localStorage.setItem('portfolio-tilt', next); } catch (e) {}
-      sync(); lean();
+      sync(); fit();
     });
-    let ticking = false;
-    function lean() {
-      ticking = false;
-      if (root.getAttribute('data-tilt') !== 'on') return;
-      // fixed tilt: it does not change with scroll (values come from the CSS defaults)
-      root.style.removeProperty('--tilt-x'); root.style.removeProperty('--tilt-main-y');
-    }
-    sync(); lean();
+    sync(); fit();
+    addEventListener('resize', fit);
+    if (window.ResizeObserver && main) new ResizeObserver(fit).observe(main);
+    addEventListener('load', fit);
   })();
 </script>
 </body>
