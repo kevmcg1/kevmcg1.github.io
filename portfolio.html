@@ -28,7 +28,11 @@
       var q = new URLSearchParams(location.search).get('season');
       if (q === 'off') s = ''; else if (q && NAMES[q]) s = q;
     } catch (e) {}
-    if (s) document.documentElement.setAttribute('data-season', s);
+    /* The holiday theme can be switched off with the button at the bottom right (remembered). ?season=name forces it on for a visit. */
+    var forced = false, seasonOff = false;
+    try { forced = !!new URLSearchParams(location.search).get('season'); seasonOff = !forced && localStorage.getItem('portfolio-season') === 'off'; } catch (e) {}
+    if (s) document.documentElement.setAttribute('data-season-name', s);
+    if (s && !seasonOff) document.documentElement.setAttribute('data-season', s);
     /* Experimental tilted UI (portfolio page only): on by default, remembered once switched off.  ?tilt=off|on overrides for a visit. */
     var tilt = 'on';
     try { if (localStorage.getItem('portfolio-tilt') === 'off') tilt = 'off'; } catch (e) {}
@@ -102,6 +106,16 @@
       50%      { transform: scale(1.15); opacity: 0.95; }
     }
     @media (prefers-reduced-motion: reduce) { #seasonFx { display: none; } }
+    .season-toggle {
+      display: none; align-items: center; gap: 8px; position: fixed; right: 14px; bottom: 14px; z-index: 60;
+      padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(17,17,20,0.88);
+      color: var(--muted); font: 500 0.6rem/1 'DM Sans', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
+      backdrop-filter: blur(6px);
+    }
+    .season-toggle:hover { color: var(--text); border-color: var(--accent); }
+    html[data-season-name] .season-toggle { display: inline-flex; }
+    /* sit to the left of the tilt button when it is showing (wide screens) */
+    @media (min-width: 769px) { html[data-season-name] .season-toggle { right: 150px; } }
 
     /* ── EXPERIMENTAL: tilted HUD look (a nod to the Division's UI). The page leans one way and the sidebar the other.
           Off switch: the button at the bottom right (remembered), or ?tilt=off.  Only on screens wide enough for the sidebar. ── */
@@ -908,6 +922,7 @@
 </div>
 
 
+<button type="button" class="season-toggle" id="seasonToggle" aria-pressed="true" title="Turn the current holiday theme off or on."><span class="tt-l">Holiday theme: on</span></button>
 <button type="button" class="tilt-toggle" id="tiltToggle" aria-pressed="true" title="Experimental: a tilted, HUD-style layout. Click to turn it off or on."><span class="dot"></span><span class="tt-l">Tilt: on</span></button>
 <script>
   document.getElementById('ds').textContent =
@@ -1670,7 +1685,7 @@
 
   /* ── Seasonal banner + floating decorations (only while a season is active) ── */
   (function seasonFx() {
-    const season = document.documentElement.getAttribute('data-season');
+    const season = document.documentElement.getAttribute('data-season-name');
     if (!season) return;
     const T = {
       halloween:  { text: '<b>Happy Halloween</b> · enjoy the spooky season', icon: '🎃', bits: ['🎃','🦇','👻','🕸️','🎃','🦇'], mode: 'fall' },
@@ -1705,6 +1720,20 @@
       fx.appendChild(el);
     }
     // particles removed: the floating decorations are no longer added to the page
+  })();
+
+  /* ── Holiday theme switch ── */
+  (function seasonSwitch() {
+    const root = document.documentElement, btn = document.getElementById('seasonToggle'), name = root.getAttribute('data-season-name');
+    if (!btn || !name) return;
+    const sync = () => { const on = root.hasAttribute('data-season'); btn.setAttribute('aria-pressed', String(on)); btn.querySelector('.tt-l').textContent = 'Holiday theme: ' + (on ? 'on' : 'off'); };
+    btn.addEventListener('click', () => {
+      const on = root.hasAttribute('data-season');
+      if (on) root.removeAttribute('data-season'); else root.setAttribute('data-season', name);
+      try { localStorage.setItem('portfolio-season', on ? 'off' : 'on'); } catch (e) {}
+      sync();
+    });
+    sync();
   })();
 
   /* ── Experimental tilt: switch (static tilt, no scroll lean) ── */
