@@ -2575,5 +2575,540 @@ function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
+<script>
+/* =========================================================
+   DEV TOOL (open with ?dev): a UI tester for the whole app.
+   Runs against the real functions and DOM, never touches saved data
+   (writes to localStorage are blocked while it runs, and state is restored after).
+   Expected values are built here from plain date arithmetic, not by calling the app's own parser.
+   ========================================================= */
+if (/[?&]dev\b/.test(location.search)) document.addEventListener('DOMContentLoaded', () => {
+  const RD = Date;                       // the real Date
+  const css = `
+    #devFab{position:fixed;left:14px;bottom:14px;z-index:90;background:var(--bg-elev-2);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font:600 12px var(--font);cursor:pointer}
+    #devFab:hover{color:var(--text);border-color:var(--accent)}
+    #devPanel{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px}
+    #devPanel.show{display:flex}
+    #devBox{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:14px;width:min(1100px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;font:13px/1.45 var(--font)}
+    #devBox header{display:flex;gap:10px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)}
+    #devBox header h3{margin:0;font-size:15px;flex:1}
+    #devBox button{background:var(--bg-elev-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font:600 12px var(--font);cursor:pointer}
+    #devBox button.go{background:var(--accent);color:#fff;border-color:var(--accent)}
+    #devBody{padding:14px 18px;overflow:auto}
+    #devBody table{width:100%;border-collapse:collapse;margin-bottom:14px}
+    #devBody th,#devBody td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--border);word-break:break-word;vertical-align:top}
+    .dv-pass{color:#4ade80}.dv-fail{color:#ff7b86}.dv-warn{color:#ffc266}
+    #devBody label{margin-right:16px;color:var(--text-dim)}
+    #devBody details{margin:6px 0}`;
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  const fab = document.createElement('button'); fab.id = 'devFab'; fab.textContent = 'Dev'; document.body.appendChild(fab);
+  const panel = document.createElement('div'); panel.id = 'devPanel';
+  panel.innerHTML = `<div id="devBox"><header><h3>Dev: UI tester</h3>
+    <button id="devRun" class="go">Run all checks</button><button id="devClose">Close</button></header>
+    <div id="devBody"><p style="color:var(--text-dim)">Tests the parser, presets, tutorial examples, every reminder variant in the list and detail views, all settings and themes, every control, import/export, reordering and the layout at many screen widths. Your own reminders are not touched.</p>
+    <label><input type="checkbox" id="devLayout" checked> Layout sweep (iframes at 11 widths × 5 themes × 2 densities)</label>
+    <label><input type="checkbox" id="devWide" checked> Wide date sweep (every month × day)</label>
+    <div id="devOut"></div></div></div>`;
+  document.body.appendChild(panel);
+  fab.onclick = () => panel.classList.add('show');
+  document.getElementById('devClose').onclick = () => panel.classList.remove('show');
+
+  const P2 = n => String(n).padStart(2, '0');
+  const LI = (y, mo, d, h, mi) => { const x = new RD(y, mo, d, h, mi); return `${x.getFullYear()}-${P2(x.getMonth()+1)}-${P2(x.getDate())}T${P2(x.getHours())}:${P2(x.getMinutes())}`; };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const suffix = n => (n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({1:'st',2:'nd',3:'rd'}[n % 10] || 'th');
+  const MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const DOW = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const dim = (y, m) => new RD(y, m + 1, 0).getDate();
+
+  function fakeDate(y, mo, d, h, mi) {
+    const base = new RD(y, mo, d, h, mi, 0).getTime();
+    const T0 = RD.now();
+    function FD(...a) { return a.length ? new RD(...a) : new RD(base + (RD.now() - T0)); }
+    FD.prototype = RD.prototype; FD.now = () => base + (RD.now() - T0); FD.parse = RD.parse; FD.UTC = RD.UTC;
+    return FD;
+  }
+
+  async function runAll() {
+    const out = document.getElementById('devOut'), btn = document.getElementById('devRun');
+    btn.disabled = true; out.innerHTML = 'Running…';
+    const groups = {}, issues = [];
+    let cur = '';
+    const g = name => { cur = name; groups[name] = groups[name] || { pass: 0, fail: 0, warn: 0 }; };
+    const rec = (input, field, expected, actual, level) => {
+      groups[cur][level]++; if (level !== 'pass') issues.push({ group: cur, input, field, expected, actual, level });
+    };
+    const eq = (input, field, expected, actual, level = 'fail') => {
+      const ok = JSON.stringify(expected) === JSON.stringify(actual); rec(input, field, ok ? '' : JSON.stringify(expected), ok ? '' : JSON.stringify(actual), ok ? 'pass' : level);
+    };
+    const truthy = (input, field, cond, note, level = 'fail') => rec(input, field, cond ? '' : note, cond ? '' : 'not so', cond ? 'pass' : level);
+    const tick = () => sleep(0);
+
+    // ---- keep the user's data safe ----
+    const snap = { reminders: JSON.parse(JSON.stringify(reminders)), settings: JSON.parse(JSON.stringify(settings)), selectedId, pendingDeleteId };
+    const origSet = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { if (k === STORE_KEY || k === SETTINGS_KEY) return; return origSet.call(this, k, v); };
+    const origCreate = URL.createObjectURL, origClick = HTMLAnchorElement.prototype.click;
+    try {
+      // =============== 1. NATURAL-LANGUAGE PARSER (under three fixed clocks) ===============
+      const CLOCKS = [[2026, 2, 11, 10, 0, 'Wed 11 Mar 2026 10:00'], [2026, 0, 31, 23, 30, 'Sat 31 Jan 2026 23:30 (month end)'], [2028, 1, 29, 0, 15, 'Tue 29 Feb 2028 00:15 (leap day)']];
+      const parseWith = (clock, text) => { window.Date = fakeDate(...clock); try { return parseNaturalLanguage('call mom ' + text); } finally { window.Date = RD; } };
+      const wide = document.getElementById('devWide').checked;
+      for (const clock of CLOCKS) {
+        const [cy, cm, cd, ch, cmi, cname] = clock, now = new RD(cy, cm, cd, ch, cmi);
+        const rollDay = (y, m, d) => { const t = new RD(y, m, d); return t; };
+        const todayMid = new RD(cy, cm, cd);
+        g('Dates · ' + cname);
+        const T = (text, due, extra = {}) => { const p = parseWith(clock, text); eq(text, 'due', due, p.due); eq(text, 'title', 'call mom', p.cleanTitle); for (const k in extra) eq(text, k, extra[k], p[k]); };
+        T('today', LI(cy, cm, cd, 9, 0));
+        T('tomorrow', LI(cy, cm, cd + 1, 9, 0)); T('tmrw', LI(cy, cm, cd + 1, 9, 0)); T('tmr', LI(cy, cm, cd + 1, 9, 0));
+        T('tonight', LI(cy, cm, cd, 19, 0));
+        DOW.forEach((w, i) => { let diff = (i - now.getDay() + 7) % 7 || 7; for (const pre of ['', 'next ', 'this ']) T(pre + w, LI(cy, cm, cd + diff, 9, 0)); });
+        for (const n of [1, 2, 3, 5, 7, 10, 14, 30, 60, 100]) { T(`in ${n} days`, LI(cy, cm, cd + n, 9, 0)); T(`in ${n} day`, LI(cy, cm, cd + n, 9, 0)); T(`in ${n} weeks`, LI(cy, cm, cd + 7 * n, 9, 0)); }
+        for (const n of [1, 2, 3, 6, 11, 12, 18]) {
+          const em = new RD(cy, cm + n, 1); const clampM = LI(em.getFullYear(), em.getMonth(), Math.min(cd, dim(em.getFullYear(), em.getMonth())), 9, 0);
+          const pm = parseWith(clock, `in ${n} months`); eq(`in ${n} months`, 'due (clamped to the end of the month)', clampM, pm.due);
+          const ey = cy + n, clampY = LI(ey, cm, Math.min(cd, dim(ey, cm)), 9, 0);
+          const py = parseWith(clock, `in ${n} years`); eq(`in ${n} years`, 'due (clamped, e.g. 29 Feb)', clampY, py.due);
+        }
+        for (const n of [1, 5, 10, 15, 30, 45, 59, 60, 90, 120, 180, 600]) {
+          for (const [u, ms] of [['minutes', 60000], ['mins', 60000], ['min', 60000], ['hours', 3600000], ['hrs', 3600000], ['hour', 3600000], ['hr', 3600000]]) {
+            const e = new RD(now.getTime() + n * ms); T(`in ${n} ${u}`, LI(e.getFullYear(), e.getMonth(), e.getDate(), e.getHours(), e.getMinutes()));
+          }
+        }
+        // month names x days (full and short names, ordinal suffixes), year rolls forward when the date has passed
+        for (let m = 0; m < 12; m++) {
+          const days = wide ? Array.from({ length: dim(2027, m) }, (_, i) => i + 1) : [1, 15, dim(2027, m)];
+          for (const d of days) {
+            const cand = new RD(cy, m, d); const yy = cand < todayMid ? cy + 1 : cy;
+            const valid = d <= dim(yy, m);
+            for (const nm of [MONTHS[m], MONTHS[m].slice(0, 3)]) for (const suf of ['', suffix(d)]) {
+              const text = `${nm} ${d}${suf}`;
+              if (!valid) continue;
+              T(text, LI(yy, m, d, 9, 0));
+            }
+          }
+        }
+        // on the Nth
+        for (let d = 1; d <= 31; d++) {
+          const text = `on the ${d}${suffix(d)}`;
+          let y = cy, mo = cm; if (d < cd) mo++;
+          const when = new RD(y, mo, 1); const ok = d <= dim(when.getFullYear(), when.getMonth());
+          const p = parseWith(clock, text);
+          if (ok) eq(text, 'due', LI(when.getFullYear(), when.getMonth(), d, 9, 0), p.due); else eq(text, 'due (day does not exist that month: should not guess)', null, p.due);
+        }
+        // M/D and M/D/Y
+        for (let m = 1; m <= 12; m++) for (const d of (wide ? [1, 2, 5, 9, 10, 12, 15, 20, 28, 29, 30, 31] : [1, 15, 28])) {
+          if (d > dim(2027, m - 1)) continue;
+          const t1 = `${m}/${d}`, p1 = parseWith(clock, t1);
+          const past = new RD(cy, m - 1, d) < todayMid;
+          eq(t1, 'due', LI(cy, m - 1, d, 9, 0), p1.due);
+          if (past) rec(t1, 'date already passed this year (not rolled to next year, unlike "mar 5")', 'next year', 'this year (past)', 'warn');
+          for (const yr of ['27', '2027', '2030']) { const t2 = `${m}/${d}/${yr}`, y4 = yr.length === 2 ? 2000 + +yr : +yr; eq(t2, 'due', LI(y4, m - 1, d, 9, 0), parseWith(clock, t2).due); }
+        }
+        // times
+        g('Times · ' + cname);
+        const tm = (h24, mi) => { let dt = new RD(cy, cm, cd, h24, mi); if (dt < now) dt = new RD(cy, cm, cd + 1, h24, mi); return LI(dt.getFullYear(), dt.getMonth(), dt.getDate(), dt.getHours(), dt.getMinutes()); };
+        for (let h = 1; h <= 12; h++) for (const ap of ['am', 'pm', 'AM', 'PM']) for (const mi of [null, 0, 5, 15, 30, 45, 59]) for (const sp of ['', ' ']) for (const at of ['', 'at ']) {
+          if (!wide && (mi === 5 || mi === 59 || sp === ' ' || at === '') && h % 4) continue;
+          const h24 = (h % 12) + (ap.toLowerCase() === 'pm' ? 12 : 0), text = `${at}${h}${mi === null ? '' : ':' + P2(mi)}${sp}${ap}`;
+          T(text, tm(h24, mi || 0));
+        }
+        for (let h = 0; h <= 23; h++) for (const mi of [0, 1, 15, 30, 45, 59]) T(`at ${h}:${P2(mi)}`, tm(h, mi));
+        for (const [w, h] of [['noon', 12], ['midday', 12], ['midnight', 0], ['morning', 9], ['afternoon', 15], ['evening', 19]]) T(w, tm(h, 0));
+        for (const [w, h] of [['morning', 9], ['evening', 19], ['noon', 12]]) for (let i = 0; i < 7; i++) T(`${DOW[i]} ${w}`, (() => { const diff = (i - now.getDay() + 7) % 7 || 7; return LI(cy, cm, cd + diff, h, 0); })());
+        // invalid input must not be accepted
+        g('Invalid input is rejected · ' + cname);
+        for (const text of ['at 25:00', 'at 24:00', 'at 12:60', 'at 99:99', '13pm', '0pm', '14am', '13:00pm', 'feb 30', 'feb 31', 'april 31', 'june 31', 'sept 31', 'nov 31', 'jan 0', 'jan 32', '13/5', '2/30', '0/10', '12/0', '4/31', 'on the 0th', 'on the 32nd', 'on the 45th', 'on the 99th'])
+          { const p = parseWith(clock, text); const bad = p.due && !/^$/.test(p.due); truthy(text, 'should not produce a date', !p.due, 'no date (invalid input)', 'fail'); }
+        await tick();
+        // repeats
+        g('Repeat phrases · ' + cname);
+        const RN = { minute: 'minute', min: 'minute', mins: 'minute', minutes: 'minute', hour: 'hour', hr: 'hour', hrs: 'hour', hours: 'hour', day: 'day', days: 'day', week: 'week', weeks: 'week', month: 'month', months: 'month', year: 'year', years: 'year' };
+        const named = { minute: 'Every minute', hour: 'Hourly', day: 'Every day', week: 'Every week', month: 'Every month', year: 'Every year' };
+        for (const [word, unit] of Object.entries(RN)) {
+          for (const n of [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 45, 60, 90, 100]) { const t = `every ${n} ${word}`; eq(t, 'repeat', n === 1 ? named[unit] : `Every ${n} ${unit}s`, parseWith(clock, t).repeat); }
+          eq(`every other ${word}`, 'repeat', `Every 2 ${unit}s`, parseWith(clock, `every other ${word}`).repeat);
+          if (['hour', 'day', 'week', 'month', 'year'].includes(word)) eq(`every ${word}`, 'repeat', named[unit], parseWith(clock, `every ${word}`).repeat);
+        }
+        for (const [t, e] of [['hourly', 'Hourly'], ['daily', 'Every day'], ['weekly', 'Every week'], ['monthly', 'Every month'], ['yearly', 'Every year'], ['annually', 'Every year'], ['biweekly', 'Every 2 weeks'], ['bi-weekly', 'Every 2 weeks'], ['every weekday', 'Every weekday'], ['every weekdays', 'Every weekday'], ['repeat daily', 'Every day'], ['remind me every 10 mins', 'Every 10 minutes'], ['repeating weekly', 'Every week']])
+          eq(t, 'repeat', e, parseWith(clock, t).repeat);
+        // urgency
+        g('Urgency phrases · ' + cname);
+        const UM = { critical: 'critical', urgent: 'critical', high: 'high', medium: 'medium', moderate: 'medium', normal: 'medium', low: 'low', no: 'none' };
+        for (const [w, e] of Object.entries(UM)) for (const f of ['%s priority', '%s urgency']) { const t = f.replace('%s', w); eq(t, 'urgency', e, parseWith(clock, t).urgency); }
+        for (const [w, e] of Object.entries({ critical: 'critical', urgent: 'critical', high: 'high', medium: 'medium', moderate: 'medium', normal: 'medium', low: 'low', none: 'none' })) for (const f of ['priority %s', 'priority: %s', 'priority=%s', 'urgency %s', 'urgency: %s']) { const t = f.replace('%s', w); eq(t, 'urgency', e, parseWith(clock, t).urgency); }
+        eq('urgent', 'urgency', 'critical', parseWith(clock, 'urgent').urgency); eq('asap', 'urgency', 'critical', parseWith(clock, 'asap').urgency);
+        // checklist
+        g('Checklist phrases · ' + cname);
+        const LISTS = [['milk'], ['bread', 'eggs'], ['bread', 'eggs', 'milk'], ['a', 'b', 'c', 'd'], ['call bank', 'pay rent', 'book flights', 'email Sam', 'water plants']];
+        const leads = ['make a list of', 'make a list containing', 'make me a checklist of', 'create a shopping list with', 'add a list containing', 'start a to-do list of', 'build a checklist:', 'checklist:', 'checklist of', 'todo list:', 'checklist -'];
+        for (const L of LISTS) for (const lead of leads) for (const sep of [', ', ' and ', '; ']) {
+          if (L.length === 1 && sep !== ', ') continue;
+          const body = sep === ' and ' ? (L.length > 1 ? L.slice(0, -1).join(', ') + ' and ' + L[L.length - 1] : L[0]) : L.join(sep);
+          const t = `${lead} ${body}`; eq(t, 'checklist items', L, parseWith(clock, t).checklist);
+        }
+        await tick();
+      }
+
+      // =============== 2. COMBINATIONS (date × time × repeat × urgency) ===============
+      g('Combined phrases (tokens must not interfere)');
+      {
+        const clock = CLOCKS[0], [cy, cm, cd] = clock, now = new RD(cy, cm, cd, 10, 0);
+        const dates = [['tomorrow', LI(cy, cm, cd + 1, 9, 0), 'd+1'], ['next friday', null, 'fri'], ['dec 25', null, 'dec25'], ['in 3 days', null, 'in3d'], ['4/20', null, '420'], ['today', null, 'today'], ['tonight', null, 'tn']];
+        const dueOf = (kind, h, mi) => {
+          const base = { 'd+1': [cy, cm, cd + 1], fri: [cy, cm, cd + ((5 - now.getDay() + 7) % 7 || 7)], dec25: [cy, 11, 25], in3d: [cy, cm, cd + 3], 420: [cy, 3, 20], today: [cy, cm, cd], tn: [cy, cm, cd] }[kind];
+          return LI(base[0], base[1], base[2], h, mi);
+        };
+        const times = [['', null], ['at 9am', [9, 0]], ['at 3:30pm', [15, 30]], ['at 14:05', [14, 5]], ['noon', [12, 0]]];
+        const reps = [['', null], ['every day', 'Every day'], ['every 3 days', 'Every 3 days'], ['weekly', 'Every week'], ['every other month', 'Every 2 months']];
+        const urgs = [['', null], ['high priority', 'high'], ['urgent', 'critical']];
+        for (const [dt, , kind] of dates) for (const [tt, tv] of times) for (const [rt, rv] of reps) for (const [ut, uv] of urgs) {
+          const text = [dt, tt, rt, ut].filter(Boolean).join(' ');
+          const p = parseWith(clock, text);
+          const dflt = kind === 'tn' ? [19, 0] : [9, 0];
+          const hm = tv || dflt;
+          let expected = dueOf(kind, hm[0], hm[1]);
+          if (kind === 'today' && tv && new RD(cy, cm, cd, hm[0], hm[1]) < now) expected = dueOf(kind, hm[0], hm[1]); // an explicit date is never rolled
+          eq(text, 'due', expected, p.due); eq(text, 'repeat', rv, p.repeat); eq(text, 'urgency', uv, p.urgency); eq(text, 'title', 'call mom', p.cleanTitle);
+        }
+      }
+      await tick();
+
+      // =============== 3. DURATIONS ===============
+      g('Duration parser');
+      {
+        const U = { minute: ['m', 'min', 'mins', 'minute', 'minutes'], hour: ['h', 'hr', 'hrs', 'hour', 'hours'], day: ['d', 'day', 'days'], week: ['w', 'wk', 'wks', 'week', 'weeks'], month: ['mo', 'mos', 'month', 'months'], year: ['y', 'yr', 'yrs', 'year', 'years'] };
+        const PM = { minute: 1, hour: 60, day: 1440, week: 10080, month: 43200, year: 525600 };
+        for (const [unit, toks] of Object.entries(U)) for (const tok of toks) for (const n of [1, 2, 13, 45, 90, 120]) for (const sp of ['', ' ']) {
+          const t = `${n}${sp}${tok}`, p = parseDuration(t);
+          eq(t, 'minutes', n * PM[unit], p && p.minutes); eq(t, 'label', `${n} ${unit}${n !== 1 ? 's' : ''}`, p && p.label);
+        }
+        for (const [t, mins, lab] of [['2 hrs 3 mins', 123, '2 hours 3 minutes'], ['1 hour and 30 min', 90, '1 hour 30 minutes'], ['1d 6h', 1800, '1 day 6 hours'], ['1 hour, 30 minutes', 90, '1 hour 30 minutes'], ['90m', 90, '90 minutes'], ['1 week 2 days', 12960, '1 week 2 days'], ['1y 2mo 3w 4d 5h 6m', 525600 + 86400 + 30240 + 5760 + 300 + 6, '1 year 2 months 3 weeks 4 days 5 hours 6 minutes']]) {
+          const p = parseDuration(t); eq(t, 'minutes', mins, p && p.minutes); eq(t, 'label', lab, p && p.label);
+        }
+        for (const t of ['', 'abc', '5', 'mins', '5 foo', '10 mins later', 'in 10 mins', 'every 5 mins', '1.5 hours', '-5 mins']) eq(t || '(empty)', 'should not be a duration', null, parseDuration(t));
+      }
+      await tick();
+
+      // =============== 4. PRESETS + TUTORIAL EXAMPLES ===============
+      g('Dropdown presets are understood by their own detector');
+      {
+        window.Date = fakeDate(2026, 2, 11, 10, 0);
+        try {
+          for (const v of DUE_PRESETS) { const d = detectDatetime(v), p = parseNaturalLanguage(v); truthy(v, 'date preset detected', d.ok && !!p.due, 'a date'); }
+          for (const v of REPEATS) { const d = detectRepeat(v); truthy(v, 'repeat preset detected', d.ok, 'recognised'); if (v !== 'Never') eq(v, 'preset round-trips through the parser', v, parseNaturalLanguage(v).repeat); }
+          for (const v of END_PRESETS) truthy(v, 'end preset detected', detectEnd(v).ok, 'recognised');
+          for (const v of SNOOZE) truthy(v, 'snooze preset detected', detectSnooze(v).ok, 'recognised');
+          for (const v of ['asdf', 'blah blah', '???', 'next', 'at']) { truthy(v, 'junk is flagged "Not recognized" (date)', detectDatetime(v).ok === false, 'not ok'); truthy(v, 'junk flagged (repeat)', detectRepeat(v).ok === false, 'not ok'); truthy(v, 'junk flagged (snooze)', detectSnooze(v).ok === false, 'not ok'); truthy(v, 'junk flagged (end)', detectEnd(v).ok === false, 'not ok'); }
+          for (const v of ['never', 'none', 'no', 'off', 'no repeat', 'NEVER', '']) truthy(v || '(empty)', 'means "no repeat"', detectRepeat(v).label === 'No repeat', 'No repeat');
+          for (const n of [1, 2, 3, 10, 99]) eq(`${n}`, 'end count label', `After ${n} time${n !== 1 ? 's' : ''}`, detectEnd(String(n)).label);
+        } finally { window.Date = RD; }
+        g('Tutorial examples all work as advertised');
+        window.Date = fakeDate(2026, 2, 11, 10, 0);
+        try {
+          for (const cat of HELP) for (const ex of cat.ex) {
+            const t = cat.title;
+            if (/^Dates|^Times|Date \+ time/.test(t)) truthy(ex, t, !!parseNaturalLanguage(ex).due, 'a date/time');
+            else if (/^Repeat/.test(t)) truthy(ex, t, !!parseNaturalLanguage(ex).repeat, 'a repeat');
+            else if (/^Durations/.test(t)) truthy(ex, t, !!parseDuration(ex), 'a duration');
+            else if (/^End repeat/.test(t)) truthy(ex, t, detectEnd(ex).ok, 'recognised');
+            else if (/^Checklists/.test(t)) truthy(ex, t, !!(parseNaturalLanguage(ex).checklist || []).length, 'checklist items');
+            else rec(ex, t, 'a rule for this help card', 'none', 'warn');
+          }
+        } finally { window.Date = RD; }
+        g('Tutorial overlay shows every example');
+        renderHelpGrid(); const shown = [...document.querySelectorAll('#helpGrid .help-ex')].map(e => e.textContent);
+        eq('help grid', 'example count', HELP.reduce((a, c) => a + c.ex.length, 0), shown.length);
+        HELP.forEach(c => c.ex.forEach(e => truthy(e, 'shown in the tutorial', shown.includes(e), 'present')));
+      }
+      await tick();
+
+      // =============== 5. DATA MIGRATION, IMPORT/EXPORT ===============
+      g('Migration of old saved data');
+      for (const [k, v] of Object.entries(LEGACY_REPEAT)) eq('repeat ' + k, 'migrated', v, migrateReminder({ id: 'x', repeat: k }).repeat);
+      for (const [k, v] of Object.entries(LEGACY_SNOOZE)) eq('snooze ' + k, 'migrated', v, migrateReminder({ id: 'x', snooze: k }).snooze);
+      eq('custom repeat', 'migrated', 'Every 3 weeks', migrateReminder({ id: 'x', repeat: 'custom', customInterval: 3, customUnit: 'weeks' }).repeat);
+      eq('custom repeat default', 'migrated', 'Every 1 days', migrateReminder({ id: 'x', repeat: 'custom' }).repeat);
+      eq('flagged', 'icon', 'fa-flag', migrateReminder({ id: 'x', flagged: true }).icon);
+      eq('afterCount', 'endText', 'After 4 times', migrateReminder({ id: 'x', endRepeat: 'afterCount', endCount: 4 }).endText);
+      eq('afterCount no count', 'endText', 'After 1 times', migrateReminder({ id: 'x', endRepeat: 'afterCount' }).endText, 'warn');
+      eq('empty object', 'id created', true, !!migrateReminder({}).id);
+      eq('bad checklist', 'cleaned', [], migrateReminder({ id: 'x', checklist: 'nope' }).checklist);
+      eq('bad checklist item', 'cleaned', [{ text: '7', done: true }], migrateReminder({ id: 'x', checklist: [null, 5, { text: 7, done: 1 }] }).checklist.map(i => ({ text: i.text, done: i.done })));
+      eq('bad icon', 'cleaned', '', migrateReminder({ id: 'x', icon: 5 }).icon);
+
+      // =============== 6. UI: SETTINGS × THEMES ===============
+      g('Settings × themes');
+      const lum = c => { const [r, gg, b] = c.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * gg + .0722 * b; };
+      const rgb = s => { const m = s.match(/[\d.]+/g).map(Number); return m.slice(0, 3); };
+      const ratio = (a, b) => { const x = lum(rgb(a)), y = lum(rgb(b)); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+      const colorOf = (el, prop) => getComputedStyle(el)[prop];
+      reminders = [Object.assign(newReminder(), { title: 'Sample', due: LI(2026, 2, 12, 9, 0), repeat: 'Every day', urgency: 'high', icon: 'fa-star', checklist: [{ id: 'a', text: 'one', done: true }, { id: 'b', text: 'two', done: false }] }),
+                   Object.assign(newReminder(), { title: 'Done one', completed: true })];
+      selectedId = reminders[0].id;
+      const themeHexOk = c => /^#/.test(c);
+      for (const th of THEMES) for (const den of ['cozy', 'compact']) for (const grp of [true, false]) for (const conf of [false, true]) for (const spell of [true, false]) {
+        const key = `${th.id}/${den}/group=${grp}/confirm=${conf}/spell=${spell}`;
+        settings = Object.assign({}, settings, { theme: th.id, density: den, groupCompleted: grp, confirmDelete: conf, spellcheck: spell, completedCollapsed: false });
+        applySettings(); syncSettingToggles(); renderThemeGrid(); render();
+        eq(key, 'body theme', th.id, document.body.dataset.theme); eq(key, 'body density', den, document.body.dataset.density);
+        eq(key, 'compact toggle', den === 'compact', document.getElementById('densityToggle').classList.contains('on'));
+        eq(key, 'group toggle', grp, document.getElementById('groupToggle').classList.contains('on'));
+        eq(key, 'confirm toggle', conf, document.getElementById('confirmDelToggle').classList.contains('on'));
+        eq(key, 'spellcheck toggle', spell, document.getElementById('spellcheckToggle').classList.contains('on'));
+        eq(key, 'selected swatch', [th.id], [...document.querySelectorAll('#themeGrid .sel')].map(e => e.dataset.themeId));
+        eq(key, 'completed header present', grp, !!document.querySelector('#listScroll .completed-header'));
+        eq(key, 'spellcheck attr on title', String(spell), document.getElementById('d-title').getAttribute('spellcheck'));
+        eq(key, 'swatch matches theme bg', th.bg.toLowerCase(), getComputedStyle(document.body).getPropertyValue('--bg-elev').trim().toLowerCase(), 'warn');
+      }
+      g('Theme contrast (WCAG)');
+      for (const th of THEMES) {
+        settings.theme = th.id; applySettings(); render();
+        const cs = getComputedStyle(document.body), v = n => { const t = document.createElement('i'); t.style.color = cs.getPropertyValue(n).trim(); document.body.appendChild(t); const c = getComputedStyle(t).color; t.remove(); return c; };
+        const bg = v('--bg'), el = v('--bg-elev'), txt = v('--text'), dimc = v('--text-dim'), faint = v('--text-faint'), acc = v('--accent'), dng = v('--danger');
+        const chk = (name, fg, bgc, min, lvl) => { const r = ratio(fg, bgc); rec(th.id + ' · ' + name, 'contrast ' + r.toFixed(2) + ':1 (needs ' + min + ')', '', '', r >= min ? 'pass' : lvl); };
+        chk('text on bg', txt, bg, 7, 'fail'); chk('text on panel', txt, el, 7, 'fail'); chk('dim text on panel', dimc, el, 4.5, 'fail'); chk('faint text on panel', faint, el, 3, 'warn');
+        chk('accent on bg', acc, bg, 3, 'fail'); chk('danger on bg', dng, bg, 3, 'fail');
+        const ab = document.getElementById('addBtn'); if (ab) chk('Add button label on accent', colorOf(ab, 'color'), colorOf(ab, 'backgroundColor'), 4.5, 'fail');
+      }
+      await tick();
+
+      // =============== 7. EVERY REMINDER VARIANT: LIST + DETAIL ===============
+      g('List rows: urgency × icon × completed × repeat');
+      settings = Object.assign({}, settings, { theme: 'midnight', density: 'cozy', groupCompleted: false }); applySettings();
+      const REP_CASES = [...REPEATS, 'Every 3 days', 'every other Friday', ''];
+      const ICON_CASES = ['', ...ICONS];
+      let n = 0;
+      for (const urg of URGENCIES.map(u => u.id)) for (const ic of ICON_CASES) for (const done of [false, true]) for (const rep of REP_CASES) {
+        const r = Object.assign(newReminder(), { title: 'T ' + n++, urgency: urg, icon: ic, completed: done, repeat: rep || 'Never' });
+        const el = itemEl(r), key = `${urg}|${ic || 'no icon'}|${done ? 'done' : 'open'}|${rep || '(empty)'}`;
+        eq(key, 'completed class', done, el.classList.contains('completed')); eq(key, 'urgency dot', true, !!el.querySelector('.urg-dot.u-' + urg));
+        eq(key, 'icon', ic ? 1 : 0, el.querySelectorAll('.ri-title i.' + (ic || 'x')).length + (ic ? 0 : el.querySelectorAll('.ri-title i').length));
+        eq(key, 'repeat shown only when repeating', isRepeating(r.repeat), !!el.querySelector('.fa-repeat'));
+        eq(key, 'check button', done, el.querySelector('.ri-check').classList.contains('done'));
+      }
+      g('List rows: awkward titles');
+      for (const t of ['', '   ', '<img src=x onerror=alert(1)>', '"quotes" & \'apos\' <b>bold</b>', 'x'.repeat(400), '😀 emoji 日本語 العربية', 'line1\nline2', '&amp;', '${1+1}', '`tick`']) {
+        const r = Object.assign(newReminder(), { title: t }), el = itemEl(r), ti = el.querySelector('.ri-title');
+        truthy(JSON.stringify(t), 'no injected elements', !ti.querySelector('img,b,script'), 'text only');
+        if (t.trim()) eq(JSON.stringify(t).slice(0, 40), 'shown as typed', t.replace(/\s+/g, ' ').trim(), ti.textContent.replace(/\s+/g, ' ').trim()); else truthy(JSON.stringify(t), 'shows Untitled', /Untitled/.test(ti.textContent), 'Untitled');
+        const sc = ti.scrollWidth <= ti.clientWidth + 1 || getComputedStyle(ti).textOverflow === 'ellipsis' || getComputedStyle(ti).overflow !== 'visible'; truthy(JSON.stringify(t).slice(0, 30), 'long title is clipped, not overflowing', sc, 'ellipsis/clip', 'warn');
+        // detail round trip
+        reminders = [Object.assign(r, { notes: t })]; selectedId = r.id; renderDetail();
+        eq(JSON.stringify(t).slice(0, 30), 'title input keeps exact text', t, document.getElementById('d-title').value);
+        eq(JSON.stringify(t).slice(0, 30), 'notes keep exact text', t, document.getElementById('d-notes').value);
+      }
+      await tick();
+
+      g('Detail view: every control state');
+      {
+        const text = id => document.getElementById(id);
+        let i = 0;
+        const sn = [...SNOOZE, '45 minutes', ''], en = [...END_PRESETS, 'Dec 25', 'weird'];
+        for (const urg of URGENCIES.map(u => u.id)) for (const ic of ICON_CASES) for (const done of [false, true]) {
+          const rep = REP_CASES[i % REP_CASES.length] || 'Never', snz = sn[i % sn.length] || 'Off', end = en[i % en.length]; i++;
+          const r = Object.assign(newReminder(), { title: 'D', urgency: urg, icon: ic, completed: done, repeat: rep, snooze: snz, endText: end, due: i % 3 ? LI(2026, 5, 1 + (i % 28), 13, 5) : '' });
+          reminders = [r]; selectedId = r.id; renderDetail();
+          const key = `${urg}|${ic || 'no icon'}|${done}|${rep}|${snz}|${end}`;
+          eq(key, 'selected urgency pill', [urg], [...document.querySelectorAll('#d-urgency .urg-pill.sel')].map(e => e.dataset.urg));
+          const selIcons = [...document.querySelectorAll('#d-icon .icon-choice.sel')].map(e => e.dataset.icon);
+          truthy(key, 'icon picker marks the icon', ic === '' ? selIcons.includes('') && selIcons.length === 1 : selIcons.includes(ic) && !selIcons.includes(''), 'selected ' + ic);
+          eq(key, 'complete button', done, text('d-check').classList.contains('done'));
+          eq(key, 'repeat input', rep, text('d-repeat').value); eq(key, 'repeat preset', isPresetRepeat(rep) ? rep : '__custom', text('d-repeat-preset').value);
+          eq(key, 'end row visible only when repeating', isRepeating(rep), text('row-endrepeat').classList.contains('show'));
+          eq(key, 'end preset', isPresetEnd(end) ? end : '__custom', text('d-end-preset').value);
+          eq(key, 'snooze preset', isPresetSnooze(snz) ? snz : '__custom', text('d-snooze-preset').value);
+          eq(key, 'repeat badge', detectRepeat(rep).ok ? 'ok' : 'bad', text('detect-repeat').classList.contains('ok') ? 'ok' : 'bad');
+          eq(key, 'end badge', detectEnd(end).ok ? 'ok' : 'bad', text('detect-end').classList.contains('ok') ? 'ok' : 'bad');
+          eq(key, 'snooze badge', snz === '' ? 'empty' : detectSnooze(snz).ok ? 'ok' : 'bad', text('detect-snooze').classList.contains('empty') ? 'empty' : text('detect-snooze').classList.contains('ok') ? 'ok' : 'bad');
+          eq(key, 'date picker value', r.due, text('d-due').value);
+          eq(key, 'date text', r.due ? fmtDate(r.due) : '', text('d-due-text').value);
+          eq(key, 'notification warning iff scheduled and notifications are not granted', (!!r.due || isRepeating(rep)) && notifPermission() !== 'granted', text('notif-warning').classList.contains('show'));
+          eq(key, 'created date shown', true, /Created/.test(document.querySelector('.created-note').textContent));
+        }
+        g('Detail view: checklists of every size');
+        for (let count = 0; count <= 14; count++) for (const pat of ['none', 'all', 'alt']) {
+          const cl = Array.from({ length: count }, (_, k) => ({ id: 'c' + k, text: 'item ' + k, done: pat === 'all' || (pat === 'alt' && k % 2 === 0) }));
+          const r = Object.assign(newReminder(), { title: 'L', checklist: cl }); reminders = [r]; selectedId = r.id; renderDetail();
+          const done = cl.filter(c => c.done).length, key = `${count} items, ${pat}`;
+          eq(key, 'progress text', count ? `${done} of ${count}` : '', text('cl-progress').textContent);
+          eq(key, 'rows', count, document.querySelectorAll('#cl-items .cl-item').length);
+          eq(key, 'done rows', done, document.querySelectorAll('#cl-items .cl-item.done').length);
+          eq(key, 'list row counter', count ? `${done}/${count}` : null, (itemEl(r).querySelector('.fa-list-check') || { parentElement: { textContent: '' } }).parentElement.textContent.trim() || null);
+        }
+      }
+      await tick();
+
+      // =============== 8. EVERY CONTROL, DRIVEN LIKE A USER ===============
+      g('Controls: clicks and typing');
+      {
+        const $ = id => document.getElementById(id);
+        const fresh = (o = {}) => { const r = Object.assign(newReminder(), { title: 'Ctl' }, o); reminders = [r]; selectedId = r.id; render(); return r; };
+        const fire = (el, type, init) => el.dispatchEvent(new (type === 'keydown' ? KeyboardEvent : Event)(type, Object.assign({ bubbles: true }, init)));
+        let r = fresh();
+        for (const u of URGENCIES) { document.querySelector(`#d-urgency [data-urg="${u.id}"]`).click(); eq(u.id, 'click urgency pill', u.id, r.urgency); eq(u.id, 'list dot follows', true, !!document.querySelector('#listScroll .urg-dot.u-' + u.id)); }
+        for (const ic of ICON_CASES) { let btn = document.querySelector(`#d-icon [data-icon="${ic}"]`); if (!btn) { document.querySelector('#d-icon [data-more]').click(); btn = document.querySelector(`#d-icon [data-icon="${ic}"]`); } btn.click(); eq(ic || 'none', 'click icon', ic, r.icon); eq(ic || 'none', 'list icon', ic ? 1 : 0, document.querySelectorAll('#listScroll .ri-title i').length); }
+        document.querySelector('#d-icon [data-more]').click(); truthy('more icons', 'grid opens', !$('d-icon').querySelector('.icon-grid').hasAttribute('hidden'), 'open'); document.querySelector('#d-icon [data-more]').click(); truthy('more icons', 'grid closes', $('d-icon').querySelector('.icon-grid').hasAttribute('hidden'), 'closed');
+        for (const v of REPEATS) { r = fresh(); const s = $('d-repeat-preset'); s.value = v; fire(s, 'change'); eq(v, 'repeat preset sets value', v, r.repeat); eq(v, 'input mirrors', v, $('d-repeat').value); eq(v, 'end row follows', isRepeating(v), $('row-endrepeat').classList.contains('show')); }
+        for (const v of END_PRESETS) { r = fresh({ repeat: 'Every day' }); const s = $('d-end-preset'); s.value = v; fire(s, 'change'); eq(v, 'end preset', v, r.endText); eq(v, 'input mirrors', v, $('d-end').value); }
+        for (const v of SNOOZE) { r = fresh(); const s = $('d-snooze-preset'); s.value = v; fire(s, 'change'); eq(v, 'snooze preset', v, r.snooze); eq(v, 'input mirrors', v, $('d-snooze').value); }
+        window.Date = fakeDate(2026, 2, 11, 10, 0);
+        try {
+          for (const v of DUE_PRESETS) { r = fresh(); const s = $('d-due-preset'); s.value = v; fire(s, 'change'); truthy(v, 'date preset sets a date', !!r.due, 'a due date'); eq(v, 'picker mirrors', r.due, $('d-due').value); eq(v, 'text mirrors', v, $('d-due-text').value); }
+          for (const [txt, exp] of [['tomorrow 3pm', LI(2026, 2, 12, 15, 0)], ['dec 25 at 8:15am', LI(2026, 11, 25, 8, 15)], ['in 2 hours', LI(2026, 2, 11, 12, 0)]]) { r = fresh(); const i = $('d-due-text'); i.value = txt; fire(i, 'input'); eq(txt, 'live badge', true, $('detect-datetime').classList.contains('ok')); fire(i, 'change'); eq(txt, 'typed date committed', exp, r.due); eq(txt, 'picker mirrors', exp, $('d-due').value); }
+          r = fresh(); { const i = $('d-due-text'); i.value = 'blah'; fire(i, 'input'); eq('blah', 'bad badge', true, $('detect-datetime').classList.contains('bad')); }
+        } finally { window.Date = RD; }
+        r = fresh({ due: LI(2026, 5, 1, 9, 0) }); { const p = $('d-due'); p.value = '2026-07-04T08:30'; fire(p, 'change'); eq('picker', 'due', '2026-07-04T08:30', r.due); eq('picker', 'text', fmtDate('2026-07-04T08:30'), $('d-due-text').value); }
+        for (const [which, key, dflt, mk] of [['due', 'due', '', { due: LI(2026, 5, 1, 9, 0) }], ['repeat', 'repeat', 'Never', { repeat: 'Every day' }], ['end', 'endText', 'Never', { repeat: 'Every day', endText: 'After 5 times' }], ['snooze', 'snooze', 'Off', { snooze: '1 hour' }], ['urgency', 'urgency', 'none', { urgency: 'high' }], ['icon', 'icon', '', { icon: 'fa-star' }]]) {
+          r = fresh(mk); document.querySelector(`#detail [data-clear="${which}"]`).click(); eq(which, 'clear resets', dflt, r[key]);
+        }
+        // title: Enter applies detections, text is cleaned
+        window.Date = fakeDate(2026, 2, 11, 10, 0);
+        try {
+          r = fresh(); const t = $('d-title'); t.value = 'dentist tomorrow at 2pm every week urgent'; fire(t, 'input'); truthy('title typing', 'detection summary appears', $('nlp-hint').classList.contains('show'), 'shown');
+          eq('title typing', 'summary rows', 3, document.querySelectorAll('#nlp-hint .ds-row').length);
+          document.getElementById('d-title').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+          eq('Enter', 'title cleaned', 'dentist', r.title); eq('Enter', 'due', LI(2026, 2, 12, 14, 0), r.due); eq('Enter', 'repeat', 'Every week', r.repeat); eq('Enter', 'urgency', 'critical', r.urgency);
+          r = fresh(); const nt = $('d-notes'); nt.value = 'buy things\nchecklist: a, b, c'; fire(nt, 'input');
+          nt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
+          eq('notes ctrl+enter', 'checklist added', ['a', 'b', 'c'], r.checklist.map(c => c.text)); eq('notes ctrl+enter', 'notes keep first line', 'buy things', r.notes);
+          r = fresh(); const nt2 = $('d-notes'); nt2.value = 'plain note\nsecond line'; fire(nt2, 'input'); nt2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+          eq('notes plain Enter', 'unchanged', 'plain note\nsecond line', r.notes);
+        } finally { window.Date = RD; }
+        // checklist
+        r = fresh(); { const a = $('cl-add'); for (const t of ['one', 'two', '  ', 'three']) { a.value = t; a.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); }
+          eq('checklist add', 'items (blank ignored)', ['one', 'two', 'three'], r.checklist.map(c => c.text));
+          document.querySelector('#cl-items .cl-check').click(); eq('toggle', 'first done', true, r.checklist[0].done); eq('toggle', 'progress', '1 of 3', $('cl-progress').textContent);
+          document.querySelectorAll('#cl-items .cl-del')[1].click(); eq('delete', 'items', ['one', 'three'], r.checklist.map(c => c.text));
+          const inp = document.querySelector('#cl-items .cl-text'); inp.value = 'edited'; fire(inp, 'input'); eq('edit', 'text', 'edited', r.checklist[0].text);
+          inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); eq('Enter in item', 'new row inserted after', 3, r.checklist.length); }
+        // complete + delete (with and without confirm)
+        for (const conf of [false, true]) {
+          settings.confirmDelete = conf; r = fresh({ title: 'Del me' });
+          $('d-check').click(); eq('complete', 'done', true, r.completed); document.querySelector('#listScroll .ri-check').click(); eq('list check', 'toggled back', false, reminders[0].completed);
+          $('d-delete').click();
+          if (conf) { truthy('delete', 'confirm dialog shows', $('delOverlay').classList.contains('show'), 'shown'); truthy('delete', 'dialog names the reminder', /Del me/.test($('delText').textContent), 'name'); $('delCancel').click(); eq('cancel', 'still there', 1, reminders.length); $('d-delete').click(); $('delConfirm').click(); }
+          eq('delete', 'removed (confirm=' + conf + ')', 0, reminders.length); eq('delete', 'detail closed', true, $('detail').classList.contains('hidden'));
+          hideOverlay('delOverlay');
+        }
+        settings.confirmDelete = false;
+        // search
+        reminders = ['Alpha one', 'beta two', 'Gamma Alpha'].map((t, i) => Object.assign(newReminder(), { title: t, notes: i === 1 ? 'hidden gem' : '' })); selectedId = null; render();
+        for (const [q, c] of [['', 3], ['alpha', 2], ['ALPHA', 2], ['gem', 1], ['zzz', 0], ['  alpha ', 2]]) { $('search').value = q; renderList(); eq('search "' + q + '"', 'rows', c, document.querySelectorAll('#listScroll .reminder-item').length); if (!c) truthy(q, 'empty message', /No matches/.test($('listScroll').textContent), 'No matches'); }
+        $('search').value = ''; renderList();
+        // reorder every pair
+        const ids = ['a', 'b', 'c', 'd', 'e'];
+        for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+          settings.groupCompleted = false;
+          reminders = ids.map(id => Object.assign(newReminder(), { id, title: id })); render();
+          performReorder(ids[i], j === 4 ? null : ids[j] === ids[i] ? null : ids[j]);
+          const exp = ids.filter(x => x !== ids[i]); if (j === 4 || ids[j] === ids[i]) exp.push(ids[i]); else exp.splice(exp.indexOf(ids[j]), 0, ids[i]);
+          eq(`move ${ids[i]} before ${ids[j] === ids[i] ? 'end' : ids[j]}`, 'order', exp, reminders.map(x => x.id));
+          eq('', 'list matches data', exp, [...document.querySelectorAll('#listScroll .reminder-item')].map(e => e.dataset.id));
+        }
+        settings.groupCompleted = true;
+        reminders = ['a', 'b', 'c'].map((id, k) => Object.assign(newReminder(), { id, title: id, completed: k === 2 })); render(); performReorder('a', null);
+        eq('grouped: move active to end of its group', ['b', 'a', 'c'], reminders.map(x => x.id));
+        // settings dialog controls
+        for (const th of THEMES) { renderThemeGrid(); document.querySelector(`#themeGrid [data-theme-id="${th.id}"]`).click(); eq(th.id, 'theme swatch click applies', th.id, document.body.dataset.theme); }
+        for (const id of ['densityToggle', 'groupToggle', 'confirmDelToggle', 'spellcheckToggle']) { const before = $(id).classList.contains('on'); $(id).click(); eq(id, 'toggle flips', !before, $(id).classList.contains('on')); $(id).click(); eq(id, 'toggle flips back', before, $(id).classList.contains('on')); }
+        // overlays open and close
+        for (const [openBtn, ov, closers] of [['settingsBtn', 'settingsOverlay', ['settingsClose']], ['helpBtn', 'helpOverlay', ['helpClose', 'helpDone']], ['notifStatus', 'notifOverlay', ['notifClose', 'notifDismiss']], ['wipeBtn', 'wipeOverlay', ['wipeCancel']]]) {
+          for (const c of closers) { $(openBtn).click(); eq(openBtn, 'opens ' + ov, true, $(ov).classList.contains('show')); $(c).click(); eq(c, 'closes ' + ov, false, $(ov).classList.contains('show')); }
+          $(openBtn).click(); $(ov).dispatchEvent(new MouseEvent('click', { bubbles: true })); eq(ov, 'backdrop click closes', false, $(ov).classList.contains('show'));
+          $(openBtn).click(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); eq(ov, 'Esc closes', false, $(ov).classList.contains('show'));
+        }
+        // new reminder + wipe
+        reminders = []; render(); $('addBtn').click(); eq('New Reminder', 'adds one', 1, reminders.length); eq('New Reminder', 'selected', reminders[0].id, selectedId); truthy('New Reminder', 'empty title row says Untitled', /Untitled/.test($('listScroll').textContent), 'Untitled');
+        $('wipeBtn').click(); $('wipeConfirm').click(); eq('wipe', 'cleared', 0, reminders.length); truthy('wipe', 'empty state text', /No reminders yet/.test($('listScroll').textContent), 'empty state'); hideOverlay('wipeOverlay');
+        // completed section
+        settings.groupCompleted = true; settings.completedCollapsed = false;
+        reminders = [Object.assign(newReminder(), { title: 'x', completed: true })]; render(); truthy('all done', 'message', /All done/.test($('listScroll').textContent), 'All done');
+        document.querySelector('.completed-header').click(); eq('completed header', 'collapses', true, settings.completedCollapsed); eq('completed header', 'hides rows', 0, document.querySelectorAll('.completed-group .reminder-item').length);
+        settings.completedCollapsed = false;
+      }
+      await tick();
+
+      g('Export and import');
+      {
+        const sample = [
+          Object.assign(newReminder(), { id: 'e1', title: 'Quote "x" & <y>', notes: 'line1\nline2', due: LI(2026, 7, 9, 8, 5), repeat: 'Every 3 days', endText: 'After 5 times', snooze: '45 minutes', urgency: 'critical', icon: 'fa-key', completed: true, checklist: [{ id: 'c1', text: 'a', done: true }, { id: 'c2', text: 'b "q"', done: false }] }),
+          Object.assign(newReminder(), { id: 'e2', title: '😀 日本語' })];
+        reminders = sample.map(x => JSON.parse(JSON.stringify(x))); selectedId = null;
+        let captured = null; URL.createObjectURL = b => { captured = b; return 'blob:dev'; }; HTMLAnchorElement.prototype.click = function () {};
+        exportTxt(); URL.createObjectURL = origCreate; HTMLAnchorElement.prototype.click = origClick;
+        const txt = captured ? await captured.text() : '';
+        truthy('export', 'a file was produced', !!captured, 'blob'); let data = {}; try { data = JSON.parse(txt); } catch (e) {}
+        eq('export', 'format', ['reminders', 1, 2], [data.app, data.version, (data.reminders || []).length]);
+        reminders = []; importTxt(txt); const strip = x => { const c = Object.assign({}, x); delete c.id; return c; };
+        eq('import', 'round trip keeps every field (ids are regenerated)', sample.map(strip), reminders.map(strip));
+        truthy('import', 'new ids are unique', new Set(reminders.map(x => x.id)).size === reminders.length, 'unique');
+        const before = reminders.length; importTxt(txt); eq('import twice', 'adds again', before * 2, reminders.length);
+        reminders = []; importTxt(JSON.stringify(sample.map(x => x))); eq('plain array form', 'accepted', 2, reminders.length);
+        reminders = []; importTxt(JSON.stringify([{ title: 'only a title' }])); eq('minimal item', 'filled with defaults', ['only a title', 'Never', 'Off', 'none'], [reminders[0].title, reminders[0].repeat, reminders[0].snooze, reminders[0].urgency]);
+        for (const bad of ['', 'garbage', '{}', '{"reminders":5}', 'null', '42']) { reminders = []; importTxt(bad); eq(JSON.stringify(bad), 'rejected without changing anything', 0, reminders.length); }
+        reminders = []; importTxt(JSON.stringify([null, 5, 'x'])); eq('junk items', 'should not crash or create broken rows', 0, reminders.length, 'warn');
+      }
+      await tick();
+
+      // =============== 9. LAYOUT SWEEP (iframes) ===============
+      if (document.getElementById('devLayout').checked) {
+        g('Layout at every width, theme and density');
+        reminders = []; render();
+        const WIDTHS = [320, 360, 375, 414, 600, 720, 721, 768, 1024, 1280, 1920];
+        const demo = [
+          Object.assign(newReminder(), { id: 'L1', title: 'A very long reminder title that should be clipped nicely rather than push the layout sideways ' + 'x'.repeat(120), notes: 'notes '.repeat(60), due: LI(2026, 11, 25, 14, 30), repeat: 'Every 2 weeks on a custom long schedule label', endText: 'After 10 times', snooze: '45 minutes', urgency: 'critical', icon: 'fa-star', checklist: Array.from({ length: 8 }, (_, i) => ({ id: 'c' + i, text: 'checklist item number ' + i + ' ' + 'long '.repeat(12), done: i % 2 === 0 })) }),
+          Object.assign(newReminder(), { id: 'L2', title: 'Short', completed: true }), Object.assign(newReminder(), { id: 'L3', title: '' })];
+        for (const w of WIDTHS) for (const th of THEMES) for (const den of ['cozy', 'compact']) {
+          const f = document.createElement('iframe'); f.style.cssText = `position:fixed;left:-9999px;top:0;width:${w}px;height:800px;border:0`; f.src = location.pathname;
+          document.body.appendChild(f);
+          await new Promise(res => { f.onload = res; setTimeout(res, 4000); });
+          const key = `${w}px · ${th.id} · ${den}`;
+          try {
+            const W = f.contentWindow, D = f.contentDocument;
+            W.Storage.prototype.setItem = function () {};
+            W.eval(`reminders = ${JSON.stringify(demo)}; settings.theme='${th.id}'; settings.density='${den}'; settings.groupCompleted=true; selectedId='L1'; applySettings(); render();`);
+            for (const view of ['detail', 'list']) {
+              if (w <= 720) W.eval(view === 'detail' ? 'showDetailPane()' : 'showListPane()');
+              else if (view === 'list') continue;
+              await sleep(30);
+              const root = D.documentElement, vw = root.clientWidth, off = [];
+              D.querySelectorAll('body *').forEach(el => { const cs = W.getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('.overlay:not(.show)') || el.closest('[hidden]') || el.closest('.toast')) return; const r = el.getBoundingClientRect(); if (r.width && (r.right > vw + 1 || r.left < -1) && !el.closest('.list-scroll,.detail,.main,.sidebar') ) off.push(el); else if (r.width && r.right > vw + 1 && !(el.closest('.drop-indicator'))) off.push(el); });
+              eq(key + ' · ' + view, 'no horizontal page scroll', true, root.scrollWidth <= vw + 1);
+              truthy(key + ' · ' + view, 'nothing sticks out past the right edge', off.length === 0, 'nothing off-screen: ' + off.slice(0, 3).map(e => e.tagName.toLowerCase() + '.' + String(e.className).split(' ')[0]).join(', '));
+              if (w <= 720) {
+                const small = [...D.querySelectorAll('button, select, input, .urg-pill, .icon-choice')].filter(el => { const r = el.getBoundingClientRect(); return r.width && r.height && (r.height < 28 || r.width < 28) && !el.closest('.overlay:not(.show)') && !el.closest('[hidden]') && el.type !== 'checkbox' && el.type !== 'file' && getComputedStyle(el).display !== 'none'; });
+                rec(key + ' · ' + view, 'touch targets under 28px', '', small.slice(0, 3).map(e => e.id || e.className).join(', '), small.length ? 'warn' : 'pass');
+              }
+            }
+            if (w <= 720) { eq(key, 'only one pane visible on phones', 1, ['sidebar', 'main'].filter(id => W.getComputedStyle(D.getElementById(id)).display !== 'none').length); }
+          } catch (e) { rec(key, 'iframe could not be inspected (needs http/https, not file://)', '', String(e.message || e), 'warn'); }
+          f.remove();
+        }
+      }
+    } catch (e) {
+      g('Dev tool crashed'); rec('', 'exception', '', (e && e.stack) || String(e), 'fail');
+    } finally {
+      window.Date = RD; URL.createObjectURL = origCreate; HTMLAnchorElement.prototype.click = origClick; Storage.prototype.setItem = origSet;
+      reminders = snap.reminders; settings = snap.settings; selectedId = snap.selectedId; pendingDeleteId = snap.pendingDeleteId;
+      document.querySelectorAll('.overlay.show').forEach(o => { if (o.id !== 'devPanel') o.classList.remove('show'); });
+      applySettings(); syncSettingToggles(); renderThemeGrid(); render();
+    }
+
+    const esc = t => String(t == null ? '' : t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    let tp = 0, tf = 0, tw = 0;
+    const rows = Object.entries(groups).map(([k, v]) => { tp += v.pass; tf += v.fail; tw += v.warn; return `<tr><td>${esc(k)}</td><td class="dv-pass">${v.pass}</td><td class="${v.fail ? 'dv-fail' : ''}">${v.fail}</td><td class="${v.warn ? 'dv-warn' : ''}">${v.warn}</td></tr>`; }).join('');
+    issues.sort((a, b) => (a.level === 'fail' ? 0 : 1) - (b.level === 'fail' ? 0 : 1));
+    const show = issues.slice(0, 300);
+    out.innerHTML = `<p class="${tf ? 'dv-fail' : 'dv-pass'}"><b>${tf ? tf + ' failures' : 'Everything matches'}</b> · ${tp} passed · ${tw} warnings</p>
+      <table><tr><th>Check</th><th>Pass</th><th>Fail</th><th>Warn</th></tr>${rows}</table>
+      ${issues.length ? `<table><tr><th></th><th>Check</th><th>Input</th><th>What</th><th>Expected</th><th>Got</th></tr>${show.map(i => `<tr><td class="${i.level === 'fail' ? 'dv-fail' : 'dv-warn'}">${i.level}</td><td>${esc(i.group)}</td><td>${esc(i.input)}</td><td>${esc(i.field)}</td><td>${esc(i.expected)}</td><td>${esc(i.actual)}</td></tr>`).join('')}</table>${issues.length > show.length ? `<p>…and ${issues.length - show.length} more (window.__devIssues)</p>` : ''}` : ''}`;
+    window.__devIssues = issues; console.log('Reminders dev tool', { passed: tp, failed: tf, warnings: tw }, issues);
+    btn.disabled = false;
+  }
+  document.getElementById('devRun').onclick = runAll;
+});
+</script>
 </body>
 </html>
