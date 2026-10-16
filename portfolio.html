@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="fa/css/all.min.css">
 <link rel="preload" href="fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/dm-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 
@@ -117,17 +118,92 @@
     /* sit to the left of the tilt button when it is showing (wide screens) */
     @media (min-width: 769px) { html[data-season-name] .season-toggle { right: 150px; } }
 
-    /* ── EXPERIMENTAL: tilted HUD look (a nod to the Division's UI). The page leans one way and the sidebar the other.
+    /* ── EXPERIMENTAL: tilted HUD look (a nod to the Division's inventory screen). The project grid on the right floats
+          like an AR projection: angled toward the viewer, dark see-through panels, orange highlights, faint scanlines.
           Off switch: the button at the bottom right (remembered), or ?tilt=off.  Only on screens wide enough for the sidebar. ── */
     .tilt-toggle { display: none; }
     @media (min-width: 769px) {
-      html[data-tilt="on"] .page { overflow-x: clip; }
-      html[data-tilt="on"] .page { perspective: 1700px; perspective-origin: 50% 38%; }
-      html[data-tilt="on"] .main {
-        transform: rotateY(var(--tilt-main-y, -3.5deg)) rotateX(var(--tilt-x, 0deg));
-        transform-origin: 0% 50%; will-change: transform;
+      /* the Division's orange, unless a holiday theme is choosing the colors */
+      html[data-tilt="on"]:not([data-season]) { --accent:#ff6d10; --accent-rgb:255,109,16; --accent-hover:#ff8a3d; --cat-web:#ff6d10; }
+      html[data-tilt="on"] body {
+        background:
+          radial-gradient(ellipse 55% 70% at 18% 42%, rgba(var(--accent-rgb), 0.07), transparent 70%),
+          radial-gradient(ellipse 60% 80% at 72% 55%, rgba(255,255,255,0.025), transparent 70%),
+          linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+        background-attachment: fixed;
       }
-      html[data-tilt="on"] .sidebar { transform: rotateY(5deg); transform-origin: 100% 50%; }
+      html[data-tilt="on"] .page { overflow-x: clip; perspective: 1500px; perspective-origin: 30% 480px; }
+      /* the projection: hinged on its left edge, the right side swung out toward the viewer */
+      html[data-tilt="on"] .main {
+        position: relative;
+        transform: rotateY(var(--tilt-main-y, -11deg)) rotateX(var(--tilt-x, 0deg)) scale(0.92);
+        transform-origin: 0% 480px; will-change: transform;
+        padding-right: 64px;
+        animation: arBoot 0.9s steps(1, end) both;
+      }
+      /* scanlines and a soft edge glow over the whole projection, never blocking a click */
+      html[data-tilt="on"] .main::before {
+        content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+        background: repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px);
+        mix-blend-mode: screen;
+      }
+      /* the left side mirrors it: hinged on its right edge, the left side swung out toward the viewer */
+      html[data-tilt="on"] .sidebar {
+        transform: rotateY(11deg) scale(0.94); transform-origin: 100% 50%;
+        background: rgba(18,18,22,0.5);
+        backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1);
+        border-right-color: rgba(var(--accent-rgb), 0.35);
+        box-shadow: inset -1px 0 0 rgba(255,255,255,0.04), 0 18px 40px rgba(0,0,0,0.35);
+        animation: arBoot 0.9s steps(1, end) both;
+      }
+      html[data-tilt="on"] .sidebar::before {
+        content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+        background: repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px);
+        mix-blend-mode: screen;
+      }
+      html[data-tilt="on"] .chip {
+        background: rgba(18,18,22,0.55); border-color: rgba(255,255,255,0.09);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      }
+      html[data-tilt="on"] .chip:hover {
+        border-color: rgba(var(--accent-rgb), 0.85); background: rgba(var(--accent-rgb), 0.08); color: var(--text);
+        box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.3), 0 0 18px rgba(var(--accent-rgb), 0.2);
+      }
+      html[data-tilt="on"] .chip.on { box-shadow: inset 3px 0 0 var(--chip-color, var(--accent)), 0 0 14px rgba(var(--accent-rgb), 0.12); }
+      html[data-tilt="on"] .filter-title::after { background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.6), rgba(255,255,255,0.06) 60%); }
+      html[data-tilt="on"] .sidebar-logo .title-underline { background: linear-gradient(90deg, var(--accent) 0%, transparent 100%); opacity: 0.7; }
+
+      /* panels: dark, see-through, square-cornered */
+      html[data-tilt="on"] .featured-card,
+      html[data-tilt="on"] .project-card {
+        background: rgba(18,18,22,0.55);
+        backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1);
+        border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 3px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 18px 40px rgba(0,0,0,0.35);
+      }
+      html[data-tilt="on"] .fc-preview { background: rgba(8,8,12,0.6); border-bottom-color: rgba(255,255,255,0.07); }
+      /* orange corner tick on every panel, like the item slots */
+      html[data-tilt="on"] .featured-card::before {
+        content: ''; position: absolute; left: 0; bottom: 0; z-index: 4; width: 4px; height: 22px;
+        background: var(--accent); opacity: 0.85; pointer-events: none;
+      }
+      /* the selected slot: orange glow and edge */
+      html[data-tilt="on"] .featured-card:hover,
+      html[data-tilt="on"] .project-card[href]:hover {
+        border-color: rgba(var(--accent-rgb), 0.85);
+        background: rgba(var(--accent-rgb), 0.08);
+        box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.35), 0 0 28px rgba(var(--accent-rgb), 0.25), inset 0 0 40px rgba(var(--accent-rgb), 0.08);
+        transform: translateZ(14px);
+      }
+      html[data-tilt="on"] .featured-card:hover .fc-body { background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.04)); }
+      html[data-tilt="on"] .pv-badge,
+      html[data-tilt="on"] .open-btn,
+      html[data-tilt="on"] .chip,
+      html[data-tilt="on"] .clear-btn { border-radius: 2px; }
+      html[data-tilt="on"] .featured-head::after,
+      html[data-tilt="on"] .section-label::after { background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.6), rgba(255,255,255,0.06) 40%); }
+
       .tilt-toggle {
         display: inline-flex; align-items: center; gap: 8px; position: fixed; right: 14px; bottom: 14px; z-index: 60;
         padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(17,17,20,0.88);
@@ -138,7 +214,9 @@
       .tilt-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
       html[data-tilt="on"] .tilt-toggle .dot { background: var(--accent); box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.7); }
     }
-    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; } }
+    /* the projection flickers on when it appears */
+    @keyframes arBoot { 0% { opacity: 0; } 12% { opacity: 0.55; } 20% { opacity: 0.15; } 32% { opacity: 0.85; } 40% { opacity: 0.5; } 52%, 100% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; animation: none; } html[data-tilt="on"] .sidebar { animation: none; } }
 
     html { scroll-behavior: smooth; }
 
@@ -355,9 +433,8 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       overflow: hidden;
-      /* the preview takes 70% of the card and the details 30%, at every screen size */
-      display: grid; grid-template-rows: 7fr 3fr;
-      aspect-ratio: 4 / 5;
+      /* the preview keeps a fixed shape; the details below grow so the whole description always shows */
+      display: grid; grid-template-rows: auto 1fr;
       position: relative;
       transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
       animation: fadeUp 0.5s ease both;
@@ -372,7 +449,7 @@
 
     /* preview area */
     .fc-preview {
-      position: relative; min-height: 0;
+      position: relative; min-height: 0; aspect-ratio: 8 / 7;
       background: #0a0a0e; overflow: hidden;
       border-bottom: 1px solid var(--border);
     }
@@ -387,7 +464,7 @@
     }
     .pv-badge { left: 12px; color: var(--accent); border-color: rgba(var(--accent-rgb),0.35); }
 
-    .fc-body { min-height: 0; overflow: hidden; container-type: size; padding: 12px 16px 14px; display: flex; flex-direction: column; }
+    .fc-body { min-height: 0; padding: 12px 16px 14px; display: flex; flex-direction: column; }
     .fc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
     .fc-name {
       font-size: 1.15rem; font-weight: 500;
@@ -397,14 +474,9 @@
     .featured-card .fc-desc {
       font-size: 0.82rem; font-weight: 300; color: #c8c8d8;
       margin-top: 6px; line-height: 1.45;
-      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
     }
-    /* the details area is a fixed 30% of the card, so what it shows follows the room it has */
-    @container (min-height: 170px) { .featured-card .fc-desc { -webkit-line-clamp: 3; } }
-    @container (max-height: 169px) { .fc-body .card-tags, .fc-body .card-updated { display: none; } }
-    @container (max-height: 139px) { .fc-body .card-id { display: none; } .fc-body .fc-meta .compat-row { display: none; } .fc-body .fc-name { font-size: 1.02rem; } .fc-body .fc-top { align-items: center; } }
-    @container (max-height: 104px) { .featured-card .fc-desc { -webkit-line-clamp: 1; margin-top: 4px; } .fc-body .fc-footer { padding-top: 4px; } .fc-body .open-btn { padding: 6px 14px; } }
-    @media (max-width: 700px) { .featured-card { aspect-ratio: auto; height: clamp(440px, 118vw, 640px); } }
+    /* keep the details short: name, full description, Open and status */
+    .fc-body .card-tags, .fc-body .card-updated, .fc-body .card-id, .fc-body .fc-meta .compat-row { display: none; }
     .fc-footer {
       margin-top: auto; padding-top: 10px;
       display: flex; align-items: center; justify-content: space-between;
@@ -424,6 +496,8 @@
       text-decoration: none; cursor: pointer;
       transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
     }
+    /* Open buttons use a plain Font Awesome icon only, never an emoji or arrow character */
+    .open-btn .fa-solid { font-size: 0.72em; color: currentColor; }
     .open-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(var(--accent-rgb),0.28); background: var(--accent-hover); }
     .open-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
     .open-btn.disabled {
@@ -1591,7 +1665,7 @@
         .map(t => `<span class="tag-pill" style="color:${catColor};border-color:${catColor}44">${t}</span>`).join('');
       const retiredTag = isRetired ? `<span class="retired-tag">Retired</span>` : '';
       const openBtn = p.url
-        ? `<a class="open-btn" href="${p.url}" aria-label="Open ${p.name}">Open <span aria-hidden="true">↗</span></a>`
+        ? `<a class="open-btn" href="${p.url}" aria-label="Open ${p.name}">Open <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>`
         : `<span class="open-btn disabled">Coming soon</span>`;
 
       card.innerHTML = `
