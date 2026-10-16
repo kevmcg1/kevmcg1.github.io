@@ -340,6 +340,7 @@ select.native{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
 
 
 /* ---------- in-progress pill, undo/redo, repair report ---------- */
+.rep-card{max-height:360px;overflow-y:auto;overflow-x:hidden}.rep-i{min-width:0}.rep-i button{flex:none}
 .rep-i{display:flex;align-items:center;gap:8px;padding:4px 0 4px 26px;font-size:12px;color:var(--mut)}.rep-i .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rep-i .ok{color:#7bd389}.rep-i .no{color:#f87171}
 .wip-pill{margin-left:10px;padding:3px 9px;border-radius:999px;border:1px solid #f5c542;color:#f5c542;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}
 .hist{display:flex;gap:2px;margin-right:4px}
@@ -2768,6 +2769,11 @@ async function fixEverything() {
   const before = S.issues.filter((i) => i.sev === 'error').length, left = res.issues.filter((i) => i.sev === 'error');
   const keep = new Map(S.attempts);
   const items = res.report.map((r) => Rep.itemFromIssue(r.issue, r.resolved, r.steps));
+  if (!items.length && before > left.length) {
+    // one automatic pass fixed these: list each original problem separately so each keeps its own "Show original problem" location
+    const auto = [{ ok: true, action: 'Re-welded vertices, removed duplicate faces and re-oriented neighbors in one automatic pass' }];
+    for (const i of S.issues.filter((x) => x.sev === 'error')) if (!left.some((l) => l.type === i.type && Math.abs(l.count - i.count) === 0 && l.title === i.title)) items.push(Rep.itemFromIssue(i, true, auto));
+  }
   if (!items.length && before > left.length) items.push({ type: 'auto', title: 'Automatic repair pass', count: before - left.length, resolved: true, what: 'The whole model was re-welded, de-duplicated and re-oriented in one pass.', how: ['Re-welded vertices, removed duplicate faces and re-oriented neighbors.'], where: null });
   S.repairs = S.repairs.concat([Rep.fixSession('fix-all', 'Fix everything', beforeStats, res.mesh, res.issues, items)]);
   S.markOnly = null;
@@ -3497,7 +3503,7 @@ const Rep = (() => {
   function cardHTML() {
     const R = S.repairs; if (!R.length) return '';
     const fixed = R.reduce((a, r) => a + r.items.filter((i) => i.resolved).length, 0);
-    const rows = R.slice().reverse().map((se) => { const t = totals(se); return `<div class="rep-s"><span>${ic(t.open ? 'triangle-exclamation' : 'circle-check', t.open ? 'shake' : 'pop')}</span><div><b>${esc(se.title)}</b><div class="m">${clock(se.time)} · ${t.fixed} fixed${t.open ? ' · ' + t.open + ' not fixed' : ''}</div></div><button class="btn sm ghost hv" data-rep="${se.id}">Details</button></div>${se.items.map((it, k) => `<div class="rep-i"><span class="${it.resolved ? 'ok' : 'no'}">${it.resolved ? '✓' : '✗'}</span><span class="t">${fmtN(it.count || 1)} × ${esc(it.title)}</span>${it.where ? `<button class="btn sm ghost hv" data-locate="${S.repairs.indexOf(se)}:${k}" data-tip="Highlight where this problem was, even though it is fixed now">${ic('location-dot', 'bob-up')}<span>Show original problem</span></button>` : `<span class="m">no location recorded</span>`}</div>`).join('')}`; }).join('');
+    const rows = R.slice().reverse().map((se) => { const t = totals(se); return `<div class="rep-s"><span>${ic(t.open ? 'triangle-exclamation' : 'circle-check', t.open ? 'shake' : 'pop')}</span><div><b>${esc(se.title)}</b><div class="m">${clock(se.time)} · ${t.fixed} fixed${t.open ? ' · ' + t.open + ' not fixed' : ''}</div></div><button class="btn sm ghost hv" data-rep="${se.id}">Details</button></div>${se.items.map((it, k) => `<div class="rep-i"><span class="${it.resolved ? 'ok' : 'no'}">${it.resolved ? '✓' : '✗'}</span><span class="t">${fmtN(it.count || 1)} × ${esc(it.title)}</span>${it.where ? `<button class="btn sm ghost hv" data-locate="${S.repairs.indexOf(se)}:${k}" data-tip="Highlight where this problem was, even though it is fixed now">${ic('location-dot', 'bob-up')}<span>Show original</span></button>` : `<span class="m">no location recorded</span>`}</div>`).join('')}`; }).join('');
     return `<div class="rep-card"><div class="rh">${ic('wand-magic-sparkles', 'wiggle')} Repairs made <span class="badge">${fixed}</span></div>${rows}<div class="rep-btns"><button class="btn sm hv" id="btnRepFull">${ic('file-lines', 'pop')}<span>Full report</span></button><label class="chk"><input type="checkbox" id="repShow" ${S.showRepairs ? 'checked' : ''}>Show repaired spots on the model</label></div></div>`;
   }
   function bindCard(root) {
