@@ -706,12 +706,12 @@
                 'N': { desc: 'Neutral (both directions)' }
             },
             size: {
-                iso:  { '06': 6.35, '08': 8.0, '09': 9.52, '12': 12.70, '16': 15.88, '19': 19.05, '25': 25.40 },
-                ansi: { '2': 6.35, '2.5': 8.0, '3': 9.52, '4': 12.70, '5': 15.88, '6': 19.05, '8': 25.40 }
+                iso:  { '06': 6.35, '08': 8.0, '09': 9.53, '12': 12.70, '16': 15.88, '19': 19.05, '25': 25.40 },
+                ansi: { '2': 6.35, '2.5': 8.0, '3': 9.53, '4': 12.70, '5': 15.88, '6': 19.05, '8': 25.40 }
             },
             thickness: {
-                iso:  { '03': 3.18, 'T3': 3.97, '04': 4.76, '06': 6.35, '07': 7.94, '09': 9.52 },
-                ansi: { '2': 3.18, '2.5': 3.97, '3': 4.76, '4': 6.35, '5': 7.94, '6': 9.52 }
+                iso:  { '03': 3.18, 'T3': 3.97, '04': 4.76, '06': 6.35, '07': 7.94, '09': 9.53 },
+                ansi: { '2': 3.18, '2.5': 3.97, '3': 4.76, '4': 6.35, '5': 7.94, '6': 9.53 }
             },
             radius: {
                 iso:  { '00': 0, '04': 0.4, '08': 0.8, '12': 1.2, '16': 1.6, '20': 2.0, '24': 2.4 },
@@ -766,12 +766,13 @@
                 const tbody = document.querySelector(`#${id} tbody`);
                 const isoKeys  = Object.keys(data.iso);
                 const ansiKeys = Object.keys(data.ansi);
-                tbody.innerHTML = isoKeys.map((k, i) => {
+                tbody.innerHTML = isoKeys.map((k) => {
                     const mm = data.iso[k];
+                    const ansiCode = ansiKeys.find(a => Math.abs(data.ansi[a] - mm) < 0.05);
                     const val = currentUnit === 'ansi' ? `${(mm / 25.4).toFixed(3)}"` : `${mm.toFixed(2)} mm`;
                     return `<tr>
                         <td class="td-code">${k}</td>
-                        <td class="td-mono">${ansiKeys[i] || '—'}</td>
+                        <td class="td-mono">${ansiCode || '—'}</td>
                         <td style="text-align:right;font-weight:500;color:var(--text)">${val}</td>
                     </tr>`;
                 }).join('');
@@ -804,9 +805,9 @@
             const cleaned = raw.replace(/[-\s]/g, '');
 
             const isANSI7 = /^[A-Z]{4}[0-9]{3}$/.test(cleaned);
-            const isISO10 = /^[A-Z]{4}[0-9]{6}[A-Z]{2}$/.test(cleaned);
-            const isISO8  = /^[A-Z]{4}[0-9]{4}[A-Z]{2}$/.test(cleaned);
-            const isISO6  = /^[A-Z]{4}[0-9]{6}$/.test(cleaned);
+            const isISO10 = /^[A-Z]{4}[0-9]{2}(?:[0-9]{2}|T3)[0-9]{2}[A-Z]{2}$/.test(cleaned);
+            const isISO8  = /^[A-Z]{4}[0-9]{2}(?:[0-9]{2}|T3)[A-Z]{2}$/.test(cleaned);
+            const isISO6  = /^[A-Z]{4}[0-9]{2}(?:[0-9]{2}|T3)[0-9]{2}$/.test(cleaned);
 
             resDiv.classList.remove('hidden');
 
@@ -836,13 +837,15 @@
             const num = cleaned.substring(4);
 
             if (isISO) {
-                const s = num.substring(0,2), t = num.substring(2,4), r = num.substring(4,6);
+                const s = num.substring(0,2), t = num.substring(2,4), r = isISO8 ? null : num.substring(4,6);
                 const mmSize  = DATA.size.iso[s]      !== undefined ? DATA.size.iso[s].toFixed(2)      : parseInt(s).toFixed(2);
                 const mmThick = DATA.thickness.iso[t] !== undefined ? DATA.thickness.iso[t].toFixed(2) : parseInt(t).toFixed(2);
-                const mmRad   = DATA.radius.iso[r]    !== undefined ? DATA.radius.iso[r].toFixed(1)    : (parseInt(r)/10).toFixed(1);
                 parts.push({ label: 'Size (I.C.)', val: `${mmSize} mm` });
                 parts.push({ label: 'Thickness',   val: `${mmThick} mm` });
-                parts.push({ label: 'Nose Radius', val: `${mmRad} mm` });
+                if (r !== null) {
+                    const mmRad = DATA.radius.iso[r] !== undefined ? DATA.radius.iso[r].toFixed(1) : (parseInt(r)/10).toFixed(1);
+                    parts.push({ label: 'Nose Radius', val: `${mmRad} mm` });
+                }
                 if (isISO10 || isISO8) {
                     const extra = cleaned.slice(-2);
                     const edgeData = DATA.edge[extra[0]], handData = DATA.hand[extra[1]];
@@ -851,9 +854,11 @@
                 }
             } else {
                 const s = parseInt(num[0]), t = parseInt(num[1]), r = parseInt(num[2]);
-                parts.push({ label: 'Size (I.C.)', val: `${s}/8" (${(s*25.4/8).toFixed(2)} mm)` });
-                parts.push({ label: 'Thickness',   val: `${t}/16" (${(t*25.4/16).toFixed(2)} mm)` });
-                parts.push({ label: 'Nose Radius', val: `${r}/64" (${(r*25.4/64).toFixed(2)} mm)` });
+                // n/d inch in mm, rounded half-up to 2 decimals (plain toFixed turns 3.175 into 3.17)
+                const mmOf = (n, d) => (Math.floor(n * 2540 / d + 0.5 + 1e-9) / 100).toFixed(2);
+                parts.push({ label: 'Size (I.C.)', val: `${s}/8" (${mmOf(s, 8)} mm)` });
+                parts.push({ label: 'Thickness',   val: `${t}/16" (${mmOf(t, 16)} mm)` });
+                parts.push({ label: 'Nose Radius', val: `${r}/64" (${mmOf(r, 64)} mm)` });
             }
 
             grid.innerHTML = parts.map((p, i) => `
@@ -1006,19 +1011,21 @@
             }
             // keys the reference tables list that a digit-only code can never enter
             for (const [name, tbl] of [['size', DATA.size.iso], ['thickness', DATA.thickness.iso], ['radius', DATA.radius.iso]])
-                for (const k of Object.keys(tbl)) if (!/^[0-9]{2}$/.test(k)) rec('Table codes the decoder cannot read', k, 'DATA.' + name + '.iso key', 'decodable', 'decoder only accepts two digits', 'fail');
+                for (const k of Object.keys(tbl)) if (!/^([0-9]{2}|T3)$/.test(k)) rec('Table codes the decoder cannot read', k, 'DATA.' + name + '.iso key', 'decodable', 'decoder only accepts two digits (or T3)', 'fail');
             await tick();
-            // 3b. 8-character metric code (no nose radius, edge/hand letters instead)
-            for (const code of ['CNMG1204EN', 'CNMG1204ER', 'TNMG1604EL']) {
+            // 3b. 8-character metric code (no nose radius, edge/hand letters instead) and the T3 thickness code
+            for (const code of ['CNMG1204EN', 'CNMG1204ER', 'TNMG1604EL', 'CNMG12T3EN']) {
                 const o = read(code);
                 clean('Metric code without nose radius (8-digit style)', code, o);
+                check('Metric code without nose radius (8-digit style)', code, 'no nose radius card', false, 'Nose Radius' in o.f);
             }
+            { const o = read('CNMG12T308EN'); check('T3 thickness code', 'CNMG12T308EN', 'Thickness', '3.97 mm', o.f['Thickness']); }
             // 4. imperial codes: every digit 0-9 in size, thickness and radius
             for (const [key, label, per, tableKey] of [['s', 'Size (I.C.)', 25.4 / 8, 'size'], ['t', 'Thickness', 25.4 / 16, 'thickness'], ['r', 'Nose Radius', 25.4 / 64, 'radius']]) for (let n = 0; n < 10; n++) {
                 const digits = { s: '4', t: '3', r: '2' }; digits[key] = String(n);
                 const code = 'CNMG' + digits.s + digits.t + digits.r, o = read(code);
                 const den = key === 's' ? 8 : key === 't' ? 16 : 64;
-                const expected = `${n}/${den}" (${(n * per).toFixed(2)} mm)`;
+                const expected = `${n}/${den}" (${(Math.floor(n * 2540 / den + 0.5 + 1e-9) / 100).toFixed(2)} mm)`;
                 check('Imperial digits (0-9)', code, label, expected, o.f[label]);
                 clean('Imperial digits (0-9)', code, o);
                 const tk = DATA[tableKey].ansi[String(n)];
@@ -1038,10 +1045,11 @@
                     check(G, id, 'row count', String(ik.length), String(rows.length));
                     ik.forEach((k, i) => {
                         check(G, `${id} ${k}`, 'metric code', k, (rows[i] || [])[0]);
-                        check(G, `${id} ${k}`, 'imperial code', ak[i] || '—', (rows[i] || [])[1]);
+                        check(G, `${id} ${k}`, 'imperial code', ak.find(a => Math.abs(tbl.ansi[a] - tbl.iso[k]) < 0.05) || '—', (rows[i] || [])[1]);
                         check(G, `${id} ${k}`, 'value', fmtDim(tbl.iso[k], f), (rows[i] || [])[2]);
-                        if (ak[i] !== undefined) rec('Reference: metric and imperial code agree', `${id} ${k} ↔ ${ak[i]}`, 'mm',
-                            tbl.iso[k].toFixed(1), tbl.ansi[ak[i]].toFixed(1), tbl.iso[k].toFixed(1) === tbl.ansi[ak[i]].toFixed(1) ? 'pass' : 'fail');
+                        const shown = (rows[i] || [])[1];
+                        if (shown && shown !== '—') rec('Reference: metric and imperial code agree', `${id} ${k} ↔ ${shown}`, 'mm',
+                            tbl.iso[k].toFixed(1), tbl.ansi[shown] === undefined ? 'unknown code' : tbl.ansi[shown].toFixed(1), tbl.ansi[shown] !== undefined && tbl.iso[k].toFixed(1) === tbl.ansi[shown].toFixed(1) ? 'pass' : 'fail');
                     });
                 }
                 const rr = cells('table-radius'), rk = Object.keys(DATA.radius.iso);
@@ -1073,7 +1081,7 @@
                 buildState[key] = k; updateBuilderUI();
                 const code = document.getElementById('builder-output').innerText;
                 check('Builder: code built from each option', `${key}=${k}`, 'code', order.map(o => buildState[o]).join(''), code);
-                if (!/^[A-Z]{4}[0-9]{6}[A-Z]{2}$/.test(code)) { rec('Builder: built code decodes back', code, label, 'a code the decoder accepts', 'rejected', 'fail'); continue; }
+                if (!/^[A-Z]{4}[0-9]{2}([0-9]{2}|T3)[0-9]{2}[A-Z]{2}$/.test(code)) { rec('Builder: built code decodes back', code, label, 'a code the decoder accepts', 'rejected', 'fail'); continue; }
                 const o = read(code);
                 const expected = expFn ? expFn(k) : (key === 'rad' ? `${tbl[k].toFixed(1)} mm` : `${tbl[k].toFixed(2)} mm`);
                 check('Builder: built code decodes back', code, label, expected, o.f[label]);
