@@ -117,17 +117,68 @@
     /* sit to the left of the tilt button when it is showing (wide screens) */
     @media (min-width: 769px) { html[data-season-name] .season-toggle { right: 150px; } }
 
-    /* ── EXPERIMENTAL: tilted HUD look (a nod to the Division's UI). The page leans one way and the sidebar the other.
+    /* ── EXPERIMENTAL: tilted HUD look (a nod to the Division's inventory screen). The project grid on the right floats
+          like an AR projection: angled toward the viewer, dark see-through panels, orange highlights, faint scanlines.
           Off switch: the button at the bottom right (remembered), or ?tilt=off.  Only on screens wide enough for the sidebar. ── */
     .tilt-toggle { display: none; }
     @media (min-width: 769px) {
-      html[data-tilt="on"] .page { overflow-x: clip; }
-      html[data-tilt="on"] .page { perspective: 1700px; perspective-origin: 50% 38%; }
+      /* the Division's orange, unless a holiday theme is choosing the colors */
+      html[data-tilt="on"]:not([data-season]) { --accent:#ff6d10; --accent-rgb:255,109,16; --accent-hover:#ff8a3d; --cat-web:#ff6d10; }
+      html[data-tilt="on"] body {
+        background:
+          radial-gradient(ellipse 55% 70% at 18% 42%, rgba(var(--accent-rgb), 0.07), transparent 70%),
+          radial-gradient(ellipse 60% 80% at 72% 55%, rgba(255,255,255,0.025), transparent 70%),
+          linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+        background-attachment: fixed;
+      }
+      html[data-tilt="on"] .page { overflow-x: clip; perspective: 1500px; perspective-origin: 30% 480px; }
+      /* the projection: hinged on its left edge, the right side swung out toward the viewer */
       html[data-tilt="on"] .main {
-        transform: rotateY(var(--tilt-main-y, -3.5deg)) rotateX(var(--tilt-x, 0deg));
-        transform-origin: 0% 50%; will-change: transform;
+        position: relative;
+        transform: rotateY(var(--tilt-main-y, -11deg)) rotateX(var(--tilt-x, 0deg)) scale(0.92);
+        transform-origin: 0% 480px; will-change: transform;
+        padding-right: 64px;
+        animation: arBoot 0.9s steps(1, end) both;
+      }
+      /* scanlines and a soft edge glow over the whole projection, never blocking a click */
+      html[data-tilt="on"] .main::before {
+        content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+        background: repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px);
+        mix-blend-mode: screen;
       }
       html[data-tilt="on"] .sidebar { transform: rotateY(5deg); transform-origin: 100% 50%; }
+
+      /* panels: dark, see-through, square-cornered */
+      html[data-tilt="on"] .featured-card,
+      html[data-tilt="on"] .project-card {
+        background: rgba(18,18,22,0.55);
+        backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1);
+        border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 3px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 18px 40px rgba(0,0,0,0.35);
+      }
+      html[data-tilt="on"] .fc-preview { background: rgba(8,8,12,0.6); border-bottom-color: rgba(255,255,255,0.07); }
+      /* orange corner tick on every panel, like the item slots */
+      html[data-tilt="on"] .featured-card::before {
+        content: ''; position: absolute; left: 0; bottom: 0; z-index: 4; width: 4px; height: 22px;
+        background: var(--accent); opacity: 0.85; pointer-events: none;
+      }
+      /* the selected slot: orange glow and edge */
+      html[data-tilt="on"] .featured-card:hover,
+      html[data-tilt="on"] .project-card[href]:hover {
+        border-color: rgba(var(--accent-rgb), 0.85);
+        background: rgba(var(--accent-rgb), 0.08);
+        box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.35), 0 0 28px rgba(var(--accent-rgb), 0.25), inset 0 0 40px rgba(var(--accent-rgb), 0.08);
+        transform: translateZ(14px);
+      }
+      html[data-tilt="on"] .featured-card:hover .fc-body { background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.04)); }
+      html[data-tilt="on"] .pv-badge,
+      html[data-tilt="on"] .open-btn,
+      html[data-tilt="on"] .chip,
+      html[data-tilt="on"] .clear-btn { border-radius: 2px; }
+      html[data-tilt="on"] .featured-head::after,
+      html[data-tilt="on"] .section-label::after { background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.6), rgba(255,255,255,0.06) 40%); }
+
       .tilt-toggle {
         display: inline-flex; align-items: center; gap: 8px; position: fixed; right: 14px; bottom: 14px; z-index: 60;
         padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(17,17,20,0.88);
@@ -138,7 +189,9 @@
       .tilt-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
       html[data-tilt="on"] .tilt-toggle .dot { background: var(--accent); box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.7); }
     }
-    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; } }
+    /* the projection flickers on when it appears */
+    @keyframes arBoot { 0% { opacity: 0; } 12% { opacity: 0.55; } 20% { opacity: 0.15; } 32% { opacity: 0.85; } 40% { opacity: 0.5; } 52%, 100% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { html[data-tilt="on"] .main { will-change: auto; animation: none; } }
 
     html { scroll-behavior: smooth; }
 
