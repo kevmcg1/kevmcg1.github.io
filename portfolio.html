@@ -125,6 +125,7 @@
           Off switch: the button at the bottom right (remembered), or ?tilt=off.  Only on screens wide enough for the sidebar. ── */
     .tilt-toggle { display: none; }
     @media (min-width: 769px) {
+      html[data-tilt="on"] { --tilt-fade: max(110px, 12vh); }   /* how far the panel edges fade into the page: grows with the screen so a large monitor shows no seam either */
       /* the Division's orange, unless a holiday theme is choosing the colors */
       html[data-tilt="on"]:not([data-season]) { --accent:#ff6d10; --accent-rgb:255,109,16; --accent-hover:#ff8a3d; --cat-web:#ff6d10; }
       html[data-tilt="on"] body {
@@ -147,25 +148,25 @@
         content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
         background: repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px);
         mix-blend-mode: screen;
-        -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 140px, #000 calc(100% - 140px), transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 140px, #000 calc(100% - 140px), transparent 100%);
+        -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--tilt-fade), #000 calc(100% - var(--tilt-fade)), transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 var(--tilt-fade), #000 calc(100% - var(--tilt-fade)), transparent 100%);
       }
       /* the left side mirrors it: hinged on its right edge, the left side swung out toward the viewer */
       html[data-tilt="on"] .sidebar {
         transform: rotateY(11deg) scale(var(--tilt-sb, 0.94)); transform-origin: 100% 50%;
         /* no hard edges: the panel's fill, scanlines and divider all fade into the page at the top and bottom, so no slanted seam shows */
-        background: linear-gradient(180deg, transparent 0, rgba(18,18,22,0.5) 110px, rgba(18,18,22,0.5) calc(100% - 110px), transparent 100%);
+        background: linear-gradient(180deg, transparent 0, rgba(18,18,22,0.5) var(--tilt-fade), rgba(18,18,22,0.5) calc(100% - var(--tilt-fade)), transparent 100%);
         border-right-color: transparent; box-shadow: none;
       }
       html[data-tilt="on"] .sidebar::after {
         content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 1px; z-index: 3; pointer-events: none;
-        background: linear-gradient(180deg, transparent 0, rgba(var(--accent-rgb), 0.4) 110px, rgba(var(--accent-rgb), 0.4) calc(100% - 110px), transparent 100%);
+        background: linear-gradient(180deg, transparent 0, rgba(var(--accent-rgb), 0.4) var(--tilt-fade), rgba(var(--accent-rgb), 0.4) calc(100% - var(--tilt-fade)), transparent 100%);
       }
 
       html[data-tilt="on"] .sidebar::before {
         content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
         background: repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px);
         mix-blend-mode: screen;
-        -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 110px, #000 calc(100% - 110px), transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 110px, #000 calc(100% - 110px), transparent 100%);
+        -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--tilt-fade), #000 calc(100% - var(--tilt-fade)), transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 var(--tilt-fade), #000 calc(100% - var(--tilt-fade)), transparent 100%);
       }
       html[data-tilt="on"] .chip {
         background: rgba(18,18,22,0.55); border-color: rgba(255,255,255,0.09);
