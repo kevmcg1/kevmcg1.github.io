@@ -1101,6 +1101,19 @@
       laptopCompat: true,
       mobileCompat: false,
     },
+    {
+      id: 'PROJ-012',
+      name: '3D Modeling',
+      cat: 'web_apps',
+      status: 'wip',
+      // no url yet: the card shows a greyed-out "Coming soon" button with no link
+      previewVideo: '/previews/3d-modeling-preview.mp4',
+      desc: 'A 3D CAD modeler in the browser: sketch, extrude, revolve, loft and fillet parts with a full editable history, then plan how to machine them.',
+      tags: ['Web App', 'Tool', 'CAD'],
+      updated: 'Oct 2026',
+      laptopCompat: true,
+      mobileCompat: false,
+    },
   ];
 
   const isFeatured = p => (p.tags || []).some(t => String(t).toLowerCase() === 'featured');
@@ -1592,7 +1605,7 @@
       const retiredTag = isRetired ? `<span class="retired-tag">Retired</span>` : '';
       const openBtn = p.url
         ? `<a class="open-btn" href="${p.url}" aria-label="Open ${p.name}">Open <span aria-hidden="true">↗</span></a>`
-        : `<span class="open-btn disabled">Coming soon</span>`;
+        : `<span class="open-btn disabled" aria-disabled="true">Coming soon</span>`;
 
       card.innerHTML = `
         <div class="fc-preview">
