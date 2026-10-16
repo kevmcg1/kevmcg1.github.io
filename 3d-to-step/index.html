@@ -7,7 +7,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="Free, private STL / OBJ / PLY / 3MF / GLB to STEP converter in your browser: mesh repair, per-face colors, move/rotate/scale with snap points, ray tracing, 2D drawings and conversion verification.">
+<meta name="description" content="Free, private STL / OBJ / PLY / 3MF / GLB to STEP converter in your browser: mesh repair, per-face colors, move/rotate/scale with snap points, ray tracing, and conversion verification.">
 <title>3D File to STEP File</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23fff'/%3E%3Cpath d='M50 18 78 34v32L50 82 22 66V34z' fill='none' stroke='%23000' stroke-width='7' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
@@ -340,6 +340,7 @@ select.native{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
 
 
 /* ---------- in-progress pill, undo/redo, repair report ---------- */
+.rep-i{display:flex;align-items:center;gap:8px;padding:4px 0 4px 26px;font-size:12px;color:var(--mut)}.rep-i .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rep-i .ok{color:#7bd389}.rep-i .no{color:#f87171}
 .wip-pill{margin-left:10px;padding:3px 9px;border-radius:999px;border:1px solid #f5c542;color:#f5c542;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}
 .hist{display:flex;gap:2px;margin-right:4px}
 .hist .btn[disabled]{opacity:.32;pointer-events:none}
@@ -372,7 +373,7 @@ select.native{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
 <body>
 <div id="app" data-mode="solid">
 <header>
-  <div class="logo"><div class="mark"><span class="ic" data-a="flip"><i class="fa-solid fa-cube"></i></span></div><span class="t">3D FILE → STEP FILE<small>converter</small></span><span class="wip-pill" title="This tool is still being built. Expect rough edges.">In progress</span></div>
+  <div class="logo"><div class="mark"><span class="ic" data-a="flip"><i class="fa-solid fa-cube"></i></span></div><span class="t">3D FILE → STEP FILE<small>converter</small></span></div>
   <div class="spacer"></div>
   <div class="hist" role="group" aria-label="Undo and redo">
     <button class="btn ghost icon hv" id="btnUndo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)" disabled><span class="ic" data-a="spin"><i class="fa-solid fa-rotate-left"></i></span></button>
@@ -393,7 +394,7 @@ select.native{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
       <button data-mode="solid" class="hv on"><span class="ic" data-a="flip"><i class="fa-solid fa-cube"></i></span>Solid</button>
       <button data-mode="wire" class="hv"><span class="ic" data-a="wiggle"><i class="fa-solid fa-draw-polygon"></i></span>Wire</button>
       <button data-mode="rt" class="hv"><span class="ic" data-a="spin"><i class="fa-solid fa-sun"></i></span>RTX</button>
-      <button data-mode="2d" class="hv"><span class="ic" data-a="swing"><i class="fa-solid fa-ruler-combined"></i></span>2D</button>
+      <button data-mode="2d" class="hv" hidden style="display:none"><span class="ic" data-a="swing"><i class="fa-solid fa-ruler-combined"></i></span>2D</button>
     </div>
     <div class="ov tools fx" id="tools"><button class="tool hv" id="toolSelect" data-tool="select" aria-label="Select faces"><span class="ic" data-a="tap"><i class="fa-solid fa-arrow-pointer"></i></span></button><button class="tool hv" id="toolMove" data-tool="move" aria-label="Move"><span class="ic" data-a="move"><i class="fa-solid fa-up-down-left-right"></i></span></button><button class="tool hv" id="toolRotate" data-tool="rotate" aria-label="Rotate"><span class="ic" data-a="spin"><i class="fa-solid fa-rotate"></i></span></button><button class="tool hv" id="toolScale" data-tool="scale" aria-label="Scale"><span class="ic" data-a="expand"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></span></button><button class="tool hv" id="toolAnchor" data-tool="anchor" aria-label="Pick anchor point"><span class="ic" data-a="cross"><i class="fa-solid fa-crosshairs"></i></span></button><div class="sep"></div><button class="tool hv" id="toolSnap" aria-label="Snap points"><span class="ic" data-a="shake"><i class="fa-solid fa-magnet"></i></span></button></div>
     <div class="ov hint fx" id="hint">Drag to orbit · scroll to zoom · right-drag to pan</div>
@@ -1613,7 +1614,7 @@ const Core = (() => {
   const scoreOf = (issues) => issues.filter((i) => i.sev === 'error').reduce((s, i) => s + Math.max(1, i.count), 0);
   const near = (a, b, diag) => v3.len(v3.sub(a.center, b.center)) <= Math.max(a.radius, b.radius, diag * 1e-3) * 1.6 + diag * 2e-4;
 
-  function tryFix(mesh, issue, level) {
+  function tryFixBase(mesh, issue, level) {
     const soup = soupOf(mesh), diag = Math.hypot(mesh.bbox.max[0] - mesh.bbox.min[0], mesh.bbox.max[1] - mesh.bbox.min[1], mesh.bbox.max[2] - mesh.bbox.min[2]) || 1;
     const keep = mesh.repaired;
     const rebuild = (s, o = {}) => prepareMesh(s, { repair: keep, ...o });
@@ -1654,14 +1655,40 @@ const Core = (() => {
       default: return null;
     }
   }
-  /** Escalating repair for one issue. Returns { mesh, resolved, steps[] } */
+  const MAX_LEVEL = 8;
+  /** One rung of the ladder. Levels 1-3 are the careful fixes; 4+ keep escalating with different, bolder strategies. */
+  function tryFix(mesh, issue, level) {
+    if (level <= 3) return tryFixBase(mesh, issue, level);
+    const soup = soupOf(mesh), diag = Math.hypot(mesh.bbox.max[0] - mesh.bbox.min[0], mesh.bbox.max[1] - mesh.bbox.min[1], mesh.bbox.max[2] - mesh.bbox.min[2]) || 1;
+    const keep = mesh.repaired, rebuild = (sp, o = {}) => prepareMesh(sp, { repair: keep, ...o });
+    const global = ['orientation', 'inverted', 'duplicate'].includes(issue.type), local = (k) => global ? {} : { scope: { c: issue.center, r: issue.radius * k + diag * 0.02 } };
+    const tolPct = (t) => (t * 100).toPrecision(2) + '% of the part size';
+    if (level === 4) { const t = 1e-3; return { mesh: rebuild(soup, { weldTol: t, ...local(4) }), action: `Joined vertices closer than ${tolPct(t)} around the problem` }; }
+    if (level === 5) {
+      if (issue.type === 'nonmanifold') { const d = new Set([...internalFaces(mesh), ...finTriangles(mesh)]); return d.size ? { mesh: rebuild(dropTris(soup, d)), action: `Removed ${d.size} interior and stray faces together` } : null; }
+      const t = 5e-3; return { mesh: rebuild(soup, { weldTol: t, ...local(6) }), action: `Joined vertices closer than ${tolPct(t)} in a wider area` };
+    }
+    if (level === 6) {
+      if (issue.type === 'hole' && issue.loop) { const t = 2e-3; return { mesh: rebuild(appendTris(soup, fillLoop(mesh, issue.loop, 'fan')), { weldTol: t, ...local(4) }), action: `Closed the hole with a fan, then joined vertices closer than ${tolPct(t)}` }; }
+      const t = 1e-2; return { mesh: rebuild(soup, { weldTol: t, ...local(8) }), action: `Joined vertices closer than ${tolPct(t)} across a large area` };
+    }
+    if (level === 7) {
+      if (issue.type === 'hole' && issue.loop) { const w = prepareMesh(soup, { repair: true }); return { mesh: rebuild(appendTris(soupOf(w), fillLoop(mesh, issue.loop, 'ear'))), action: 'Re-welded the whole model, then filled the hole with a flat patch' }; }
+      return { mesh: prepareMesh(soup, { repair: true, weldTol: 3e-3 }), action: `Re-welded the whole model with a ${tolPct(3e-3)} tolerance` };
+    }
+    if (level === 8) { const t = 2e-2; return { mesh: prepareMesh(soup, { repair: true, weldTol: t }), action: `Last resort: joined every vertex closer than ${tolPct(t)}` }; }
+    return null;
+  }
+  /** Escalating repair for one issue. Keeps trying different strategies until it is fixed or they run out. Returns { mesh, resolved, steps[] } */
   function tryAgain(mesh, issue) {
     const diag = Math.hypot(mesh.bbox.max[0] - mesh.bbox.min[0], mesh.bbox.max[1] - mesh.bbox.min[1], mesh.bbox.max[2] - mesh.bbox.min[2]) || 1;
     let cur = mesh, curIssues = diagnose(cur), score = scoreOf(curIssues), resolved = false; const steps = [];
     const global = ['orientation', 'inverted', 'duplicate'].includes(issue.type);
-    for (let level = 1; level <= 3 && !resolved; level++) {
+    let noneInARow = 0;
+    for (let level = 1; level <= MAX_LEVEL && !resolved; level++) {
       let r = null; try { r = tryFix(cur, issue, level); } catch (e) { r = null; }
-      if (!r) { steps.push({ level, action: 'No further strategy for this problem', ok: false }); continue; }
+      if (!r) { if (++noneInARow === 1) steps.push({ level, action: 'No strategy at this level, trying the next one', ok: false }); continue; }
+      noneInARow = 0;
       const iss = diagnose(r.mesh), sc = scoreOf(iss), still = iss.some((i) => i.type === issue.type && (global || near(i, issue, diag)));
       if ((sc < score || !still) && r.mesh.stats.boundaryEdges <= cur.stats.boundaryEdges) { cur = r.mesh; curIssues = iss; score = sc; steps.push({ level, action: r.action, ok: true }); } else steps.push({ level, action: r.action + ' (no improvement, undone)', ok: false });
       resolved = !curIssues.some((i) => i.type === issue.type && (global || near(i, issue, diag)));
@@ -2610,7 +2637,7 @@ async function setModel(mesh, name, opts = {}) {
   const keepXf = !!opts.keepXf;
   S.mesh = mesh; S.name = name; S.ver++; S.facesCache.clear(); S.smoothRaw = null; S.attempts = opts.keepAttempts ? S.attempts : new Map(); S.focus = null; S.lastStep = null;
   if (opts.example !== undefined) S.example = opts.example;
-  if (!keepXf) { S.repairs = Rep.openSessions(mesh, opts.raw); S.showRepairs = S.repairs.some((r) => r.items.some((i) => i.where)); }
+  if (!keepXf) { S.repairs = Rep.openSessions(mesh, opts.raw); S.showRepairs = false; S.markOnly = null; }
   S.sel.clear(); S.hover = -1; if (!opts.keepColors) S.colors.clear();
   buildView();
   busy('Analyzing surfaces…', 0.75); await tick();
@@ -2729,7 +2756,6 @@ async function tryIssue(issue, card) {
     await tick(1300); card && card.classList.add('gone'); await tick(380);
   } else { S.attempts.set(key, { steps: r.steps, resolved: false }); toast('Could not fix: ' + issue.title + '. Details are in Health.', 'warn', 5200); }
   S.repairs = S.repairs.concat([Rep.fixSession('fix-one', (r.resolved ? 'Fixed: ' : 'Tried to fix: ') + issue.title, beforeStats, r.mesh, r.issues || [], [Rep.itemFromIssue(issue, r.resolved, r.steps)])]);
-  if (r.resolved) S.showRepairs = true;
   if (r.mesh !== S.mesh) { const keep = new Map(S.attempts); await setModel(r.mesh, S.name, { keepXf: true, keepAttempts: true, keepColors: true }); S.attempts = keep; }
   renderHealth(); runIcon($('#sec-model .sec-h'));
   Hist.push((r.resolved ? 'Fixed: ' : 'Tried to fix: ') + issue.title);
@@ -2744,7 +2770,7 @@ async function fixEverything() {
   const items = res.report.map((r) => Rep.itemFromIssue(r.issue, r.resolved, r.steps));
   if (!items.length && before > left.length) items.push({ type: 'auto', title: 'Automatic repair pass', count: before - left.length, resolved: true, what: 'The whole model was re-welded, de-duplicated and re-oriented in one pass.', how: ['Re-welded vertices, removed duplicate faces and re-oriented neighbors.'], where: null });
   S.repairs = S.repairs.concat([Rep.fixSession('fix-all', 'Fix everything', beforeStats, res.mesh, res.issues, items)]);
-  S.showRepairs = true;
+  S.markOnly = null;
   await setModel(res.mesh, S.name, { keepXf: true, keepAttempts: true, keepColors: true });
   S.attempts = keep;
   for (const r of res.report) if (!r.resolved) for (const i of S.issues) if (i.type === r.issue.type) S.attempts.set(attKey(i), { steps: r.steps, resolved: false });
@@ -2810,7 +2836,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 200); camera.position.set(3, 2.2, 4);
 const controls = new THREE.OrbitControls(camera, touch);
 controls.enableDamping = true; controls.dampingFactor = 0.09; controls.screenSpacePanning = true; controls.rotateSpeed = 0.85; controls.panSpeed = 0.9;
-controls.minDistance = 0.3; controls.maxDistance = 40; controls.maxPolarAngle = Math.PI * 0.495; controls.target.set(0, 0.5, 0);
+controls.minDistance = 0.3; controls.maxDistance = 40; controls.minPolarAngle = 0; controls.maxPolarAngle = Math.PI; controls.target.set(0, 0.5, 0);
 
 (function buildEnv() { // neutral gray studio for reflections
   const pm = new THREE.PMREMGenerator(renderer), env = new THREE.Scene();
@@ -2828,7 +2854,8 @@ const grid = new THREE.GridHelper(14, 56, 0x3a3a3a, 0x1c1c1c); grid.material.tra
 
 const pivot = new THREE.Object3D(), holder = new THREE.Group(); scene.add(pivot); pivot.add(holder);
 const matSolid = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, metalness: 0, roughness: 0.2, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-const matHidden = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, polygonOffset: true, polygonOffsetFactor: 1.5, polygonOffsetUnits: 1.5 });
+// true wireframe: the solid draws nothing (not even depth), so every edge, front and back, shows through
+const matHidden = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, colorWrite: false, depthWrite: false });
 /* RTX mode: standard physically based shading (studio reflections, real shadows), nothing exotic */
 const matRTX = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, metalness: 0, roughness: 0.2, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
 const SHADE = { exp: 1, rot: 0, shadow: true };
@@ -2936,7 +2963,9 @@ function resize() {
 new ResizeObserver(resize).observe(stage);
 
 /* ---- mode switching ---- */
+const FEATURE_2D = false;   // 2D drawing sheet is switched off for now; all its code is kept below
 async function setMode(mode, force) {
+  if (mode === '2d' && !FEATURE_2D) mode = 'solid';
   const prev = S.mode; S.mode = mode;
   try {
     if (mode === '2d') { if (!S.mesh) { S.mode = prev; toast('Load a model first.', 'warn'); return; } busy('Drawing views…', 0.4); await tick(); await Sheet.enter(); }
@@ -2981,7 +3010,7 @@ const mk = $('#markers'), mctx = mk.getContext('2d');
 const PV = new THREE.Matrix4(), tmpV = new THREE.Vector3();
 function drawMarkers() {
   const showSnap = (S.snapOn || S.tool === 'anchor') && S.mode !== '2d' && anchorData;
-  const showRep = S.showRepairs && S.repairMarks.length && S.mode !== '2d', showFocus = S.focus && performance.now() - S.focus.t0 < 7000, showPivot = S.mesh && S.mode !== '2d' && S.tool !== 'select';
+  const showRep = ((S.markOnly && S.markOnly.length) || (S.showRepairs && S.repairMarks.length)) && S.mode !== '2d', showFocus = S.focus && performance.now() - S.focus.t0 < 7000, showPivot = S.mesh && S.mode !== '2d' && S.tool !== 'select';
   if (!showSnap && !showFocus && !showPivot && !showRep && !drawMarkers.cleared) { mctx.clearRect(0, 0, mk.width, mk.height); drawMarkers.cleared = true; snapHover = null; return; }
   if (!showSnap && !showFocus && !showPivot && !showRep) return;
   drawMarkers.cleared = false;
@@ -3010,7 +3039,7 @@ function drawMarkers() {
     }
   }
   snapHover = best; updateSnapUi();
-  if (showRep) { const t = ((performance.now() % 2400) / 2400); for (const q of S.repairMarks) { const s = proj(q.x, q.y, q.z); if (!s) continue; mctx.strokeStyle = 'rgba(123,211,137,' + (0.95 - t * 0.5) + ')'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(s[0], s[1], 7 + t * 6, 0, 7); mctx.stroke(); mctx.fillStyle = '#7bd389'; mctx.beginPath(); mctx.arc(s[0], s[1], 2.6, 0, 7); mctx.fill(); } }
+  if (showRep) { const t = ((performance.now() % 2400) / 2400); for (const q of (S.markOnly && S.markOnly.length ? S.markOnly : S.repairMarks)) { const s = proj(q.x, q.y, q.z); if (!s) continue; mctx.strokeStyle = 'rgba(123,211,137,' + (0.95 - t * 0.5) + ')'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(s[0], s[1], 7 + t * 6, 0, 7); mctx.stroke(); mctx.fillStyle = '#7bd389'; mctx.beginPath(); mctx.arc(s[0], s[1], 2.6, 0, 7); mctx.fill(); } }
   if (showPivot) { const pw = pivot.position, ps = projWorld(pw); if (ps) { mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(ps[0], ps[1], 7, 0, 7); mctx.moveTo(ps[0] - 12, ps[1]); mctx.lineTo(ps[0] + 12, ps[1]); mctx.moveTo(ps[0], ps[1] - 12); mctx.lineTo(ps[0], ps[1] + 12); mctx.stroke(); } }
   if (showFocus) {
     const t = ((performance.now() - S.focus.t0) % 1300) / 1300;
@@ -3369,7 +3398,7 @@ const Tut = (() => {
     { sel: '.logo', title: 'Welcome', text: 'This tool turns STL, OBJ, PLY, OFF, 3MF and GLB meshes into STEP files, checks and repairs them, lets you color and move parts, and proves the result is correct. I will walk you through it. It takes about a minute.' },
     { sel: () => (S.mesh ? '#btnOpen' : '#dropzone'), title: 'Load a model', text: 'Drag a 3D file (STL, OBJ, PLY, OFF, 3MF or GLB) anywhere onto the page, or press Open. No file handy? Next will open an example gear for you.', hand: 'tap',
       after: async () => { if (!S.mesh) await loadExample('gear'); } },
-    { sel: '#tabs', title: 'Four ways to look', text: 'Solid is the normal view. Wire shows the exact faces that will be written to STEP. RTX is a real-time shader render with studio reflections, soft shadows and ambient occlusion. 2D makes a drawing sheet with dimensions.', hand: 'tap', before: () => setMode('solid') },
+    { sel: '#tabs', title: 'Three ways to look', text: 'Solid is the normal view. Wire is a see-through wireframe of the exact faces that will be written to STEP. RTX is a real-time shader render with studio reflections, soft shadows and ambient occlusion.', hand: 'tap', before: () => setMode('solid') },
     { sel: '#sec-model', title: 'Model & health', text: 'Every problem in the mesh is listed here: holes, flipped faces, duplicates, cracks. Fix each one, or fix everything. Broken examples are in the Examples menu if you want to practice.', before: () => openSection('sec-model') },
     { sel: '#toolSelect', title: 'Select faces', text: 'With the arrow tool, click a face in the model. Hold Shift to add more. Flat faces, holes, shafts and curved surfaces are recognized automatically.', hand: 'tap', before: () => { setTool('select'); } },
     { sel: '#sec-faces', title: 'Color faces', text: 'Use a rule to select many at once: all faces, the same type, the same size or radius, the same direction. Then click a swatch to color them. Colors are saved inside the STEP file.', hand: 'tap', before: () => { openSection('sec-faces'); S.an && S.an.patches[0] && setSelection(S.an.patches.filter((p) => p.group === (S.an.kinds.hole ? 'hole' : 'plane')).map((p) => p.id)); } },
@@ -3468,13 +3497,14 @@ const Rep = (() => {
   function cardHTML() {
     const R = S.repairs; if (!R.length) return '';
     const fixed = R.reduce((a, r) => a + r.items.filter((i) => i.resolved).length, 0);
-    const rows = R.slice().reverse().map((se) => { const t = totals(se); return `<div class="rep-s"><span>${ic(t.open ? 'triangle-exclamation' : 'circle-check', t.open ? 'shake' : 'pop')}</span><div><b>${esc(se.title)}</b><div class="m">${clock(se.time)} · ${t.fixed} fixed${t.open ? ' · ' + t.open + ' not fixed' : ''}</div></div><button class="btn sm ghost hv" data-rep="${se.id}">Details</button></div>`; }).join('');
+    const rows = R.slice().reverse().map((se) => { const t = totals(se); return `<div class="rep-s"><span>${ic(t.open ? 'triangle-exclamation' : 'circle-check', t.open ? 'shake' : 'pop')}</span><div><b>${esc(se.title)}</b><div class="m">${clock(se.time)} · ${t.fixed} fixed${t.open ? ' · ' + t.open + ' not fixed' : ''}</div></div><button class="btn sm ghost hv" data-rep="${se.id}">Details</button></div>${se.items.map((it, k) => `<div class="rep-i"><span class="${it.resolved ? 'ok' : 'no'}">${it.resolved ? '✓' : '✗'}</span><span class="t">${fmtN(it.count || 1)} × ${esc(it.title)}</span>${it.where ? `<button class="btn sm ghost hv" data-locate="${S.repairs.indexOf(se)}:${k}" data-tip="Highlight where this problem was, even though it is fixed now">${ic('location-dot', 'bob-up')}<span>Show original problem</span></button>` : `<span class="m">no location recorded</span>`}</div>`).join('')}`; }).join('');
     return `<div class="rep-card"><div class="rh">${ic('wand-magic-sparkles', 'wiggle')} Repairs made <span class="badge">${fixed}</span></div>${rows}<div class="rep-btns"><button class="btn sm hv" id="btnRepFull">${ic('file-lines', 'pop')}<span>Full report</span></button><label class="chk"><input type="checkbox" id="repShow" ${S.showRepairs ? 'checked' : ''}>Show repaired spots on the model</label></div></div>`;
   }
   function bindCard(root) {
     $$('[data-rep]', root).forEach((b) => (b.onclick = () => openModal(b.dataset.rep)));
     const f = $('#btnRepFull', root); if (f) f.onclick = () => openModal(null);
-    const c = $('#repShow', root); if (c) c.onchange = () => { S.showRepairs = c.checked; };
+    $$('[data-locate]', root).forEach((b) => (b.onclick = () => showOriginal(b.dataset.locate)));
+    const c = $('#repShow', root); if (c) c.onchange = () => { S.showRepairs = c.checked; S.markOnly = null; };
   }
   function refreshMarks() {
     S.repairMarks = []; if (!S.view) return;
@@ -3492,7 +3522,7 @@ const Rep = (() => {
     const how = (it.how || []).map((h) => `<li>✓ ${esc(h)}</li>`).join('') + (it.tried || []).map((h) => `<li>✗ ${esc(h)}</li>`).join('');
     return `<div class="ri"><div class="ri-h"><span class="${it.resolved ? 'ok' : 'no'}">${ic(it.resolved ? 'circle-check' : 'circle-xmark', it.resolved ? 'pop' : 'shake')}</span><span>${fmtN(it.count || 1)} × ${esc(it.title)} <span style="color:var(--mut);font-weight:500">— ${it.resolved ? 'fixed' : 'not fixed'}</span></span></div>`
       + (it.what ? `<p>${esc(it.what)}</p>` : '') + (how ? `<ul>${how}</ul>` : '')
-      + (!w ? `<div class="wh"><span>Where:</span><span>${it.type === 'degenerate' ? 'These triangles had no area, so they had no real position on the surface.' : 'The exact spots were not recorded for this repair.'}</span></div>` : '') + (w ? `<div class="wh"><span>Where:</span><b>${esc(w.region)}</b><span>X ${num(c[0])} · Y ${num(c[1])} · Z ${num(c[2])} ${esc(U())}</span>${w.radius ? `<span>within ~${num(w.radius)} ${esc(U())}</span>` : ''}<span>${w.spots} spot${w.spots === 1 ? '' : 's'}</span><button class="btn sm ghost hv" data-locate="${key}">${ic('location-dot', 'bob-up')}<span>Show</span></button></div>` : '') + '</div>';
+      + (!w ? `<div class="wh"><span>Where:</span><span>${it.type === 'degenerate' ? 'These triangles had no area, so they had no real position on the surface.' : 'The exact spots were not recorded for this repair.'}</span></div>` : '') + (w ? `<div class="wh"><span>Where:</span><b>${esc(w.region)}</b><span>X ${num(c[0])} · Y ${num(c[1])} · Z ${num(c[2])} ${esc(U())}</span>${w.radius ? `<span>within ~${num(w.radius)} ${esc(U())}</span>` : ''}<span>${w.spots} spot${w.spots === 1 ? '' : 's'}</span><button class="btn sm ghost hv" data-locate="${key}">${ic('location-dot', 'bob-up')}<span>Show original problem</span></button></div>` : '') + '</div>';
   }
   function fullHTML(onlyId) {
     const R = S.repairs.filter((r) => !onlyId || r.id === onlyId);
@@ -3519,9 +3549,17 @@ const Rep = (() => {
     }
     return L.join('\n');
   }
+  /** Highlight only this one problem's original spots (never every repair at once). */
+  function showOriginal(key, closeModal) {
+    const [si, k] = key.split(':').map(Number), it = S.repairs[si] && S.repairs[si].items[k]; if (!it || !it.where) return;
+    if (closeModal) closeModal.classList.remove('on');
+    focusPoints(it.where.pts, it.where.center, it.where.radius);
+    S.markOnly = it.where.pts.slice(0, 12).map(toLocal); S.showRepairs = false; clearTimeout(showOriginal.t); showOriginal.t = setTimeout(() => { S.markOnly = null; }, 7500);
+    const cb = $('#repShow'); if (cb) cb.checked = false;
+  }
   function openModal(id) {
     const m = $('#repModal'); $('#repBody').innerHTML = fullHTML(id);
-    $$('[data-locate]', m).forEach((b) => (b.onclick = () => { const [si, k] = b.dataset.locate.split(':').map(Number), it = S.repairs[si] && S.repairs[si].items[k]; if (!it || !it.where) return; m.classList.remove('on'); focusPoints(it.where.pts, it.where.center, it.where.radius); S.showRepairs = true; renderHealth(); }));
+    $$('[data-locate]', m).forEach((b) => (b.onclick = () => showOriginal(b.dataset.locate, m)));
     m.classList.add('on');
   }
   function init() {

@@ -28,14 +28,14 @@
       var q = new URLSearchParams(location.search).get('season');
       if (q === 'off') s = ''; else if (q && NAMES[q]) s = q;
     } catch (e) {}
-    /* The holiday theme can be switched off with the button at the bottom right (remembered). ?season=name forces it on for a visit. */
+    /* The holiday theme is off by default; the button at the bottom right turns it on (remembered). ?season=name forces it on for a visit. */
     var forced = false, seasonOff = false;
-    try { forced = !!new URLSearchParams(location.search).get('season'); seasonOff = !forced && localStorage.getItem('portfolio-season') === 'off'; } catch (e) {}
+    try { forced = !!new URLSearchParams(location.search).get('season'); seasonOff = !forced && localStorage.getItem('portfolio-season') !== 'on';   // off by default; the button turns it on } catch (e) {}
     if (s) document.documentElement.setAttribute('data-season-name', s);
     if (s && !seasonOff) document.documentElement.setAttribute('data-season', s);
-    /* Experimental tilted UI (portfolio page only): on by default, remembered once switched off.  ?tilt=off|on overrides for a visit. */
-    var tilt = 'on';
-    try { if (localStorage.getItem('portfolio-tilt') === 'off') tilt = 'off'; } catch (e) {}
+    /* Experimental tilted UI (portfolio page only): off by default, remembered once switched on.  ?tilt=off|on overrides for a visit. */
+    var tilt = 'off';   // off by default; the button at the bottom right turns it on (remembered)
+    try { if (localStorage.getItem('portfolio-tilt') === 'on') tilt = 'on'; } catch (e) {}
     try { var tq = new URLSearchParams(location.search).get('tilt'); if (tq === 'off' || tq === 'on') tilt = tq; } catch (e) {}
     document.documentElement.setAttribute('data-tilt', tilt);
   })();
@@ -922,8 +922,8 @@
 </div>
 
 
-<button type="button" class="season-toggle" id="seasonToggle" aria-pressed="true" title="Turn the current holiday theme off or on."><span class="tt-l">Holiday theme: on</span></button>
-<button type="button" class="tilt-toggle" id="tiltToggle" aria-pressed="true" title="Experimental: a tilted, HUD-style layout. Click to turn it off or on."><span class="dot"></span><span class="tt-l">Tilt: on</span></button>
+<button type="button" class="season-toggle" id="seasonToggle" aria-pressed="false" title="Turn the current holiday theme off or on."><span class="tt-l">Holiday theme: off</span></button>
+<button type="button" class="tilt-toggle" id="tiltToggle" aria-pressed="false" title="Experimental: a tilted, HUD-style layout. Click to turn it off or on."><span class="dot"></span><span class="tt-l">Tilt: off</span></button>
 <script>
   document.getElementById('ds').textContent =
     new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'}).toUpperCase();
