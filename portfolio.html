@@ -134,7 +134,7 @@
           linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
         background-attachment: fixed;
       }
-      html[data-tilt="on"] .page { overflow-x: clip; perspective: 1500px; perspective-origin: 30% 480px; }
+      html[data-tilt="on"] .page { overflow-x: clip; perspective: 1500px; perspective-origin: 30% var(--tilt-py, 480px); }   /* --tilt-py keeps the vanishing point at the same spot on the screen while scrolling, so the tilt looks identical everywhere */
       /* the projection: hinged on its left edge, the right side swung out toward the viewer */
       html[data-tilt="on"] .main {
         position: relative;
@@ -789,6 +789,8 @@
       transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
     }
     .drawer.open { transform: translateY(0); }
+    /* the filter drawer is for narrow screens only; on wide ones the sidebar does the job (and the tilt's perspective would otherwise pull it up into view) */
+    @media (min-width: 769px) { .drawer, .drawer-overlay { display: none !important; } }
     .drawer-handle { width: 36px; height: 3px; border-radius: 2px; background: var(--border); margin: 14px auto 0; }
     .drawer-header {
       padding: 14px 22px 12px;
@@ -1839,7 +1841,11 @@
       root.setAttribute('data-tilt', next); try { localStorage.setItem('portfolio-tilt', next); } catch (e) {}
       sync(); fit();
     });
-    sync(); fit();
+    // keep the vanishing point fixed relative to the screen (it is measured down the page), so the slant is the same at every scroll position
+    const page = document.querySelector('.page');
+    function pin() { if (!page) return; root.style.setProperty('--tilt-py', Math.round(Math.min(window.innerHeight * 0.5, 480) - page.getBoundingClientRect().top) + 'px'); }
+    addEventListener('scroll', pin, { passive: true }); addEventListener('resize', pin);
+    pin(); sync(); fit();
     addEventListener('resize', fit);
     if (window.ResizeObserver && main) new ResizeObserver(fit).observe(main);
     addEventListener('load', fit);
