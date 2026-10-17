@@ -110,16 +110,21 @@ function hook() {
   swap(URL, 'createObjectURL', (o) => function (b) { const u = o.call(URL, b); T.blobs.set(u, b); if (T.blobs.size > 20) T.blobs.delete(T.blobs.keys().next().value); return u; });
   swap(HTMLAnchorElement.prototype, 'click', (o) => function () {
     if (this.download) { T.downloads.push({ name: this.download, blob: T.blobs.get(this.href), n: T.n }); if (T.downloads.length > 30) T.downloads.shift(); return; }
-    if (this.href && !/^#/.test(this.getAttribute('href') || '') && this.origin !== location.origin) { T.counters.externalBlocked++; return; }
+    if (this.getAttribute('href') && !/^#/.test(this.getAttribute('href')) && (this.target && this.target !== '_self' || this.origin !== location.origin || this.pathname !== location.pathname)) { T.counters.externalBlocked++; return; }
     return o.apply(this, arguments);
   });
   swap(window, 'open', () => function () { T.counters.externalBlocked++; return null; });
+  swap(History.prototype, 'pushState', (o) => function () { try { return o.apply(this, arguments); } catch (e) { /* ignore */ } });
   swap(window, 'alert', () => function () { T.counters.dialogs++; });
   swap(window, 'confirm', () => function () { T.counters.dialogs++; return true; });
   swap(window, 'prompt', () => function () { T.counters.dialogs++; return ''; });
   swap(Element.prototype, 'setPointerCapture', (o) => function () { try { return o.apply(this, arguments); } catch (e) { /* synthetic pointer ids have no capture */ } });
   swap(Element.prototype, 'releasePointerCapture', (o) => function () { try { return o.apply(this, arguments); } catch (e) { /* same */ } });
-  const blockNav = (e) => { if (!T.running || e.isTrusted) return; const a = e.target && e.target.closest && e.target.closest('a[href]'); if (a && a.origin !== location.origin && !/^#/.test(a.getAttribute('href'))) { e.preventDefault(); T.counters.externalBlocked++; } };
+  // the tester must never leave the page: no link that goes anywhere but a spot on this page may be followed (the portfolio link has the same origin as the app, so checking the origin is not enough)
+  const leaves = (a) => { try { const u = new URL(a.getAttribute('href'), location.href); return (a.target && a.target !== '_self') || (u.origin + u.pathname + u.search) !== (location.origin + location.pathname + location.search); } catch (e) { return true; } };
+  const blockNav = (e) => { if (!T.running || e.isTrusted) return; const a = e.target && e.target.closest && e.target.closest('a[href]'); if (a && !a.hasAttribute('download') && leaves(a)) { e.preventDefault(); e.stopImmediatePropagation(); T.counters.externalBlocked++; } };
+  const guard = (e) => { if (T.running) { e.preventDefault(); e.returnValue = 'The UX test is still running.'; return e.returnValue; } };
+  window.addEventListener('beforeunload', guard); HK.undo.push(() => window.removeEventListener('beforeunload', guard));
   document.addEventListener('click', blockNav, true); HK.undo.push(() => document.removeEventListener('click', blockNav, true));
   const tt = $('#toasts');
   if (tt) { const mo = new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('toast')) T.toasts.push({ seq: ++T.toastSeq, kind: n.classList.contains('err') ? 'err' : n.classList.contains('warn') ? 'warn' : 'ok', text: n.textContent.trim().slice(0, 200), n: T.n }); if (T.toasts.length > 60) T.toasts.shift(); }))); mo.observe(tt, { childList: true }); HK.undo.push(() => mo.disconnect()); }
@@ -311,7 +316,7 @@ function checkState() {
   const tb = $('.tool[data-tool].on'); if (tb && !check('tool buttons match the current tool', tb.dataset.tool === S.tool)) find('state', 'warn', `Tool is "${S.tool}" but the highlighted button is "${tb.dataset.tool}"`);
   const sw = $('#vMat'); if (sw && !check('finish list shows the chosen finish', sw.value === S.mat)) find('state', 'warn', `Finish is "${S.mat}" but the list shows "${sw.value}"`);
 }
-function checkCanvas() {
+async function checkCanvas(again) {
   if (!S.mesh || S.mode === '2d') return;
   const cv = A.renderer.domElement; if (!cv || cv.clientWidth < 10) return;
   try {
@@ -328,6 +333,7 @@ function checkCanvas() {
     const px = c.getImageData(0, 0, 160, 90).data; let maxA = 0, maxL = 0;
     for (let i = 0; i < px.length; i += 4) { if (px[i + 3] > maxA) maxA = px[i + 3]; const l = Math.max(px[i], px[i + 1], px[i + 2]); if (l > maxL) maxL = l; }
     const blank = maxA < 6 || maxL < 8;   // nothing was drawn at all (lines in Wire mode are thin, so look for any pixel at all)
+    if (blank && !again) { await sleep(Math.max(150, T.base * 3)); return checkCanvas(true); }   // a resize clears the canvas until the next frame: look again before calling it blank
     if (!check('3D view is not blank', !blank)) find('blank', 'error', 'The 3D view is blank while the model is in view (mode ' + S.mode + ')');
   } catch (e) { /* tainted or unsupported */ }
 }
@@ -492,7 +498,7 @@ async function aExport() {
   return 'export';
 }
 const MACROS = {
-  async 'tour of finishes'() { await A.loadExample(pick(['gear', 'bracket', 'knot'])); await settle(20000); const b = $('[data-mode="rt"]'); b && await realClick(b); await settle(); for (const k of Object.keys(A.MATS)) { const s = $('#vMat'); if (!s) break; setValue(s, k); s.dispatchEvent(new Event('change', { bubbles: true })); await raf(); await raf(); checkCanvas(); feature('finish: ' + k); } for (const m of ['wire', 'solid', 'rt']) { const bb = $(`[data-mode="${m}"]`); bb && await realClick(bb); await raf(); await raf(); checkCanvas(); } },
+  async 'tour of finishes'() { await A.loadExample(pick(['gear', 'bracket', 'knot'])); await settle(20000); const b = $('[data-mode="rt"]'); b && await realClick(b); await settle(); for (const k of Object.keys(A.MATS)) { const s = $('#vMat'); if (!s) break; setValue(s, k); s.dispatchEvent(new Event('change', { bubbles: true })); await raf(); await raf(); await checkCanvas(); feature('finish: ' + k); } for (const m of ['wire', 'solid', 'rt']) { const bb = $(`[data-mode="${m}"]`); bb && await realClick(bb); await raf(); await raf(); await checkCanvas(); } },
   async 'repair flow'() { const ids = A.EX().flatMap((g) => g.items).filter((e) => e.raw).map((e) => e.id); await A.loadExample(pick(ids)); await settle(20000); const fx = $$('button').find((b) => /fix everything/i.test(b.textContent) && visible(b)); if (fx) { await realClick(fx); await settle(30000); feature('fix everything'); } key('z', { ctrl: 1 }, document.body); await settle(); key('y', { ctrl: 1 }, document.body); await settle(); },
   async 'rapid fire'() { const list = scan().filter((c) => c.k !== 'link'); for (let i = 0; i < 20 && list.length; i++) { const c = pick(list); if (c.el.isConnected) { c.k === 'button' || c.k === 'check' ? await realClick(c.el) : await aForm(c); note(c.key, c.key, c.k, false); } if (chance(0.5)) await raf(); } },
   async 'mode thrash'() { for (let i = 0; i < 24; i++) { const b = $(`[data-mode="${pick(['solid', 'wire', 'rt', 'solid', 'rt'])}"]`); b && b.isConnected && (pdown(b, ...center(b)), pup(b, ...center(b)), fire(b, 'click', ...center(b), { detail: 1 })); if (chance(0.6)) await raf(); } },
@@ -530,7 +536,7 @@ async function oneAction() {
   // oracles
   const ks = T.kinds.get(cur.kind) || { n: 0, bad: 0, ms: [], jank: 0 }; ks.n++; ks.ms.push(ms); if (ks.ms.length > 400) ks.ms.shift(); T.kinds.set(cur.kind, ks);
   checkState();
-  if (n % 2 === 0) checkCanvas();
+  if (n % 2 === 0) await checkCanvas();
   if (n % 6 === 0) await checkDom(false);
   if (n % 60 === 0) await checkDom(true);
   if (n % 40 === 0) leakCheck();
