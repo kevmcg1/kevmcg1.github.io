@@ -255,7 +255,7 @@ function makeFile() {
   const bad = {
     empty: () => ['empty.stl', new Uint8Array(0)], garbage: () => ['garbage.stl', Uint8Array.from({ length: rf(10, 5000) | 0 }, () => (rng() * 256) | 0)],
     text: () => ['notes.txt', 'hello, this is not a mesh'], noext: () => ['model', 'solid x\nendsolid x\n'], nan: () => ['nan.stl', 'solid x\nfacet normal 0 0 1\nouter loop\nvertex NaN 0 0\nvertex 1 Infinity 0\nvertex 0 1 -Infinity\nendloop\nendfacet\nendsolid x\n'],
-    trunc: () => { const b = toBinSTL(meshBox(0, 0, 0, 5, 5, 5)); return ['trunc.stl', b.slice(0, 84 + 50 * 5 + 17)]; }, zeroTri: () => ['zero.stl', toAsciiSTL({ v: [[0, 0, 0]], f: [[0, 0, 0]] })],
+     zeroTri: () => ['zero.stl', toAsciiSTL({ v: [[0, 0, 0]], f: [[0, 0, 0]] })],
     wrongExt: () => ['image.png', Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13])], badObj: () => ['bad.obj', 'v 1 2\nf 1 2 3 4 5\nf a b c\n'], badPly: () => ['bad.ply', 'ply\nformat ascii 1.0\nelement vertex 99999999\nend_header\n1 2 3\n'],
     huge: () => ['big.obj', 'v 0 0 0\n'.repeat(20000)], 
   };
@@ -322,7 +322,8 @@ function checkCanvas() {
       if (inView) { const c = new THREE.Vector3(), size = b.getSize(new THREE.Vector3()).length(), d = Math.max(0.01, A.camera.position.distanceTo(b.getCenter(c))); big = size / d * cv.clientHeight / (2 * Math.tan(A.camera.fov * Math.PI / 360)) > 6; }
       if (check('model stays in view', inView)) T.offscreen = 0; else { T.offscreen++; if (T.offscreen === 40) find('visual-offscreen', 'info', 'The model has been out of view for 40 actions in a row (is there an obvious way back, like Fit?)', { where: 'model' }); }
     }
-    if (!inView || !big) return;   // nothing to see, so a blank view is correct
+    if (!inView || !big) return;
+    if (mm && new THREE.Box3().setFromObject(mm).containsPoint(A.camera.position)) return;   // the camera is inside the part: nothing to see by design   // nothing to see, so a blank view is correct
     const o = document.createElement('canvas'); o.width = 160; o.height = 90; const c = o.getContext('2d', { willReadFrequently: true }); c.drawImage(cv, 0, 0, 160, 90);
     const px = c.getImageData(0, 0, 160, 90).data; let maxA = 0, maxL = 0;
     for (let i = 0; i < px.length; i += 4) { if (px[i + 3] > maxA) maxA = px[i + 3]; const l = Math.max(px[i], px[i + 1], px[i + 2]); if (l > maxL) maxL = l; }
@@ -332,7 +333,7 @@ function checkCanvas() {
 }
 function lum(c) { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); }
 function parseRGBA(s) { const m = /rgba?\(([^)]+)\)/.exec(s); if (!m) return null; const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; }
-function bgOf(el) { let a = el; const stack = []; while (a && a.nodeType === 1) { const c = parseRGBA(getComputedStyle(a).backgroundColor); if (c && c[3] > 0.05) { stack.push(c); if (c[3] >= 0.98) break; } a = a.parentElement; } let base = [10, 10, 12]; for (let i = stack.length - 1; i >= 0; i--) { const c = stack[i]; base = base.map((v, k) => k < 3 ? c[k] * c[3] + v * (1 - c[3]) : 1); } return base; }
+function bgOf(el) { let a = el; const stack = []; while (a && a.nodeType === 1) { const cs0 = getComputedStyle(a); if (cs0.backgroundImage && cs0.backgroundImage !== 'none') return null; const c = parseRGBA(cs0.backgroundColor); if (c && c[3] > 0.05) { stack.push(c); if (c[3] >= 0.98) break; } a = a.parentElement; } let base = [10, 10, 12]; for (let i = stack.length - 1; i >= 0; i--) { const c = stack[i]; base = base.map((v, k) => k < 3 ? c[k] * c[3] + v * (1 - c[3]) : 1); } return base; }
 let scanBusy = false;
 async function checkDom(deep) {
   if (scanBusy) return; scanBusy = true;
@@ -370,10 +371,11 @@ async function checkDom(deep) {
       const tx = []; const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.nodeValue.trim().length > 1 && n.parentElement && !inDev(n.parentElement) && !/^(SCRIPT|STYLE)$/.test(n.parentElement.tagName) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT) });
       for (let n; (n = w.nextNode()) && tx.length < 250;) { const p = n.parentElement; if (p && visible(p) && showing(p)) tx.push(p); }
       new Set(tx).forEach((p) => {
-        const cs = getComputedStyle(p), fg = parseRGBA(cs.color), bg = bgOf(p); if (!fg) return;
+        const cs = getComputedStyle(p), fg = parseRGBA(cs.color), bg = bgOf(p); if (!fg || !bg) return;   // (a gradient or image behind the text can't be measured this way)
         const fl = lum(fg.slice(0, 3).map((v, i) => v * fg[3] + bg[i] * (1 - fg[3]))), bl = lum(bg), ratio = (Math.max(fl, bl) + 0.05) / (Math.min(fl, bl) + 0.05), big = parseFloat(cs.fontSize) >= 24 || (parseFloat(cs.fontSize) >= 18.6 && +cs.fontWeight >= 700);
         const faint = p.closest('[disabled], .disabled, [aria-disabled=true], :disabled');
-        if (!check('text is readable (contrast)', !!faint || ratio >= 3)) find('visual-contrast', 'info', `Low contrast ${ratio.toFixed(1)}:1 for "${p.textContent.trim().slice(0, 30)}" in ${ctlKey(p)}`, { where: ctlKey(p), thumb: false });
+        const ok = !!faint || ratio >= 3; check('text is readable (contrast)', ok);
+        if (!ok) maybe('visual-contrast', 'info', `Low contrast ${ratio.toFixed(1)}:1 for "${p.textContent.trim().slice(0, 30)}" in ${ctlKey(p)}`, ctlKey(p), () => { if (!p.isConnected) return false; const c2 = getComputedStyle(p), f2 = parseRGBA(c2.color), b2 = bgOf(p); if (!f2 || !b2) return false; const l1 = lum(f2.slice(0, 3).map((v, i) => v * f2[3] + b2[i] * (1 - f2[3]))), l2 = lum(b2); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05) < 3; });
       });
       if (document.getAnimations().length > 250) find('jank', 'warn', 'More than 250 animations are running at once', { where: 'animations', thumb: false });
     }

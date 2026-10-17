@@ -1988,6 +1988,10 @@ const Importers = (() => {
     const V = [], C = []; let hasCol = false; const tris = [], P = (i) => [V[i * 3], V[i * 3 + 1], V[i * 3 + 2]]; const tcolList = []; let faceCol = false;
     try {
       for (const el of els) {
+        if (!el.props.length) continue;   // an element with no properties holds nothing to read
+        // a header that promises more items than the file can hold: read only what is there instead of looping millions of times
+        const least = tokens ? el.props.length : el.props.reduce((n, p) => n + (SZ[p.list ? p.ct : p.type] || 1), 0);
+        const room = Math.floor((tokens ? tokens.length - ti : u8.length - pos) / least); if (el.count > room) el.count = Math.max(0, room);   // (a damaged file keeps whatever it really holds)
         for (let i = 0; i < el.count; i++) {
           const vals = {};
           for (const p of el.props) {
