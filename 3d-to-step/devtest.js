@@ -44,12 +44,15 @@ function check(name, ok) { const c = T.checks.get(name) || { runs: 0, bad: 0 }; 
 function snap() {
   try { if (T.thumbs > 40) return null; const cv = A.renderer.domElement, o = document.createElement('canvas'); o.width = 192; o.height = 108; o.getContext('2d').drawImage(cv, 0, 0, 192, 108); T.thumbs++; return o.toDataURL('image/jpeg', 0.6); } catch (e) { return null; }
 }
+function dumpState() {
+  try { const h = A.Hist.info(), m = S.mesh; return `model ${S.name || '-'} · ${m ? m.m + ' triangles, ' + (S.faces ? S.faces.length + ' faces' : 'no faces') : 'none'} · mode ${S.mode} · tool ${S.tool} · finish ${S.mat} · history ${h.i + 1}/${h.n} · ${S.sel ? S.sel.size : 0} selected · camera ${A.camera.position.toArray().map((v) => v.toFixed(1)).join(',')}`; } catch (e) { return ''; }
+}
 function find(kind, sev, msg, extra = {}) {
   const sig = kind + '|' + norm(msg + (extra.where || ''));
   let it = T.issues.get(sig);
   if (!it) {
     if (T.issues.size > 600) return;
-    it = { sig, kind, sev, msg: String(msg).slice(0, 400), count: 0, first: T.n, last: T.n, ctl: new Set(), actions: new Set(), repro: T.recent.slice(-12), seed: T.seed, diag: extra.diag || diagnose(kind, msg, extra), thumb: extra.thumb === false ? null : (kind.startsWith('visual') || kind === 'blank' ? snap() : null), stack: extra.stack || '' };
+    it = { sig, kind, sev, msg: String(msg).slice(0, 400), count: 0, first: T.n, last: T.n, ctl: new Set(), actions: new Set(), repro: T.recent.slice(-12), seed: T.seed, state: dumpState(), diag: extra.diag || diagnose(kind, msg, extra), thumb: extra.thumb === false ? null : (kind.startsWith('visual') || kind === 'blank' ? snap() : null), stack: extra.stack || '' };
     T.issues.set(sig, it); logLine(sev === 'error' ? 'bad' : 'warn', `#${T.n} ${kind}: ${it.msg}`);
   }
   it.count++; it.last = T.n; if (T.cur) { it.actions.add(T.cur.kind); if (T.cur.ctl) it.ctl.add(T.cur.ctl); }
@@ -254,9 +257,9 @@ function makeFile() {
     text: () => ['notes.txt', 'hello, this is not a mesh'], noext: () => ['model', 'solid x\nendsolid x\n'], nan: () => ['nan.stl', 'solid x\nfacet normal 0 0 1\nouter loop\nvertex NaN 0 0\nvertex 1 Infinity 0\nvertex 0 1 -Infinity\nendloop\nendfacet\nendsolid x\n'],
     trunc: () => { const b = toBinSTL(meshBox(0, 0, 0, 5, 5, 5)); return ['trunc.stl', b.slice(0, 84 + 50 * 5 + 17)]; }, zeroTri: () => ['zero.stl', toAsciiSTL({ v: [[0, 0, 0]], f: [[0, 0, 0]] })],
     wrongExt: () => ['image.png', Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13])], badObj: () => ['bad.obj', 'v 1 2\nf 1 2 3 4 5\nf a b c\n'], badPly: () => ['bad.ply', 'ply\nformat ascii 1.0\nelement vertex 99999999\nend_header\n1 2 3\n'],
-    huge: () => ['big.obj', 'v 0 0 0\n'.repeat(20000)], longName: () => ['x'.repeat(240) + '.stl', toAsciiSTL(meshBox(0, 0, 0, 5, 5, 5))],
-    html: () => ['<img src=x onerror=alert(1)>.stl', toAsciiSTL(meshBox(0, 0, 0, 5, 5, 5))],
+    huge: () => ['big.obj', 'v 0 0 0\n'.repeat(20000)], 
   };
+  if (chance(0.12)) { const nm = pick(['x'.repeat(240) + '.stl', '<img src=x onerror=alert(1)>.stl', 'sp ace & (odd) #name%20.stl', 'ünï©ödé 日本.stl']); return { name: nm, file: new File([toAsciiSTL(meshBox(0, 0, 0, 5, 5, 5))], nm), expect: 'either', what: 'odd file name' }; }
   if (chance(0.3)) { const k = pick(Object.keys(bad)), [name, data] = bad[k](); return { name, file: new File([data], name), expect: 'reject', what: k }; }
   const sk = pick(Object.keys(shapes)), m = shapes[sk](), fmt = pick(['stl', 'bstl', 'obj', 'ply', 'off']);
   const name = `dt-${sk}.${fmt === 'bstl' ? 'stl' : fmt}`, data = fmt === 'stl' ? toAsciiSTL(m) : fmt === 'bstl' ? toBinSTL(m) : fmt === 'obj' ? toOBJ(m) : fmt === 'ply' ? toPLY(m) : toOFF(m);
@@ -320,10 +323,10 @@ function checkCanvas() {
       if (check('model stays in view', inView)) T.offscreen = 0; else { T.offscreen++; if (T.offscreen === 40) find('visual-offscreen', 'info', 'The model has been out of view for 40 actions in a row (is there an obvious way back, like Fit?)', { where: 'model' }); }
     }
     if (!inView || !big) return;   // nothing to see, so a blank view is correct
-    const o = document.createElement('canvas'); o.width = 48; o.height = 27; const c = o.getContext('2d', { willReadFrequently: true }); c.drawImage(cv, 0, 0, 48, 27);
-    const d = c.getImageData(0, 0, 48, 27).data; let lo = 255, hi = 0, clear = 0;
-    for (let i = 0; i < d.length; i += 4) { const l = (d[i] + d[i + 1] + d[i + 2]) / 3; lo = Math.min(lo, l); hi = Math.max(hi, l); if (d[i + 3] === 0) clear++; }
-    const blank = hi < 12 || clear === d.length / 4 || (hi - lo < 4 && clear === 0);
+    const o = document.createElement('canvas'); o.width = 160; o.height = 90; const c = o.getContext('2d', { willReadFrequently: true }); c.drawImage(cv, 0, 0, 160, 90);
+    const px = c.getImageData(0, 0, 160, 90).data; let maxA = 0, maxL = 0;
+    for (let i = 0; i < px.length; i += 4) { if (px[i + 3] > maxA) maxA = px[i + 3]; const l = Math.max(px[i], px[i + 1], px[i + 2]); if (l > maxL) maxL = l; }
+    const blank = maxA < 6 || maxL < 8;   // nothing was drawn at all (lines in Wire mode are thin, so look for any pixel at all)
     if (!check('3D view is not blank', !blank)) find('blank', 'error', 'The 3D view is blank while the model is in view (mode ' + S.mode + ')');
   } catch (e) { /* tainted or unsupported */ }
 }
@@ -597,6 +600,7 @@ function reportText() {
   R.issues.forEach((i, k) => {
     L.push('', `### ${k + 1}. [${i.sev.toUpperCase()}] ${i.kind}: ${i.msg}`, `- Seen ${i.count} time${i.count > 1 ? 's' : ''}, first at action #${i.first}, last at #${i.last}${i.actions.size ? ' · during: ' + [...i.actions].join(', ') : ''}${i.ctl.size ? ' · controls: ' + [...i.ctl].slice(0, 4).join(', ') : ''}`);
     if (i.diag) L.push(`- Likely cause: ${i.diag}`);
+    if (i.state) L.push('- App state when it first happened: ' + i.state);
     if (i.stack) L.push('- Stack: ' + i.stack.split('\n').slice(0, 4).map((l) => l.trim()).join(' | '));
     L.push(`- To reproduce (seed ${i.seed}), the last actions before it were:`, ...i.repro.slice(-8).map((r) => '    ' + r));
   });
@@ -609,7 +613,7 @@ function reportText() {
   if (R.miss.length) L.push(`- Not used yet (${R.miss.length}): ${R.miss.slice(0, 40).map((c) => c.label).join('; ')}${R.miss.length > 40 ? '; …' : ''}`);
   return L.join('\n');
 }
-function reportJSON() { const R = build(); return JSON.stringify({ seed: T.seed, actions: T.n, durationMs: Math.round(R.dur), rate: R.rate, pass: T.pass, fail: T.fail, issues: R.issues.map((i) => ({ kind: i.kind, severity: i.sev, message: i.msg, count: i.count, first: i.first, last: i.last, likelyCause: i.diag, stack: i.stack, during: [...i.actions], controls: [...i.ctl], repro: i.repro, thumb: i.thumb })), checks: Object.fromEntries([...T.checks.entries()].map(([k, v]) => [k, v])), kinds: Object.fromEntries([...T.kinds.entries()].map(([k, v]) => [k, { n: v.n, bad: v.bad, jank: v.jank }])), features: Object.fromEntries(T.features), coverage: { total: R.tot.length, used: R.hit.length, pairs: T.pairs.size, unused: R.miss.map((c) => c.label) }, smoothness: { fps: R.fps, p50: R.p50, p95: R.p95, p99: R.p99, longTasks: T.longtasks.length } }, null, 1); }
+function reportJSON() { const R = build(); return JSON.stringify({ seed: T.seed, actions: T.n, durationMs: Math.round(R.dur), rate: R.rate, pass: T.pass, fail: T.fail, issues: R.issues.map((i) => ({ kind: i.kind, severity: i.sev, message: i.msg, count: i.count, first: i.first, last: i.last, likelyCause: i.diag, stack: i.stack, state: i.state, during: [...i.actions], controls: [...i.ctl], repro: i.repro, thumb: i.thumb })), checks: Object.fromEntries([...T.checks.entries()].map(([k, v]) => [k, v])), kinds: Object.fromEntries([...T.kinds.entries()].map(([k, v]) => [k, { n: v.n, bad: v.bad, jank: v.jank }])), features: Object.fromEntries(T.features), coverage: { total: R.tot.length, used: R.hit.length, pairs: T.pairs.size, unused: R.miss.map((c) => c.label) }, smoothness: { fps: R.fps, p50: R.p50, p95: R.p95, p99: R.p99, longTasks: T.longtasks.length } }, null, 1); }
 function autosave() { try { localStorage.setItem('devtest-report', JSON.stringify({ at: Date.now(), n: T.n, text: reportText() })); } catch (e) { /* ignore */ } }
 function download(name, text, type) { const b = new Blob([text], { type }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.dispatchEvent(new MouseEvent('click')); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); }
 

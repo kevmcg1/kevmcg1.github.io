@@ -1981,7 +1981,7 @@ const Importers = (() => {
     const dv = new DataView(buf), le = format === 'binary_little_endian'; let pos = bodyStart;
     let tokens = null, ti = 0; if (format === 'ascii') tokens = td.decode(u8.subarray(bodyStart)).split(/\s+/).filter(Boolean);
     const read = (type) => {
-      if (tokens) return +tokens[ti++];
+      if (tokens) { if (ti >= tokens.length) throw new Error('The PLY file ends before all of its data.'); return +tokens[ti++]; }   // (a header that promises millions of points would otherwise spin for ages on NaN)
       let v; switch (type) { case 'char': case 'int8': v = dv.getInt8(pos); break; case 'uchar': case 'uint8': v = dv.getUint8(pos); break; case 'short': case 'int16': v = dv.getInt16(pos, le); break; case 'ushort': case 'uint16': v = dv.getUint16(pos, le); break; case 'int': case 'int32': v = dv.getInt32(pos, le); break; case 'uint': case 'uint32': v = dv.getUint32(pos, le); break; case 'float': case 'float32': v = dv.getFloat32(pos, le); break; case 'double': case 'float64': v = dv.getFloat64(pos, le); break; default: throw new Error('Unknown PLY type ' + type); }
       pos += SZ[type]; return v;
     };
@@ -2646,13 +2646,14 @@ function applyImportedColors(mesh) {
 }
 
 async function setModel(mesh, name, opts = {}) {
-  const keepXf = !!opts.keepXf;
+  const keepXf = !!opts.keepXf, tok = (setModel.tok = (setModel.tok || 0) + 1);   // a newer open or fix started while this one was analyzing wins; this one stops (otherwise the two meshes get mixed and analysis crashes)
   S.mesh = mesh; S.name = name; S.ver++; S.facesCache.clear(); S.smoothRaw = null; S.attempts = opts.keepAttempts ? S.attempts : new Map(); S.focus = null; S.lastStep = null;
   if (opts.example !== undefined) S.example = opts.example;
   if (!keepXf) { S.repairs = Rep.openSessions(mesh, opts.raw); S.showRepairs = false; S.markOnly = null; }
   S.sel.clear(); S.hover = -1; if (!opts.keepColors) S.colors.clear();
   buildView();
   busy('Analyzing surfaces…', 0.75); await tick();
+  if (tok !== setModel.tok || S.mesh !== mesh) return;
   S.faces = ensureFaces({ merge: true, angle: 0.25 });
   S.an = Core.analyze(mesh, S.faces);
   S.patchTris = Array.from({ length: S.an.patches.length }, () => []);
