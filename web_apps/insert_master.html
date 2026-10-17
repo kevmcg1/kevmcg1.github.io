@@ -6,6 +6,7 @@
 <link rel="preload" href="../fonts/dm-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 
     <meta charset="UTF-8">
+<meta name="robots" content="noai, noimageai">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Insert Master</title>
     <style>
@@ -442,8 +443,21 @@
             *, *::after { animation: none !important; transition: none !important; }
         }
     </style>
+<style id="site-chrome">
+/* shared header and footer (same on every kevmcg1.github.io project): a strip linking back to the portfolio above the app, the license line below it */
+.site-head,.foot{--sh-bar:#08090a;--sh-line:#222428;--sh-ink:#ececee;--sh-muted:#8a8f97;--sh-accent:#5b93ea;--sh-hover:rgba(255,255,255,.04);box-sizing:border-box;flex:none;width:100%;margin:0;background:var(--sh-bar);font:400 12.5px/1.4 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:normal;text-transform:none;text-align:center;-webkit-text-size-adjust:100%}
+.site-head{display:block;padding:0;border-bottom:1px solid var(--sh-line)}
+.site-head a{display:block;width:100%;padding:6px 14px;box-sizing:border-box;text-align:center;color:var(--sh-ink);text-decoration:none;border:0;transition:color .2s ease,background-color .2s ease}
+.site-head a:hover,.site-head a:focus-visible{color:var(--sh-accent);background:var(--sh-hover);text-decoration:underline;text-underline-offset:3px;outline:none}
+.foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 18px;padding:8px 14px;border-top:1px solid var(--sh-line);font-size:12px;color:var(--sh-muted)}
+.foot a{color:var(--sh-ink);text-decoration:none;border-bottom:1px solid transparent}
+.foot a:hover,.foot a:focus-visible{color:var(--sh-accent);border-bottom-color:currentColor;outline:none}
+@media (max-width:640px){.foot{padding:8px 10px}}
+.foot{margin-bottom:-4rem;margin-top:4rem}
+</style>
 </head>
 <body>
+<header class="site-head" role="banner"><a href="https://kevmcg1.github.io/portfolio" target="_top" aria-label="Back to the portfolio at kevmcg1.github.io">KEVMCG1.GITHUB.IO</a></header>
 
     <header>
         <div class="header-inner">
@@ -1122,5 +1136,6 @@
             loadSample('CNMG120408EN');
         });
     </script>
+<footer class="foot"><span>Insert Master is released under GitHub’s <a href="https://github.com/github/choosealicense.com/blob/gh-pages/_licenses/cc0-1.0.txt" target="_blank" rel="license noopener noreferrer">Creative Commons Zero v1.0 Universal</a> license. All rights reserved.</span></footer>
 </body>
 </html>
