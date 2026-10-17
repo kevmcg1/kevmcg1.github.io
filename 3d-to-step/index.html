@@ -455,7 +455,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
 <label class="chk"><input type="checkbox" id="rotSnap" checked>Snap gizmo rotation to 45°</label>
 <div class="note">Snap points: face centers, edge centers, hole centers, circle points every 45°, and corners. Click one with the Anchor tool to move the pivot there.</div>
 </div></div></div></div></section><section class="sec" id="sec-look" data-modes="solid wire rt"><div class="w"><button class="sec-h hv" data-toggle><span class="ic" data-a="wiggle"><i class="fa-solid fa-palette"></i></span><span>Appearance</span><span class="ic chev" data-a=""><i class="fa-solid fa-chevron-down"></i></span></button><div class="sec-b"><div class="in"><div class="pad">
-<div class="g2"><label class="f"><span class="l">Material</span><div id="vMatHost"></div><select id="vMat" class="native"></select></label><label class="f"><span class="l">Base color</span><input type="color" id="vColor" value="#d9d9d9"></label></div>
+<div class="g2"><label class="f"><span class="l">RTX finish</span><div id="vMatHost"></div><select id="vMat" class="native"></select></label><label class="f"><span class="l">Base color</span><input type="color" id="vColor" value="#d9d9d9"></label></div>
 <label class="chk"><input type="checkbox" id="vZup" checked>Model is Z-up (rotate to Y-up)</label>
 <label class="chk"><input type="checkbox" id="vSmooth" checked>Smooth shading</label>
 <label class="chk"><input type="checkbox" id="vEdges">Show sharp edges</label>
@@ -1981,13 +1981,17 @@ const Importers = (() => {
     const dv = new DataView(buf), le = format === 'binary_little_endian'; let pos = bodyStart;
     let tokens = null, ti = 0; if (format === 'ascii') tokens = td.decode(u8.subarray(bodyStart)).split(/\s+/).filter(Boolean);
     const read = (type) => {
-      if (tokens) return +tokens[ti++];
+      if (tokens) { if (ti >= tokens.length) throw new Error('The PLY file ends before all of its data.'); return +tokens[ti++]; }   // (a header that promises millions of points would otherwise spin for ages on NaN)
       let v; switch (type) { case 'char': case 'int8': v = dv.getInt8(pos); break; case 'uchar': case 'uint8': v = dv.getUint8(pos); break; case 'short': case 'int16': v = dv.getInt16(pos, le); break; case 'ushort': case 'uint16': v = dv.getUint16(pos, le); break; case 'int': case 'int32': v = dv.getInt32(pos, le); break; case 'uint': case 'uint32': v = dv.getUint32(pos, le); break; case 'float': case 'float32': v = dv.getFloat32(pos, le); break; case 'double': case 'float64': v = dv.getFloat64(pos, le); break; default: throw new Error('Unknown PLY type ' + type); }
       pos += SZ[type]; return v;
     };
     const V = [], C = []; let hasCol = false; const tris = [], P = (i) => [V[i * 3], V[i * 3 + 1], V[i * 3 + 2]]; const tcolList = []; let faceCol = false;
     try {
       for (const el of els) {
+        if (!el.props.length) continue;   // an element with no properties holds nothing to read
+        // a header that promises more items than the file can hold: read only what is there instead of looping millions of times
+        const least = tokens ? el.props.length : el.props.reduce((n, p) => n + (SZ[p.list ? p.ct : p.type] || 1), 0);
+        const room = Math.floor((tokens ? tokens.length - ti : u8.length - pos) / least); if (el.count > room) el.count = Math.max(0, room);   // (a damaged file keeps whatever it really holds)
         for (let i = 0; i < el.count; i++) {
           const vals = {};
           for (const p of el.props) {
@@ -2598,18 +2602,15 @@ function initTips() {
 }
 
 /* ===================================================================== state */
-const MATS = {
-  ceramic: { name: 'Ceramic',        color: '#e6e6e6', metal: 0, rough: 0.12, trans: 0, cc: 1 },
-  clay:    { name: 'Matte clay',     color: '#bdbdbd', metal: 0, rough: 0.9,  trans: 0, cc: 0 },
-  plastic: { name: 'Glossy plastic', color: '#9a9a9a', metal: 0, rough: 0.22, trans: 0, cc: 1 },
-  steel:   { name: 'Brushed steel',  color: '#c9ced6', metal: 1, rough: 0.34, trans: 0, cc: 0 },
-  chrome:  { name: 'Chrome',         color: '#ffffff', metal: 1, rough: 0.03, trans: 0, cc: 0 },
-  gold:    { name: 'Gold',           color: '#ffc562', metal: 1, rough: 0.2,  trans: 0, cc: 0 },
-  glass:   { name: 'Glass',          color: '#eef6ff', metal: 0, rough: 0.02, trans: 1, cc: 0 },
+const MATS = {   // RTX finishes: three metals and a 3D-printed plastic. Metals reflect the same studio as the 3D modeler's parts.
+  aluminum:  { name: 'Aluminum',        color: '#dde2ea', metal: 0.9,  rough: 0.3,  env: 1.0,  layers: 0 },
+  stainless: { name: 'Stainless steel', color: '#d3d7dc', metal: 1,    rough: 0.24, env: 1.05, layers: 0 },
+  brass:     { name: 'Brass',           color: '#e6bd62', metal: 1,    rough: 0.26, env: 1.1,  layers: 0 },
+  pla:       { name: 'PLA (3D printed)', color: '#e9e6dc', metal: 0,    rough: 0.42, env: 0.9,  layers: 1 },
 };
 const S = {
   mesh: null, name: 'part', view: null, faces: null, an: null, patchTris: null, issues: [], attempts: new Map(),
-  colors: new Map(), sel: new Set(), hover: -1, zUp: true, smooth: true, mat: 'ceramic', color: '#e6e6e6',
+  colors: new Map(), sel: new Set(), hover: -1, zUp: true, smooth: true, mat: 'aluminum', color: '#dde2ea',
   mode: 'solid', tool: 'select', snapOn: false, snapTypes: { face: true, edge: true, hole: true, circle: true, corner: false },
   size: 0, facesCache: new Map(), ver: 0, xfVer: 0, focus: null, repairs: [], showRepairs: false, repairMarks: [], example: null, lastStep: null, tutorialRunning: false,
 };
@@ -2649,13 +2650,14 @@ function applyImportedColors(mesh) {
 }
 
 async function setModel(mesh, name, opts = {}) {
-  const keepXf = !!opts.keepXf;
+  const keepXf = !!opts.keepXf, tok = (setModel.tok = (setModel.tok || 0) + 1);   // a newer open or fix started while this one was analyzing wins; this one stops (otherwise the two meshes get mixed and analysis crashes)
   S.mesh = mesh; S.name = name; S.ver++; S.facesCache.clear(); S.smoothRaw = null; S.attempts = opts.keepAttempts ? S.attempts : new Map(); S.focus = null; S.lastStep = null;
   if (opts.example !== undefined) S.example = opts.example;
   if (!keepXf) { S.repairs = Rep.openSessions(mesh, opts.raw); S.showRepairs = false; S.markOnly = null; }
   S.sel.clear(); S.hover = -1; if (!opts.keepColors) S.colors.clear();
   buildView();
   busy('Analyzing surfaces…', 0.75); await tick();
+  if (tok !== setModel.tok || S.mesh !== mesh) return;
   S.faces = ensureFaces({ merge: true, angle: 0.25 });
   S.an = Core.analyze(mesh, S.faces);
   S.patchTris = Array.from({ length: S.an.patches.length }, () => []);
@@ -2858,13 +2860,29 @@ const controls = new THREE.OrbitControls(camera, touch);
 controls.enableDamping = true; controls.dampingFactor = 0.09; controls.screenSpacePanning = true; controls.rotateSpeed = 0.85; controls.panSpeed = 0.9;
 controls.minDistance = 0.3; controls.maxDistance = 40; controls.minPolarAngle = 0; controls.maxPolarAngle = Math.PI; controls.target.set(0, 0.5, 0);
 
+const ENV = {}; // two reflection environments: a dim one for Solid, and the bright studio the 3D modeler uses for its metal parts (RTX)
 (function buildEnv() { // neutral gray studio for reflections
   const pm = new THREE.PMREMGenerator(renderer), env = new THREE.Scene();
   env.add(new THREE.Mesh(new THREE.SphereGeometry(60, 32, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.1, 0.1, 0.1), side: THREE.BackSide })));
   const panel = (w, h, x, y, z, k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k), side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); env.add(m); };
   panel(34, 22, -22, 30, 22, 7); panel(16, 34, 38, 14, 8, 2.6); panel(44, 12, 0, 16, -40, 5); panel(70, 8, 0, 48, 0, 2.6); panel(60, 4, 0, 1, 40, 1.2);
-  scene.environment = pm.fromScene(env, 0.02).texture; pm.dispose();
+  ENV.dark = pm.fromScene(env, 0.02).texture; scene.environment = ENV.dark; pm.dispose();
 })();
+(function buildStudioEnv() { // same softboxes, gradient backdrop and strip lights as the 3D modeler's metal look
+  try {
+    const pm = new THREE.PMREMGenerator(renderer), sc = new THREE.Scene(), sg = new THREE.SphereGeometry(60, 48, 24), pos = sg.attributes.position, col = new Float32Array(pos.count * 3);
+    const lerp = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k), sm = (k) => k * k * (3 - 2 * k);
+    const ramp = (h) => { const T = [0.97, 0.97, 1.0], M = [0.88, 0.91, 0.98], F = [0.78, 0.79, 0.85]; return h > 0 ? lerp(M, T, sm(Math.min(1, h / 0.75))) : lerp(M, F, sm(Math.min(1, -h / 0.6))); };
+    for (let i = 0; i < pos.count; i++) col.set(ramp(pos.getY(i) / 50).map((v) => v * 0.2), i * 3);   // darker than the modeler's backdrop so a flat face has something to reflect: the softboxes read as real highlights on a dark studio
+    sg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    sc.add(new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false })));
+    const box = (w, h, rgb, gain, x, y, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(rgb[0] * gain, rgb[1] * gain, rgb[2] * gain), side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); sc.add(m); };
+    box(60, 40, [1, 1, 1.02], 1.65, -8, 44, -14); box(54, 32, [1, 1, 1.03], 1.25, -28, 22, -30); box(26, 34, [1.0, 0.90, 0.76], 1.5, 46, 6, -8);
+    box(44, 44, [1, 1, 1], 0.02, -46, 6, 14); box(9, 36, [0.92, 0.96, 1.0], 2.4, -26, 14, 38); box(46, 9, [1, 1, 1], 1.6, 6, 12, 46);
+    ENV.studio = pm.fromScene(sc, 0.02).texture; pm.dispose(); sg.dispose();
+  } catch (e) { ENV.studio = null; }
+})();
+
 const key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(-3, 6, 3.5); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
 Object.assign(key.shadow.camera, { left: -5, right: 5, top: 5, bottom: -5, near: 0.5, far: 24 }); key.shadow.camera.updateProjectionMatrix(); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02;
 const hemi = new THREE.HemisphereLight(0xffffff, 0x202020, 0.22), rim = new THREE.DirectionalLight(0xffffff, 0);
@@ -2878,15 +2896,30 @@ const matSolid = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors:
 const matHidden = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, colorWrite: false, depthWrite: false });
 /* RTX mode: standard physically based shading (studio reflections, real shadows), nothing exotic */
 const matRTX = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, metalness: 0, roughness: 0.2, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+// PLA: the print's layer lines. A bump of rounded beads stacked along the build direction (world up), faded out where they would alias.
+const LAYER_U = { uLayer: { value: 0.05 }, uAmp: { value: 0 } };
+matRTX.extensions = { derivatives: true };
+matRTX.onBeforeCompile = (sh) => {
+  sh.uniforms.uLayer = LAYER_U.uLayer; sh.uniforms.uAmp = LAYER_U.uAmp;
+  sh.vertexShader = 'varying vec3 vLayerPos;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vLayerPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+  sh.fragmentShader = 'uniform float uLayer, uAmp; varying vec3 vLayerPos;\n' + sh.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+    if (uAmp > 0.0) {
+      float ph = vLayerPos.y / uLayer, fr = fract(ph), fade = 1.0 - smoothstep(0.25, 0.7, fwidth(ph));
+      vec3 upV = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz), tg = upV - dot(upV, normal) * normal;
+      normal = normalize(normal - tg * (cos(6.2831853 * fr) * 0.55 + 0.25 * cos(12.566371 * fr)) * uAmp * fade);
+    }`);
+};
+matRTX.customProgramCacheKey = () => 'tgPLA';
 const SHADE = { exp: 1, rot: 0, shadow: true };
 function applyRTX() {
-  const rt = S.mode === 'rt', p = MATS[S.mat];
-  matRTX.metalness = p.metal; matRTX.roughness = Math.max(p.rough, 0.05); matRTX.clearcoat = p.cc ? 1 : 0; matRTX.clearcoatRoughness = 0.04;
-  matRTX.envMapIntensity = p.trans > 0 ? 1.8 : p.metal ? 1.35 : 1.1;
-  matRTX.transparent = p.trans > 0; matRTX.opacity = p.trans > 0 ? 0.32 : 1; matRTX.side = p.trans > 0 ? THREE.DoubleSide : THREE.FrontSide; matRTX.depthWrite = !(p.trans > 0); matRTX.needsUpdate = true;
+  const rt = S.mode === 'rt', p = MATS[S.mat] || MATS.aluminum;
+  matRTX.metalness = p.metal; matRTX.roughness = Math.max(p.rough, 0.05); matRTX.clearcoat = 0; matRTX.envMapIntensity = p.env;
+  matRTX.transparent = false; matRTX.opacity = 1; matRTX.side = THREE.FrontSide; matRTX.depthWrite = true; matRTX.needsUpdate = true;
+  const dim = S.view ? Math.max(...S.view.sizeN) : 3; LAYER_U.uLayer.value = Math.max(dim, 0.2) / 70; LAYER_U.uAmp.value = rt && p.layers ? 0.5 : 0;
+  scene.environment = rt && ENV.studio ? ENV.studio : ENV.dark;
   const a = SHADE.rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
   key.position.set(-3 * c + 3.5 * s, 6, 3 * s + 3.5 * c); rim.position.set(2 * c - 5 * s, 3, -2 * s - 5 * c);
-  key.intensity = rt ? 1.9 : 1.2; rim.intensity = rt ? 0.9 : 0; hemi.intensity = rt ? 0.3 : 0.22;
+  key.intensity = rt ? 1.5 : 1.2; rim.intensity = rt ? 0.6 : 0; hemi.intensity = rt ? 0.2 : 0.22;
   ground.material.opacity = rt ? 0.6 : 0.5; renderer.toneMappingExposure = 1.05 * (rt ? SHADE.exp : 1);
   if (modelMesh) modelMesh.receiveShadow = rt && SHADE.shadow;
 }
@@ -2919,10 +2952,8 @@ function rebuildColors() { if (!S.patchTris) return; for (let p = 0; p < S.patch
 function triColorsLinear() { const m = S.mesh.m, o = new Float32Array(m * 3), base = baseLin(); const cache = new Map(); for (let p = 0; p < S.patchTris.length; p++) { const h = S.colors.get(p), c = h ? (cache.get(h) || (cache.set(h, toLin(hexToRgb(h))), cache.get(h))) : base; for (const t of S.patchTris[p]) { o[t * 3] = c[0]; o[t * 3 + 1] = c[1]; o[t * 3 + 2] = c[2]; } } return o; }
 
 function applyMaterial() {
-  const p = MATS[S.mat];
-  matSolid.metalness = p.metal; matSolid.roughness = p.rough; matSolid.clearcoat = p.cc ? 1 : 0; matSolid.clearcoatRoughness = 0.06;
-  matSolid.transparent = p.trans > 0; matSolid.opacity = p.trans > 0 ? 0.35 : 1; matSolid.side = p.trans > 0 ? THREE.DoubleSide : THREE.FrontSide;
-  matSolid.envMapIntensity = p.trans > 0 ? 1.7 : 1; matSolid.depthWrite = !(p.trans > 0); matSolid.needsUpdate = true; applyRTX();
+  matSolid.metalness = 0; matSolid.roughness = 0.12; matSolid.clearcoat = 1; matSolid.clearcoatRoughness = 0.06;
+  matSolid.transparent = false; matSolid.opacity = 1; matSolid.side = THREE.FrontSide; matSolid.envMapIntensity = 1; matSolid.depthWrite = true; matSolid.needsUpdate = true; applyRTX();
 }
 function faceWireGeometry() {
   const vp = S.view.vpos, seen = new Set(), V = S.mesh.V, out = [];
@@ -3715,6 +3746,20 @@ function boot() {
 }
 boot();
 if (location.hash === '#debug') window.__app = { Hist, Rep, S, Core, Sheet, camera, key, rim, hemi, ground, matRTX, matSolid, renderer, getModel: () => modelMesh, selectPatch, setSelection, applyRule, paintSelection, setTool, setSnap, resetXf, quickRotate, currentXf, syncFields, applyFields, pivot, holder, setMode, loadExample, renderHealth, fixEverything, tryIssue, runVerify, convert, setAnchorWorldLocal, dropToFloor, centerOnOrigin, anchorToOrigin };
+/* Dev tool: press the backtick key (`) to open the automatic UX tester (devtest.js, loaded on first use). */
+(() => {
+  let loading = false;
+  const api = () => ({ S, Hist, Rep, Sheet, Core, Tut, MATS, EX, camera, controls, scene, renderer, pivot, holder, getModel: () => modelMesh, setMode, setTool, loadExample, loadFile, renderHealth, fixEverything, convert, runVerify, selectPatch, setSelection, toast, busy, applyMaterial });
+  addEventListener('keydown', (e) => {
+    if (e.key !== '`' || !e.isTrusted || e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target; if (t && (t.tagName === 'TEXTAREA' || t.isContentEditable || (t.tagName === 'INPUT' && /^(text|number|search|email|url|tel|password)$/.test(t.type)))) return;
+    e.preventDefault(); e.stopPropagation(); window.__devApi = api();
+    if (window.DevTest) { window.DevTest.toggle(); return; }
+    if (loading) return; loading = true;
+    const sc = document.createElement('script'); sc.src = 'devtest.js?v=1'; sc.onload = () => { loading = false; window.DevTest && window.DevTest.toggle(true); }; sc.onerror = () => { loading = false; toast('Could not load the dev tool (devtest.js)', 'err'); };
+    document.head.appendChild(sc);
+  }, true);
+})();
 
 })();
 </script>
