@@ -76,7 +76,7 @@ function checkOut(text, o = {}) {
   return P;
 }
 /* shortcuts whose output has blanks (__) to fill in */
-const tmpl = (line) => /\bblock\b|[abc] axis index|index [abc]|tcp on|tool center point on|rough(?:ing)? turn|program header|new program|start program/i.test(String(line).replace(/\s+/g, ' '));
+const tmpl = (line) => /\bblock\b|[abc] axis index|index [abc]|tcp on|tool center point on|cutter comp|rough(?:ing)? turn|program header|new program|start program/i.test(String(line).replace(/\s+/g, ' '));
 const BADOUT = /(^|[^A-Za-z])(NaN|undefined|Infinity|null)([^A-Za-z]|$)|\[object/;
 
 /* ---------------------------------------------------------------- independent program checker (a whole program, line by line) */
