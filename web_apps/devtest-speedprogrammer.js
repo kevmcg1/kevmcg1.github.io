@@ -293,7 +293,7 @@ window.__devApi = {
   modal: '#cheat-sheet-modal.visible, #debug-modal.visible, #alphaNotice:not([hidden])',
   coverOk: '#autocomplete, #toast, #status-pill',
   computed: '#units-badge, #status-pill, .ac-code, .ac-desc, .cheat-code, .cheat-desc, #debug-summary, .debug-output, #toast',
-  markup: [{ root: '#highlight', allowed: 'span' }, { root: '#autocomplete', allowed: 'div, span' }, { root: '#cheat-sheet-content', allowed: 'div, span' }, { root: '#debug-body', allowed: 'div, span' }, { root: '#line-numbers', allowed: 'div' }],
+  markup: [{ root: '#highlight', allowed: 'span, div' }, { root: '#autocomplete', allowed: 'div, span' }, { root: '#cheat-sheet-content', allowed: 'div, span' }, { root: '#debug-body', allowed: 'div, span' }, { root: '#line-numbers', allowed: 'div' }],
   alpha: { popup: '#alphaNotice:not([hidden])', button: '#anGo' },
   slowKinds: ['paste'],
   allowance: () => Math.round(editor.value.length / 25),
@@ -310,10 +310,11 @@ window.__devApi = {
   check: (K) => {
     syncMachine(); machineInvariants(K);
     const v = editor.value, lines = v.split('\n');
-    const nums = lineNums.children.length;
-    K.check('line numbers match the number of lines', nums === lines.length && (lines.length > 300 || all('div', lineNums).every((d, i) => d.textContent === String(i + 1)))) || K.find('state', 'error', `The editor has ${lines.length} lines but the margin shows ${nums} line numbers`, { where: 'line numbers' });
+    // (the margin and the colour layer draw only the lines on screen plus a margin: lines winFirst..winLast)
+    const shown = lines.slice(winFirst, winLast + 1), nums = numsInner.textContent.split('\n');
+    K.check('line numbers match the number of lines', winFirst >= 0 && winLast <= lines.length - 1 && nums.length === shown.length && nums.every((t, i) => t === String(winFirst + i + 1))) || K.find('state', 'error', `The editor has ${lines.length} lines but the margin shows ${nums.length} line numbers (lines ${winFirst + 1} to ${winLast + 1})`, { where: 'line numbers' });
     const NUL = /\u0000/g;   // (the browser's HTML parser drops NUL characters, so they are left out of the comparison)
-    K.check('the highlight layer shows exactly the editor text (upper case)', highlight.textContent.replace(NUL, '') === lines.map((l) => l.toUpperCase()).join('\n').replace(NUL, '')) || K.find('state', 'error', 'The coloured text behind the editor differs from the editor text', { where: 'highlight text', sample: highlight.textContent.slice(0, 200) + ' | ' + v.slice(0, 200) });
+    K.check('the highlight layer shows exactly the editor text (upper case)', hlInner.textContent.replace(NUL, '') === shown.map((l) => l.toUpperCase()).join('\n').replace(NUL, '')) || K.find('state', 'error', 'The coloured text behind the editor differs from the editor text', { where: 'highlight text', sample: hlInner.textContent.slice(0, 200) + ' | ' + v.slice(0, 200) });
     const u = unitsOf(v), badge = sel('#units-badge').textContent;
     K.check('the units badge matches the G20 / G21 in the text', badge === (u === 'inch' ? 'INCH (G20)' : u === 'metric' ? 'METRIC (G21)' : 'UNITS ?')) || K.find('state', 'error', `Units badge says "${badge}" but the program says ${u || 'nothing'}`, { where: 'units badge' });
     K.check('the Auto ; button shows its state', autoSemicolonBtn.textContent === (autoSemicolon ? 'Auto ; ON' : 'Auto ; OFF') && autoSemicolonBtn.classList.contains('auto-btn-active') === autoSemicolon) || K.find('state', 'error', `Auto semicolon is ${autoSemicolon ? 'on' : 'off'} but the button says "${autoSemicolonBtn.textContent}"`, { where: 'auto button' });
