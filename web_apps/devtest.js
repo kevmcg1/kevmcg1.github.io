@@ -517,6 +517,7 @@ const MODES = {
   thorough: { label: 'Thorough: about 3000 actions, every control many times, thousands of pairs and runs, every flow', budget: 3000 },
   problems: { label: 'Aim at problems: scouts for suspects, replays old problems, spends most of its time on what is most likely to break, shrinks every failure', budget: 450, scoutShare: .14 },
   stress: { label: 'Stress test: pushes the app with bigger and bigger inputs, hammers it with back-to-back actions and repeats whole journeys, timing each step, to find where it slows down, freezes or breaks', budget: 0 },
+  endless: { label: 'Endless: runs Quick, Standard, Thorough, Aim at problems and Stress over and over with new seeds until you press Stop. Keeps going in a background tab, behind other windows or with the screen off, and saves its report after every round', budget: 0 },
   free: { label: 'Free run: the original open-ended run (your rate, max and seed below)', budget: 0 },
 };
 async function resetBaseline() {
@@ -608,6 +609,37 @@ function stressText() {
   return L;
 }
 
+
+/* endless: the plan modes one after another, forever, each round with a new seed. Everything found stays in one report. It runs through worker timers and a
+   Web Lock, so it does not need the tab visible or the window focused; a screen wake lock is asked for too. */
+async function runEndless() {
+  const order = ['quick', 'standard', 'thorough', 'problems'].concat(A.stress ? ['stress'] : []), E = T.endless = { round: 0, rounds: [], started: Date.now(), now: '' };
+  let wake = null; const getWake = async () => { try { if (navigator.wakeLock && !document.hidden && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) { wake = null; } };
+  const onVis = () => { if (!document.hidden) getWake(); }; document.addEventListener('visibilitychange', onVis); getWake();
+  try {
+    while (T.running) {
+      const mode = order[E.round % order.length]; E.round++; E.now = mode;
+      const seed = (T.seed0 + E.round * 7919) >>> 0; rng = mulberry32(seed); T.seed = seed;
+      const n0 = T.n, i0 = T.issues.size, t0 = NOW(), err0 = [...T.issues.values()].filter((i) => i.sev === 'error').length;
+      T.cycleBase = T.n; T.phases = {}; T.phaseName = ''; T.plan = null; T.problems = null; T.stressRes = null; T.finishAt = 0; T.budgetOverride = 0;
+      logLine('ok', `Round ${E.round}: ${mode} (seed ${seed})`); ui();
+      try { if (mode === 'problems') await runProblems(); else if (mode === 'stress') await runStress(); else await runPlanned(mode); }
+      catch (e) { find('js-error', 'error', 'Tester error: ' + (e && e.message), { stack: e && e.stack }); }
+      T.scenario = null; if (!T.running) break;
+      E.rounds.push({ round: E.round, mode, seed, actions: T.n - n0, ms: Math.round(NOW() - t0), newProblems: T.issues.size - i0, newErrors: [...T.issues.values()].filter((i) => i.sev === 'error').length - err0 });
+      if (E.rounds.length > 200) E.rounds.shift();
+      T.log.length > 400 && T.log.splice(0, 200); autosave(); await resetBaseline(); await sleep(50);
+    }
+  } finally { document.removeEventListener('visibilitychange', onVis); try { wake && wake.release(); } catch (e) { /* ignore */ } }
+}
+function endlessText() {
+  const E = T.endless; if (!E) return [];
+  const L = ['', '## Endless run', `- ${E.round} rounds started${T.running ? ` (round ${E.round} is ${E.now}, still running)` : ''} over ${fmtT(Date.now() - E.started)}; ${T.n} actions in all. Every problem below was found at some point in the run.`];
+  E.rounds.slice(-30).forEach((r) => L.push(`    round ${r.round} ${r.mode} (seed ${r.seed}): ${r.actions} actions in ${fmtT(r.ms)}, ${r.newProblems} new problem(s)${r.newErrors ? `, ${r.newErrors} new error(s)` : ''}`));
+  if (E.rounds.length > 30) L.push(`    (${E.rounds.length - 30} earlier rounds not listed)`);
+  return L;
+}
+
 /* aim at problems: what is remembered, scouting, replay, hunting, shrinking */
 const MEM = "devtest-problems.v1:" + APP;
 const loadMem = () => { try { const o = JSON.parse(localStorage.getItem(MEM)); return o && typeof o === 'object' ? { ctl: o.ctl || {}, repros: o.repros || [] } : { ctl: {}, repros: [] }; } catch (e) { return { ctl: {}, repros: [] }; } };
@@ -690,10 +722,10 @@ async function start(o = {}) {
   T.scripts0 = document.scripts.length; try { T.saved = A.snapshot ? A.snapshot() : null; } catch (e) { T.saved = null; }   // the person's own work is put back when the run ends
   hook(); logLine('ok', `Started: seed ${T.seed}, ${T.turbo ? 'full speed' : T.rate + ' actions/s'}${T.max ? ', ' + T.max + ' actions' : ', until stopped'}`); ui();
   await calibrate(); if (!T.running) return;
-  T.stressRes = null; T.mode = MODES[o.mode] ? o.mode : 'free'; T.budgetOverride = o.budget || 0; T.speed = o.speed != null ? +o.speed : (T.mode === 'free' ? 1 : 10); T.phases = {}; T.phaseName = ''; T.plan = null; T.problems = null; T.live.trace = [];
+  T.stressRes = null; T.endless = null; T.cycleBase = 0; T.seed0 = T.seed; T.mode = MODES[o.mode] ? o.mode : 'free'; T.budgetOverride = o.budget || 0; T.speed = o.speed != null ? +o.speed : (T.mode === 'free' ? 1 : 10); T.phases = {}; T.phaseName = ''; T.plan = null; T.problems = null; T.live.trace = [];
   BG.start(T.speed);
   if (T.mode === 'free') { loop(); return; }
-  try { if (T.mode === 'problems') await runProblems(); else if (T.mode === 'stress') await runStress(); else await runPlanned(T.mode); } catch (e) { find('js-error', 'error', 'Tester error: ' + (e && e.message), { stack: e && e.stack }); }
+  try { if (T.mode === 'problems') await runProblems(); else if (T.mode === 'stress') await runStress(); else if (T.mode === 'endless') await runEndless(); else await runPlanned(T.mode); } catch (e) { find('js-error', 'error', 'Tester error: ' + (e && e.message), { stack: e && e.stack }); }
   T.scenario = null; stop(T.running ? 'plan finished' : 'stopped');
 }
 function stop(why) { if (!T.running) return; T.running = false; if (T.phaseName && T.phases[T.phaseName]) { const ps = T.phases[T.phaseName]; ps.ms = NOW() - T.phaseT0; ps.done = T.n - ps.n0; } T.tEnd = now(); T.endReason = why || 'stopped'; FM.on = false; T.turboUsed = BG.turbo; T.bgFrames = BG.hiddenFrames; T.speedUsed = BG.speed; BG.stop(); logLine('ok', 'Finished: ' + T.endReason); autosave(); ui(); giveBack(); }
@@ -726,6 +758,7 @@ function reportText() {
   const verdict = R.errs.length ? 'NEEDS ATTENTION' : R.warns.length ? 'GOOD, WITH WARNINGS' : 'ALL CLEAR';
   L.push(`## Verdict: ${verdict}`, `- ${T.pass} of ${T.n} actions passed every check (${pct(T.pass, T.n)}%), ${T.fail} had a problem`, `- ${R.errs.length} errors, ${R.warns.length} warnings, ${R.infos.length} notes (distinct problems)`, `- Smoothness: ${R.fps.toFixed(0)} fps average, frame time typical ${R.p50.toFixed(0)} ms, 95th ${R.p95.toFixed(0)} ms, 99th ${R.p99.toFixed(0)} ms; ${T.longtasks.length} long tasks`, '');
   if (T.plan) L.push('', `Mode: ${MODES[T.mode].label.split(':')[0]} · plan of ${T.plan.total} actions · ${Object.keys(T.plan).filter((k) => !['total', 'mode'].includes(k)).map((k) => k + ' ' + Math.min(T.plan[k], (T.phases[k] || { done: 0 }).done || 0)).join(', ')}`);
+  endlessText().forEach((l) => L.push(l));
   stressText().forEach((l) => L.push(l));
   if (T.problems) { const P = T.problems; L.push('', '## Aimed at problems', `- ${T.n ? Math.round(100 * (T.n - P.scouted - P.explore) / T.n) : 0}% of the actions went to suspects (${Object.entries(P.types).map(([k, v]) => k + ' ' + v).join(', ')}); memory at the start: ${P.memory.suspects} suspect controls, ${P.memory.repros} old problems`,
     P.measured ? '- Suspects (score = what went wrong around them):' : '- Nothing went wrong, so there is no measured ranking. These are the controls the tester thinks most likely to break (a starting guess by kind of control):');
@@ -754,7 +787,7 @@ function reportText() {
   if (R.miss.length) L.push(`- Not used yet (${R.miss.length}): ${R.miss.slice(0, 40).map((c) => c.label).join('; ')}${R.miss.length > 40 ? '; …' : ''}`);
   return L.join('\n');
 }
-function reportJSON() { const R = build(); return JSON.stringify({ mode: T.mode, plan: T.plan, problems: T.problems, stress: T.stressRes, seed: T.seed, actions: T.n, durationMs: Math.round(R.dur), rate: R.rate, pass: T.pass, fail: T.fail, issues: R.issues.map((i) => ({ kind: i.kind, severity: i.sev, message: i.msg, count: i.count, first: i.first, last: i.last, likelyCause: i.diag, stack: i.stack, state: i.state, sample: i.sample, during: [...i.actions], controls: [...i.ctl], repro: i.repro })), checks: Object.fromEntries([...T.checks.entries()].map(([k, v]) => [k, v])), kinds: Object.fromEntries([...T.kinds.entries()].map(([k, v]) => [k, { n: v.n, bad: v.bad, jank: v.jank }])), features: Object.fromEntries(T.features), coverage: { total: R.tot.length, used: R.hit.length, pairs: T.pairs.size, unused: R.miss.map((c) => c.label) }, smoothness: { fps: R.fps, p50: R.p50, p95: R.p95, p99: R.p99, longTasks: T.longtasks.length } }, null, 1); }
+function reportJSON() { const R = build(); return JSON.stringify({ mode: T.mode, plan: T.plan, problems: T.problems, stress: T.stressRes, endless: T.endless, seed: T.seed, actions: T.n, durationMs: Math.round(R.dur), rate: R.rate, pass: T.pass, fail: T.fail, issues: R.issues.map((i) => ({ kind: i.kind, severity: i.sev, message: i.msg, count: i.count, first: i.first, last: i.last, likelyCause: i.diag, stack: i.stack, state: i.state, sample: i.sample, during: [...i.actions], controls: [...i.ctl], repro: i.repro })), checks: Object.fromEntries([...T.checks.entries()].map(([k, v]) => [k, v])), kinds: Object.fromEntries([...T.kinds.entries()].map(([k, v]) => [k, { n: v.n, bad: v.bad, jank: v.jank }])), features: Object.fromEntries(T.features), coverage: { total: R.tot.length, used: R.hit.length, pairs: T.pairs.size, unused: R.miss.map((c) => c.label) }, smoothness: { fps: R.fps, p50: R.p50, p95: R.p95, p99: R.p99, longTasks: T.longtasks.length } }, null, 1); }
 function autosave() { try { localStorage.setItem('devtest-report:' + APP, JSON.stringify({ at: Date.now(), n: T.n, text: reportText() })); } catch (e) { /* ignore */ } }
 function download(name, text, type) { const b = new Blob([text], { type }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.dispatchEvent(new MouseEvent('click')); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); }
 
@@ -773,7 +806,7 @@ function build_ui() {
   const st = document.createElement('style'); st.id = 'devtest-css'; st.textContent = CSS; document.head.appendChild(st);
   el = document.createElement('div'); el.id = 'devtest'; el.hidden = true; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Automatic UX tester');
   el.innerHTML = `<div class="h"><b>UX tester</b><span class="dim">press ` + '`' + ` to hide</span><span class="sp"></span><button data-a="min" title="Collapse">–</button><button data-a="close" title="Hide (the test keeps running)">✕</button></div>
-<div class="row"><select id="dtMode" title="What kind of run"><option value="quick">Quick</option><option value="standard">Standard</option><option value="thorough">Thorough</option><option value="problems">Aim at problems</option><option value="stress">Stress test</option><option value="free" selected>Free run</option></select><select id="dtSpeed" title="How much faster than real time the page's animations and timers run. Faster means more actions per second."><option value="1">Real time</option><option value="4">4× faster</option><option value="10" selected>10× faster</option><option value="20">20× faster</option></select><button data-a="forget" title="Forget the suspects and problems remembered from earlier Aim at problems runs">Forget memory</button></div>
+<div class="row"><select id="dtMode" title="What kind of run"><option value="quick">Quick</option><option value="standard">Standard</option><option value="thorough">Thorough</option><option value="problems">Aim at problems</option><option value="stress">Stress test</option><option value="endless">Endless</option><option value="free" selected>Free run</option></select><select id="dtSpeed" title="How much faster than real time the page's animations and timers run. Faster means more actions per second."><option value="1">Real time</option><option value="4">4× faster</option><option value="10" selected>10× faster</option><option value="20">20× faster</option></select><button data-a="forget" title="Forget the suspects and problems remembered from earlier Aim at problems runs">Forget memory</button></div>
 <div class="dim" id="dtLabel" style="padding:2px 10px"></div>
 <div class="row"><button class="go" data-a="start">▶ Start</button><button data-a="pause" disabled>❚❚ Pause</button><button class="no" data-a="stop" disabled>■ Stop</button>
 <label>per sec<input id="dtRate" type="number" min="1" max="60" value="10"></label><label>max<input id="dtMax" type="number" min="0" value="0" title="0 = keep going until stopped"></label><label>seed<input id="dtSeed" type="number" value="1"></label><label title="Ignore the rate and go as fast as the page allows"><input id="dtTurbo" type="checkbox" style="width:auto">turbo</label></div>
@@ -822,7 +855,7 @@ function estimate() {
 }
 function etaText(total) {
   const R = build(), rate = T.n / Math.max(1, R.dur / 1000), tests = ' · ' + rate.toFixed(1) + ' actions per second' + (BG.speed > 1 && T.running ? ', time ×' + BG.speed : '');
-  if (T.running && T.plan) { const left = estimate(), fin = Date.now() + left; T.finishAt = T.finishAt && T.n > 5 ? T.finishAt * 0.85 + fin * 0.15 : fin; return T.n < 3 ? 'estimating the finishing time…' : `${Math.round(Math.min(99.9, 100 * T.n / total))}% · about ${fmtDur(T.finishAt - Date.now())} left · done around ${clock(T.finishAt)}${tests}`; }
+  if (T.running && T.plan) { const left = estimate(), fin = Date.now() + left; T.finishAt = T.finishAt && T.n > 5 ? T.finishAt * 0.85 + fin * 0.15 : fin; return T.n - (T.cycleBase || 0) < 3 ? 'estimating the finishing time…' : `${T.mode === 'endless' && T.endless ? 'Endless · round ' + T.endless.round + ' (' + T.endless.now + ') · ' : ''}${Math.round(Math.min(99.9, 100 * (T.n - (T.cycleBase || 0)) / total))}% of this round · about ${fmtDur(T.finishAt - Date.now())} left · done around ${clock(T.finishAt)}${tests}`; }
   if (!T.running && T.n && T.plan) return `${T.endReason || 'finished'} · took ${fmtDur(R.dur)}${tests}`;
   return T.running ? `running${tests}` : '';
 }
@@ -839,7 +872,7 @@ function ui(force) {
   if (!el || (!T.open && !force)) return; lastUi = now();
   const R = build(), set = (id, v) => { const e = $('#' + id); if (e && e.textContent !== String(v)) e.textContent = v; };
   set('dtN', T.n); set('dtP', T.pass); set('dtF', T.fail); set('dtR', R.rate.toFixed(1)); set('dtT', fmtT(R.dur)); set('dtI', R.issues.length);
-  const total = T.plan ? T.plan.total : T.max, pctDone = total ? Math.min(T.running ? 99.9 : 100, 100 * T.n / total) : 0, bar = $('#dtBar'); if (bar) bar.style.width = (total ? pctDone : T.running ? (T.n % 100) : 0) + '%';
+  const total = T.plan ? T.plan.total : T.max, pctDone = total ? Math.min(T.running ? 99.9 : 100, 100 * (T.n - (T.cycleBase || 0)) / total) : 0, bar = $('#dtBar'); if (bar) bar.style.width = (total ? pctDone : T.running ? (T.n % 100) : 0) + '%';
   set('dtEta', etaText(total)); const phEl = $('#dtPhases'); if (phEl) { const h = phasesHtml(); if (phEl.dataset.h !== h) { phEl.dataset.h = h; phEl.innerHTML = h; } }
   const s = $('[data-a=start]', el), p = $('[data-a=pause]', el), x = $('[data-a=stop]', el); s.disabled = T.running; p.disabled = !T.running; x.disabled = !T.running; s.textContent = T.running ? '● Running' : T.n ? '▶ Run again' : '▶ Start';
   const body = $('#dtBody'), atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 30;

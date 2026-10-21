@@ -935,7 +935,7 @@ G41 feed to Z-.5 at 12.`;
 
 <script>
 /* Dev tool: press the backtick key (`) anywhere on the page, even in the editor, to open the automatic UX tester. devtest.js and its small adapter for this page
-   (devtest-speedprogrammer.js) are loaded on first use. Open the page with ?dev=quick | standard | thorough | problems | stress to start a run by itself. */
+   (devtest-speedprogrammer.js) are loaded on first use. Open the page with ?dev=quick | standard | thorough | problems | stress | endless to start a run by itself. */
 (() => {
   let loading = false;
   const FILES = ['devtest-speedprogrammer.js?v=1', 'devtest.js?v=1'];
@@ -957,7 +957,7 @@ G41 feed to Z-.5 at 12.`;
     if (window.DevTest) { window.DevTest.toggle(); return; }
     load(() => { window.DevTest && window.DevTest.toggle(true); });
   }, true);
-  const auto = /[?&]dev=(quick|standard|thorough|problems|stress|free)\b/.exec(location.search);
+  const auto = /[?&]dev=(quick|standard|thorough|problems|stress|endless|free)\b/.exec(location.search);
   if (auto) setTimeout(() => load(() => {
     window.DevTest.toggle(true); const m = document.getElementById('dtMode'); if (m) { m.value = auto[1]; m.onchange && m.onchange(); }
     const go = document.querySelector('#devtest [data-a=start]'); if (go) go.click();
