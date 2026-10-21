@@ -51,6 +51,16 @@
   #units-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 1px; transition: all 0.3s; text-transform: uppercase; font-style: italic; }
   #units-badge.inch { border-color: #e5c07b; color: #e5c07b; }
   #units-badge.metric { border-color: #56b6c2; color: #56b6c2; }
+  /* Mill / Lathe: exactly one is always on (a radio group) */
+  #machine-toggle { display: inline-flex; border: 1px solid var(--accent); border-radius: 4px; overflow: hidden; }
+  #machine-toggle button { border: 0; border-radius: 0; background: transparent; padding: 4px 14px; font-weight: 700; letter-spacing: 1.5px; }
+  #machine-toggle button + button { border-left: 1px solid var(--accent); }
+  #machine-toggle button[aria-checked="true"] { background: var(--accent); color: var(--bg); }
+  #machine-toggle button[aria-checked="false"]:hover { background: var(--accent-dim); color: var(--text); }
+  #multiaxis-wrap { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; font-style: italic; color: var(--text-dim); cursor: pointer; }
+  #multiaxis-wrap[hidden] { display: none; }
+  #multiaxis-wrap input { accent-color: var(--accent); margin: 0; cursor: pointer; }
+  #multiaxis-wrap:has(input:checked) { color: var(--accent); }
   #status-pill { margin-left: auto; font-size: 11px; padding: 2px 10px; border-radius: 20px; background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
   #status-pill.show { opacity: 1; }
   button {
@@ -214,6 +224,12 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
   <div id="topbar">
     <div class="top-row">
       <span class="logo">SPEED CODER</span>
+      <div class="sep"></div>
+      <div id="machine-toggle" role="radiogroup" aria-label="Machine type">
+        <button type="button" id="machine-mill" role="radio" aria-checked="true" data-machine="mill">Mill</button>
+        <button type="button" id="machine-lathe" role="radio" aria-checked="false" data-machine="lathe">Lathe</button>
+      </div>
+      <label id="multiaxis-wrap" title="Turn on A / B / C axis words and the 5-axis phrases (mill only)"><input type="checkbox" id="multiaxis-chk"> Multiaxis</label>
       <div class="sep"></div>
       <span id="units-badge">UNITS ?</span>
       <div class="sep"></div>
@@ -885,8 +901,16 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
   closeDebugBtn.addEventListener('click', () => debugModal.classList.remove('visible'));
   debugModal.addEventListener('click', e => { if (e.target === debugModal) debugModal.classList.remove('visible'); });
 
-  // Initial content
-  editor.value = `%
+  // ============================================================
+  // MACHINE MODE: mill or lathe (never both). Multiaxis is a mill-only option, off by default.
+  // ============================================================
+  const MACHINE_KEY = 'speedcoder.machine.v1';
+  const machineBtns = { mill: document.getElementById('machine-mill'), lathe: document.getElementById('machine-lathe') };
+  const multiChk = document.getElementById('multiaxis-chk');
+  const multiWrap = document.getElementById('multiaxis-wrap');
+  const hintRow = document.querySelector('.hint-row');
+  const SAMPLE = {
+    mill: `%
 O0001 (EXAMPLE PROGRAM - VF-2)
 (DATE: ${new Date().toLocaleDateString()})
 (MATERIAL: 6061 ALUMINUM)
@@ -928,7 +952,117 @@ end block
 max spindle speed 5000
 
 (G-CODE + NATURAL LANGUAGE EXAMPLE)
-G41 feed to Z-.5 at 12.`;
+G41 feed to Z-.5 at 12.`,
+    lathe: `%
+O0001 (EXAMPLE LATHE PROGRAM - ST-20)
+(DATE: ${new Date().toLocaleDateString()})
+(MATERIAL: 1018 STEEL)
+
+(SETUP)
+safety line inch
+home all
+
+(OP 1 - FACE AND ROUGH TURN)
+change tool to T1
+G54
+CSS 600 sfm max 3000 rpm
+feed per rev
+coolant on
+rapid to X2.2 Z.1
+face to X-.06 at .008
+rapid to X2.1 Z.1
+rough turn 100 200 D.1 R.02 U.02 W.005 F.01
+N100 G00 X1.
+G01 Z-1.5
+X1.5
+Z-2.5
+N200 X2.1
+
+(OP 2 - FINISH AND THREAD)
+change tool to T2
+finish pass 100 200 F.005
+change tool to T3 offset 5
+rapid to X1.1 Z.2
+thread to X.95 Z-1. pitch .0625
+nose comp left
+cancel nose comp
+coolant off
+home all
+end block
+
+(G-CODE + NATURAL LANGUAGE EXAMPLE)
+G42 turn to X1.2 Z-1. at .005`
+  };
+  function saveMachine(m) { try { localStorage.setItem(MACHINE_KEY, JSON.stringify(m)); } catch (e) { /* storage may be blocked */ } }
+  function loadMachine() {
+    try { const o = JSON.parse(localStorage.getItem(MACHINE_KEY)); if (o && (o.type === 'mill' || o.type === 'lathe')) return { type: o.type, multi: o.type === 'mill' && o.multi === true }; } catch (e) { /* none saved */ }
+    return { type: 'mill', multi: false };
+  }
+  function applyMachine(type, multi, opts) {
+    opts = opts || {};
+    const prev = GcodeConverter.getMachine().type;
+    const m = GcodeConverter.setMachine(type, multi);
+    for (const t of ['mill', 'lathe']) {
+      const b = machineBtns[t]; b.setAttribute('aria-checked', String(m.type === t)); b.tabIndex = m.type === t ? 0 : -1;
+    }
+    multiWrap.hidden = m.type !== 'mill';
+    multiChk.checked = m.multi;
+    document.body.dataset.machine = m.type;
+    hintRow.textContent = 'Type anything and press Enter to convert to G-code (' + m.type.toUpperCase() + ' mode' + (m.multi ? ', multiaxis' : '') + ')';
+    saveMachine(m);
+    hideAutocomplete();
+    if (cheatSheetModal.classList.contains('visible')) renderCheatSheet();
+    if (debugModal.classList.contains('visible')) runDebug();
+    if (prev !== m.type && editor.value === SAMPLE[prev]) { editor.value = SAMPLE[m.type]; updateLineNumbers(); updateUnitsBadge(); }
+    if (!opts.silent) showStatus(m.type.toUpperCase() + ' mode' + (m.multi ? ' + multiaxis' : ''));
+  }
+  for (const t of ['mill', 'lathe']) {
+    machineBtns[t].addEventListener('click', () => { if (GcodeConverter.getMachine().type !== t) applyMachine(t, false); });
+    machineBtns[t].addEventListener('keydown', (e) => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); const o = t === 'mill' ? 'lathe' : 'mill'; applyMachine(o, false); machineBtns[o].focus(); }
+    });
+  }
+  multiChk.addEventListener('change', () => applyMachine('mill', multiChk.checked));
+
+  // The documented examples the Debug panel and the dev tool check, for the machine that is on.
+  const DOC_MILL = _LEGACY_DEBUG_START.filter(c => c.category !== 'CSS' && !['max spindle speed 5000', 'spindle clamp 6000', 'css block', 'css off block'].includes(c.input));
+  const DOC_LATHE = _LEGACY_DEBUG_START.filter(c => ['Spindle', 'Coolant', 'Air / Conveyor', 'Dwell', 'CSS'].includes(c.category) && !/orient/i.test(c.input) || ['work offset 1', 'use work offset G55', 'absolute mode', 'incremental mode', 'use absolute', 'set units to inches', 'metric', 'end program', 'optional stop', 'op stop', 'program stop', 'call subroutine O1234', 'XZ plane', 'cancel cycle', 'cancel canned cycle', 'sub block', 'spindle start block', 'css block', 'css off block'].includes(c.input))
+    .concat([
+      { category: 'Safety / Init', input: 'safety line', expect: 'G00 G18 G40 G80 G99' },
+      { category: 'Safety / Init', input: 'safety line inch', expect: 'G00 G18 G20 G40 G80 G99' },
+      { category: 'Safety / Init', input: 'safety line metric', expect: 'G00 G18 G21 G40 G80 G99' },
+      { category: 'Safety / Init', input: 'home x', expect: 'G28 U0.' },
+      { category: 'Safety / Init', input: 'home z', expect: 'G28 W0.' },
+      { category: 'Safety / Init', input: 'home all', expect: 'G28 U0.\nG28 W0.' },
+      { category: 'Tool Change', input: 'change tool to T3', expect: 'T0303' },
+      { category: 'Tool Change', input: 'use tool T12', expect: 'T1212' },
+      { category: 'Tool Change', input: 'change tool to T3 offset 5', expect: 'T0305' },
+      { category: 'Motion', input: 'rapid to X1 Z2', expect: 'G00 X1. Z2.' },
+      { category: 'Motion', input: 'feed to Z-0.5 at 30', expect: 'G01 Z-.5 F30.' },
+      { category: 'Motion', input: 'turn to X1.5 Z-2 at .01', expect: 'G01 X1.5 Z-2. F.01' },
+      { category: 'Motion', input: 'face to X0 Z0', expect: 'G01 X0. Z0.' },
+      { category: 'Motion', input: 'arc clockwise to X1 Z-1 R1', expect: 'G02 X1. Z-1. R1.' },
+      { category: 'Motion', input: 'arc counterclockwise to X2 Z-2 R0.5', expect: 'G03 X2. Z-2. R.5' },
+      { category: 'Work Offsets / Coords', input: 'part zero', expect: 'G00 G54 X0. Z0.' },
+      { category: 'Work Offsets / Coords', input: 'clear z', expect: 'G00 Z.1' },
+      { category: 'Feed', input: 'feed per rev', expect: 'G99' },
+      { category: 'Feed', input: 'feed per minute', expect: 'G98' },
+      { category: 'Nose Comp', input: 'nose comp left', expect: 'G41' },
+      { category: 'Nose Comp', input: 'nose comp right', expect: 'G42' },
+      { category: 'Nose Comp', input: 'cancel nose comp', expect: 'G40' },
+      { category: 'Cycles', input: 'rough turn 100 200 D.1 R.02 U.02 W.005 F.01', expect: 'G71 U.1 R.02\nG71 P100 Q200 U.02 W.005 F.01' },
+      { category: 'Cycles', input: 'finish pass 100 200 F.005', expect: 'G70 P100 Q200 F.005' },
+      { category: 'Cycles', input: 'thread to X.4 Z-1 pitch .0625', expect: 'G32 X.4 Z-1. F.0625' },
+      { category: 'Blocks', input: 'tool change block', expect: null },
+      { category: 'Blocks', input: 'end block', expect: null },
+      { category: 'Blocks', input: 'wcs block', expect: null },
+    ]);
+  window.__documentedCases = () => (GcodeConverter.getMachine().type === 'lathe' ? DOC_LATHE : DOC_MILL);
+  window.__samplePrograms = SAMPLE;
+
+  // Initial content
+  { const saved = loadMachine(); applyMachine(saved.type, saved.multi, { silent: true }); }
+  editor.value = SAMPLE[GcodeConverter.getMachine().type];
 
   updateLineNumbers();
 </script>

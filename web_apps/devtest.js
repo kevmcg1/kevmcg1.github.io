@@ -463,7 +463,18 @@ ACTS.forEach((a) => { if (a.purpose) PURPOSE[a.id] = a.purpose; if (a.expect) EX
 async function oneAction(spec) {
   const outer = rng, aseed = spec && spec.seed != null ? spec.seed >>> 0 : Math.floor(outer() * 4294967296);
   rng = mulberry32(aseed); T.spec = spec || {};   // every action draws from its own seeded stream, so (kind, control, seed) replays it
-  try { return await oneAction0(aseed); } finally { rng = outer; T.spec = {}; }
+  /* watchdog: one action that never finishes (a hung wait, a promise nothing resolves) must not stall a run that is meant to go on for hours */
+  const hangMs = T.hangMs || 60000; let timer;
+  try {
+    const guard = new Promise((res) => { timer = window.setTimeout(() => res('hung'), hangMs); });
+    const r = await Promise.race([oneAction0(aseed), guard]);
+    if (r === 'hung') {
+      find('freeze', 'error', `An action did not finish within ${Math.round(hangMs / 1000)} s and was abandoned: ${T.cur ? T.cur.desc : 'unknown'}`, { where: 'hang ' + (T.cur ? T.cur.kind + ':' + (T.cur.ctl || '') : '') });
+      logLine('bad', `#${T.n} an action hung for ${Math.round(hangMs / 1000)} s, abandoned it and carried on`); T.hangs = (T.hangs || 0) + 1; T.cur = null; try { heal(); } catch (e) { /* ignore */ }
+      return undefined;
+    }
+    return r;
+  } finally { window.clearTimeout(timer); rng = outer; T.spec = {}; }
 }
 async function oneAction0(aseed) {
   T.n++; const n = T.n; const spec = T.spec;
@@ -567,6 +578,10 @@ async function runPlanned(mode) {
    phase (every whole journey over and over, watching memory). */
 const STRESS_MAX_MS = 8000;
 async function runStress() {
+  const hang0 = T.hangMs; T.hangMs = 300000;   // (the biggest sizes may honestly take a while)
+  try { return await runStress0(); } finally { T.hangMs = hang0; }
+}
+async function runStress0() {
   const SC = A.stress || {}, names = Object.keys(SC), levels = clamp(T.budgetOverride || 9, 3, 14), hammerN = 480, soakN = 120;
   const S = T.stressRes = { rows: [], scaling: [], stopped: [], hammer: null, soak: null, levels };
   T.plan = { total: names.length * levels + hammerN + soakN, mode: 'stress' }; T.plan['bigger and bigger inputs'] = names.length * levels; T.plan['hammering'] = hammerN; T.plan['soak: journeys on repeat'] = soakN;

@@ -17,10 +17,17 @@
 'use strict';
 const GC = window.GcodeConverter;
 const sel = (s) => document.querySelector(s), all = (s, r = document) => [...r.querySelectorAll(s)];
-const ITEMS = GC.getCheatSheetItems();
-const GSET = new Set(ITEMS.filter((i) => i.category === 'G-Code').map((i) => i.code)), MSET = new Set(ITEMS.filter((i) => i.category === 'M-Code').map((i) => i.code));
-const PHRASES = ITEMS.filter((i) => i.category === 'Shortcut' || i.category === 'Natural Language').map((i) => i.code);
-const BASE = { value: editor.value };
+/* what the chosen machine (Mill, Mill + Multiaxis or Lathe) knows: the cheat-sheet items, the G / M codes and the phrases, kept current by syncMachine() */
+const ITEMS = [], GSET = new Set(), MSET = new Set(), PHRASES = [];
+const machine = () => GC.getMachine();
+function syncMachine() {
+  const items = GC.getCheatSheetItems(); ITEMS.length = 0; items.forEach((x) => ITEMS.push(x)); GSET.clear(); MSET.clear(); PHRASES.length = 0;
+  ITEMS.forEach((i) => { if (i.category === 'G-Code') GSET.add(i.code); else if (i.category === 'M-Code') MSET.add(i.code); else if (i.category === 'Shortcut' || i.category === 'Natural Language') PHRASES.push(i.code); });
+}
+syncMachine();
+/* the axis letters each machine has (written out here on purpose, not read from the page): a mill X Y Z, with Multiaxis A B C too; a lathe X Z and the incremental U W */
+const axesOf = (m) => (m.type === 'lathe' ? 'XZUWIK' : 'XYZIJK' + (m.multi ? 'ABC' : ''));
+const BASE = { value: (window.__samplePrograms && window.__samplePrograms.mill) || editor.value };
 
 /* ---------------------------------------------------------------- independent G-code checker */
 const WORD = /^[A-Z](-?\d+\.?\d*|-?\.\d+)$/, HOLE = /^[A-Z]-?_+\.?$/, AXIS = 'XYZABCUVWIJK';
@@ -45,18 +52,18 @@ function checkOut(text, o = {}) {
       if (!WORD.test(tok)) { add('error', `malformed word "${tok}" in "${t}" (a letter needs a plain number)`); return; }
       const L = tok[0], v = parseFloat(tok.slice(1)); ws.push({ L, v, tok });
       if (L !== 'G' && L !== 'M') { seen[L] = (seen[L] || 0) + 1; if (seen[L] > 1 && 'XYZABCFSTHDPQRIJKL'.includes(L)) add(rangeSev, `word ${L} appears twice in "${t}"`); }
-      if (L === 'G') { if (!GSET.has('G' + pad2(Math.floor(v))) || !Number.isInteger(v)) add('warn', `G code ${tok} in "${t}" is not in the rules table`); }
-      else if (L === 'M') { if (!MSET.has('M' + pad2(Math.floor(v))) || !Number.isInteger(v)) add('warn', `M code ${tok} in "${t}" is not in the rules table`); }
-      else if (L === 'T') { if (!Number.isInteger(v) || v < 0 || v > 99) add(rangeSev, `tool number ${tok} in "${t}" is out of range 0..99`); }
+      if (L === 'G') { if (!o.noTable && !GSET.has(Number.isInteger(v) ? 'G' + pad2(v) : 'G' + String(v))) add('warn', `G code ${tok} in "${t}" is not in the ${machine().type} rules table`); }
+      else if (L === 'M') { if (!o.noTable && !MSET.has('M' + pad2(Math.floor(v))) || !Number.isInteger(v)) add('warn', `M code ${tok} in "${t}" is not in the ${machine().type} rules table`); }
+      else if (L === 'T') { const tmax = machine().type === 'lathe' ? 9999 : 99; if (!Number.isInteger(v) || v < 0 || v > tmax) add(rangeSev, `tool number ${tok} in "${t}" is out of range 0..${tmax}`); }
       else if (L === 'S') { if (v < 0 || v > 60000) add(rangeSev, `spindle speed ${tok} in "${t}" is out of range 0..60000`); }
       else if (L === 'F') { if (!(v > 0)) add(rangeSev === 'error' ? 'error' : 'warn', `feed ${tok} in "${t}" is not above zero`); else if (v > 100000) add(rangeSev, `feed ${tok} in "${t}" is above 100000`); }
       else if (L === 'H' || L === 'D') { if (!Number.isInteger(v) || v < 0 || v > 999) add(rangeSev, `offset ${tok} in "${t}" is out of range 0..999`); }
       else if (L === 'P' || L === 'Q') { if (v < 0) add(rangeSev, `${tok} in "${t}" is negative`); }
-      else if (AXIS.includes(L)) { if (Math.abs(v) > 1e5) add(rangeSev, `${tok} in "${t}" is beyond 100000`); if (!/\./.test(tok) && !o.templates && v !== 0 && Math.abs(v) < 1e5) add('warn', `axis word ${tok} in "${t}" has no decimal point (on many controls X5 means 0.0005)`); }
+      else if (AXIS.includes(L)) { if (!axesOf(machine()).includes(L)) add('error', `${L} is not an axis of this ${machine().type}${machine().type === 'mill' && 'ABC'.includes(L) ? ' without Multiaxis' : ''} in "${t}"`); if (Math.abs(v) > 1e5) add(rangeSev, `${tok} in "${t}" is beyond 100000`); if (!/\./.test(tok) && !o.templates && v !== 0 && Math.abs(v) < 1e5) add('warn', `axis word ${tok} in "${t}" has no decimal point (on many controls X5 means 0.0005)`); }
     });
     const gs = ws.filter((w) => w.L === 'G').map((w) => 'G' + pad2(w.v)), has = (L) => ws.some((w) => w.L === L);
     if (!o.templates) {   // (a template has blanks to fill in, so it cannot be judged yet)
-      if ((gs.includes('G41') || gs.includes('G42')) && !has('D')) add(rangeSev, `cutter compensation without a D offset in "${t}"`);
+      if (machine().type === 'mill' && (gs.includes('G41') || gs.includes('G42')) && !has('D')) add(rangeSev, `cutter compensation without a D offset in "${t}"`);
       if (gs.includes('G43') && !has('H')) add(rangeSev, `tool length compensation without an H offset in "${t}"`);
       if (gs.includes('G04') && !has('P') && !has('X')) add(rangeSev, `dwell without a time in "${t}"`);
     }
@@ -69,12 +76,12 @@ function checkOut(text, o = {}) {
   return P;
 }
 /* shortcuts whose output has blanks (__) to fill in */
-const tmpl = (line) => /\bblock\b|b axis index|index b|program header|new program|start program/i.test(String(line).replace(/\s+/g, ' '));
+const tmpl = (line) => /\bblock\b|[abc] axis index|index [abc]|tcp on|tool center point on|cutter comp|rough(?:ing)? turn|program header|new program|start program/i.test(String(line).replace(/\s+/g, ' '));
 const BADOUT = /(^|[^A-Za-z])(NaN|undefined|Infinity|null)([^A-Za-z]|$)|\[object/;
 
 /* ---------------------------------------------------------------- independent program checker (a whole program, line by line) */
 function checkProgram(text, o = {}) {
-  const P = [], add = (msg) => P.push({ sev: 'error', msg });
+  const P = [], add = (msg) => P.push({ sev: 'error', msg }), lathe = machine().type === 'lathe';
   const lines = text.split('\n').map((l) => l.trim().replace(/;$/, '').trim()).filter((l) => l !== '');
   if (!lines.length) { add('the program is empty'); return P; }
   if (lines[0] === '%') { if (lines[lines.length - 1] !== '%' || lines.length < 3) add('the program starts with % but does not end with %'); if (!/^O\d{1,5}\b/.test(lines[1] || '')) add(`the % is not followed by an O program number (line 2 is "${lines[1] || ''}")`); }
@@ -84,7 +91,7 @@ function checkProgram(text, o = {}) {
     if (/^O\d/.test(ln)) return;
     const code = ln.replace(/\([^()]*\)/g, ' '), ws = code.split(/\s+/).filter(Boolean).map((tk) => ({ L: tk[0], v: parseFloat(tk.slice(1)), tk })).filter((w) => /^[A-Z]$/.test(w.L) && Number.isFinite(w.v));
     const G = ws.filter((w) => w.L === 'G').map((w) => 'G' + pad2(w.v)), M = ws.filter((w) => w.L === 'M').map((w) => 'M' + pad2(w.v)), has = (L) => ws.find((w) => w.L === L);
-    const axes = ws.some((w) => 'XYZABC'.includes(w.L));
+    const axes = ws.some((w) => 'XYZABCUW'.includes(w.L));
     const mo = G.find((g) => ['G00', 'G01', 'G02', 'G03'].includes(g)); if (mo) st.motion = mo;
     const at = `line ${idx + 1} "${ln}"`;
     if (st.ended && !/^M30|^M02/.test(ln)) add(`${at} comes after the end of the program (M30)`);
@@ -95,10 +102,12 @@ function checkProgram(text, o = {}) {
     if (G.includes('G43')) { if (!st.tool) add(`${at}: tool length compensation (G43) before any tool is loaded`); else if (has('H') && has('H').v !== st.tool) add(`${at}: H${has('H').v} does not match the loaded tool T${st.tool}`); st.tlc = true; }
     if (M.includes('M08') || M.includes('M07') || M.includes('M88')) st.coolant = true; if (M.includes('M09')) st.coolant = false;
     const tw = has('T');
-    if (tw && M.includes('M06')) {
-      if (st.spindle) add(`${at}: tool change while the spindle is still running (no M05 before it)`);
-      if (!st.homed) add(`${at}: tool change without retracting Z first (no G28 after the last cut)`);
-      if (st.comp) add(`${at}: tool change with cutter compensation still on`);
+    if (tw && (lathe ? !/^G28/.test(ln) : M.includes('M06'))) {   // (a lathe changes tool with a T word alone: T0303 = tool 3, offset 3)
+      if (!lathe) {
+        if (st.spindle) add(`${at}: tool change while the spindle is still running (no M05 before it)`);
+        if (!st.homed) add(`${at}: tool change without retracting Z first (no G28 after the last cut)`);
+        if (st.comp) add(`${at}: tool change with cutter compensation still on`);
+      } else if (st.comp) add(`${at}: tool change with nose compensation still on`);
       st.tool = tw.v; st.tlc = false; st.tcs++;
     }
     if (M.includes('M03') || M.includes('M04')) { st.spindle = true; }
@@ -110,16 +119,16 @@ function checkProgram(text, o = {}) {
       if (!m) add(`${at}: a move with no G00 / G01 motion code set yet`);
       else {
         if (!st.moved) {
-          ['G17', 'G40', 'G49', 'G80', 'G90'].forEach((g) => { if (![...st.seenBefore].includes(g)) add(`${at}: first move comes before the safe start block has ${g}`); });
+          (lathe ? ['G18', 'G40', 'G80', 'G99'] : ['G17', 'G40', 'G49', 'G80', 'G90']).forEach((g) => { if (![...st.seenBefore].includes(g)) add(`${at}: first move comes before the safe start block has ${g}`); });
           if (!st.units) add(`${at}: first move comes before the units (G20 / G21) are set`);
           st.moved = true;
         }
         if (m !== 'G00') {
           st.cut = true; st.homed = false;
-          if (!st.tool) add(`${at}: cutting move before any tool change`); if (!st.tlc) add(`${at}: cutting move without tool length compensation (G43 H..)`);
+          if (!st.tool) add(`${at}: cutting move before any tool change`); if (!lathe && !st.tlc) add(`${at}: cutting move without tool length compensation (G43 H..)`);
           if (!st.spindle) add(`${at}: cutting move with the spindle off`); if (!st.wcs) add(`${at}: cutting move without a work offset (G54..)`);
           if (!st.feed) add(`${at}: cutting move without a feed rate (F)`);
-          if (['G02', 'G03'].includes(m) && !has('R') && !has('I') && !has('J')) add(`${at}: arc without R or I / J`);
+          if (['G02', 'G03'].includes(m) && !has('R') && !has('I') && !has('J') && !has('K')) add(`${at}: arc without R or I / J / K`);
         } else if (axes && st.cut) st.homed = false;
       }
     }
@@ -156,7 +165,7 @@ function fill(K, code, awful) {
 function numbersIn(s) { return (String(s).match(/-?\d*\.?\d+(?:e[+-]?\d+)?/gi) || []).map(Number).filter(Number.isFinite); }
 const closeNum = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 const addSemi = (l) => { const t = l.replace(/\s+$/, ''); return t === '' || t.startsWith('(') || /^O\d+/.test(t) || t.startsWith('%') || t.endsWith(';') ? l : t + ';'; };
-const unitsOf = (text) => { let u = null; for (const line of text.split('\n')) { const t = line.replace(/\([^)]*\)/g, '').toUpperCase(); if (/(^|[^A-Z0-9.])G20(?![0-9])/.test(t)) u = 'inch'; if (/(^|[^A-Z0-9.])G21(?![0-9])/.test(t)) u = 'metric'; } return u; };
+const unitsOf = (text) => { let u = null; for (const line of text.split('\n')) { const code = line.replace(/\([^)]*\)/g, '').toUpperCase(); for (const m of code.matchAll(/G(\d+(?:\.\d+)?)/g)) { if (m.index > 0 && /[A-Z]/.test(code[m.index - 1])) continue; const v = Number(m[1]); if (v === 20) u = 'inch'; else if (v === 21) u = 'metric'; } } return u; };
 
 /* ---------------------------------------------------------------- pressing Enter in the editor, and what must come out */
 function expectedEnter(text, pos, auto) {
@@ -196,7 +205,7 @@ function judge(K, res, filled, o) {
     probs.forEach((p) => K.find(p.sev === 'error' ? 'gcode' : p.sev === 'warn' ? 'gcode' : 'gcode', p.sev === 'info' ? 'info' : p.sev, `"${res.exp.line.slice(0, 60)}" -> ${p.msg}`, { where: p.msg.replace(/[\d.]+/g, '#').replace(/"[^"]*"/g, '"."').slice(0, 70), sample: `typed: ${res.exp.line}\nresult: ${res.newLine}` }));
     if (filled && o && o.strict && !/work offset/i.test(res.exp.line)) {
       const out = numbersIn(res.newLine.replace(/\([^)]*\)/g, ''));
-      filled.nums.forEach((n) => { const x = Number(n.v); if (Number.isFinite(x) && !out.some((y) => closeNum(x, y))) K.find('oracle', 'warn', `the number ${n.v} typed in "${res.exp.line.slice(0, 60)}" is missing from the output "${res.newLine.slice(0, 60)}"`, { where: 'number lost ' + res.exp.line.replace(/[\d.\-]+/g, '#').slice(0, 40) }); });
+      filled.nums.filter((n) => !(machine().type === 'lathe' && n.kind === 'tool')).forEach((n) => { const x = Number(n.v); if (Number.isFinite(x) && !out.some((y) => closeNum(x, y))) K.find('oracle', 'warn', `the number ${n.v} typed in "${res.exp.line.slice(0, 60)}" is missing from the output "${res.newLine.slice(0, 60)}"`, { where: 'number lost ' + res.exp.line.replace(/[\d.\-]+/g, '#').slice(0, 40) }); });
     }
     return true;
   }
@@ -205,6 +214,7 @@ function judge(K, res, filled, o) {
 
 /* ---------------------------------------------------------------- program builder */
 function buildProgram(K, o = {}) {
+  if (machine().type === 'lathe') return buildLathe(K, o);
   const inch = o.units ? o.units === 'inch' : K.chance(0.5), L = [];
   if (K.chance(0.6)) L.push('program header');
   L.push(inch ? 'safety line inch' : 'safety line metric', 'work offset ' + K.ri(1, 6));
@@ -221,6 +231,23 @@ function buildProgram(K, o = {}) {
   L.push('end block');
   return { lines: L, inch, tools: nOps };
 }
+function buildLathe(K, o = {}) {
+  const inch = o.units ? o.units === 'inch' : K.chance(0.5), L = [];
+  if (K.chance(0.6)) L.push('program header');
+  L.push(inch ? 'safety line inch' : 'safety line metric', 'work offset ' + K.ri(1, 6));
+  const nOps = K.ri(1, 3); let t = K.ri(1, 6);
+  for (let i = 0; i < nOps; i++, t += K.ri(1, 4)) {
+    L.push(`change tool to T${t}`, `spindle on ${K.ri(2, 20) * 100}`);
+    if (K.chance(0.7)) L.push('coolant on');
+    L.push(`rapid to X${K.rf(1, 4).toFixed(2)} Z${K.rf(0.05, 0.3).toFixed(2)}`);
+    for (let j = K.ri(1, 3); j > 0; j--) L.push(K.pick(['turn to', 'face to', 'feed to']) + ` X${K.rf(0, 4).toFixed(2)} Z-${K.rf(0.05, 3).toFixed(2)} at ${K.pick(['.005', '.01', '.012'])}`);
+    if (K.chance(0.4)) L.push(`arc clockwise to X${K.rf(0, 4).toFixed(2)} Z-${K.rf(0.1, 3).toFixed(2)} R${K.rf(0.1, 1).toFixed(2)}`);
+    if (K.chance(0.3)) L.push('optional stop');
+    L.push('coolant off', 'spindle off', 'home all');
+  }
+  L.push('end block');
+  return { lines: L, inch, tools: nOps };
+}
 async function typeProgram(K, lines) {
   editor.value = ''; K.typeInto(editor, '', {}); let cur = '';
   K.allowSlow(500); let i = 0; for (const l of lines) { const r = pressEnter(K, cur + l); cur = editor.value; judge(K, r, null, { strict: true }); await K.raf(); }
@@ -233,6 +260,25 @@ const GARBAGE = ['asdf', 'G', 'M', 'T', 'X', '%%', '(', ')', '((((', '; ;', 'O',
 const PROSE = ['please make this a safe program', 'rapid to the left and down', 'change the tool to the big one', 'start the spindle', 'the quick brown fox jumps over the lazy dog', 'M ', '   ', ''];
 
 /* ---------------------------------------------------------------- the adapter */
+/* ---------------------------------------------------------------- Mill / Lathe / Multiaxis contract */
+const radios = () => ({ mill: sel('#machine-mill'), lathe: sel('#machine-lathe') });
+const multiBox = () => sel('#multiaxis-chk'), multiWrapEl = () => sel('#multiaxis-wrap');
+function machineInvariants(K) {
+  const m = machine(), r = radios(), on = ['mill', 'lathe'].filter((t) => r[t].getAttribute('aria-checked') === 'true');
+  K.check('exactly one of Mill and Lathe is on', on.length === 1) || K.find('state', 'error', `${on.length} of Mill / Lathe are on (${on.join(', ') || 'none'}): it must always be exactly one`, { where: 'machine radios' });
+  K.check('the Mill / Lathe toggle agrees with the converter', on[0] === m.type) || K.find('state', 'error', `The toggle shows ${on[0]} but the converter is in ${m.type} mode`, { where: 'machine toggle vs converter' });
+  K.check('Multiaxis is shown in mill mode only', multiWrapEl().hidden === (m.type === 'lathe')) || K.find('state', 'error', `Multiaxis is ${multiWrapEl().hidden ? 'hidden' : 'shown'} in ${m.type} mode`, { where: 'multiaxis visibility' });
+  K.check('Multiaxis box agrees with the converter', multiBox().checked === m.multi) || K.find('state', 'error', `The Multiaxis box is ${multiBox().checked ? 'checked' : 'unchecked'} but the converter says multiaxis is ${m.multi}`, { where: 'multiaxis box' });
+  K.check('a lathe never has multiaxis', !(m.type === 'lathe' && m.multi)) || K.find('state', 'error', 'Lathe mode has multiaxis on', { where: 'lathe multi' });
+  K.check('the page marks which machine is on', document.body.dataset.machine === m.type);
+  try { const saved = JSON.parse(localStorage.getItem('speedcoder.machine.v1')); K.check('the machine choice is remembered', !!saved && saved.type === m.type && saved.multi === m.multi) || K.find('state', 'warn', `The saved machine choice is ${JSON.stringify(saved)} but the machine is ${JSON.stringify(m)}`, { where: 'machine saved' }); } catch (e) { /* storage blocked */ }
+}
+const setMachineUI = async (K, type, multi) => {
+  const r = radios(); if (machine().type !== type) await K.realClick(r[type]);
+  if (type === 'mill' && multiBox().checked !== !!multi) await K.realClick(multiBox());
+  syncMachine();
+};
+
 window.__devApi = {
   name: 'Speed Programmer',
   covers: [
@@ -251,16 +297,18 @@ window.__devApi = {
   alpha: { popup: '#alphaNotice:not([hidden])', button: '#anGo' },
   slowKinds: ['paste'],
   allowance: () => Math.round(editor.value.length / 25),
-  snapshot: () => { const s = { value: editor.value, auto: autoSemicolon, a: editor.selectionStart, b: editor.selectionEnd, top: editor.scrollTop }; BASE.value = s.value; return s; },
-  restore: (s) => { hideAutocomplete(); cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); if (autoSemicolon !== s.auto) autoSemicolonBtn.click(); editor.value = s.value; updateLineNumbers(); editor.setSelectionRange(s.a, s.b); editor.scrollTop = s.top; statusPill.classList.remove('show'); },
-  state: () => ({ units: sel('#units-badge').textContent, 'auto ;': autoSemicolon, lines: editor.value.split('\n').length, 'cheat sheet': cheatSheetModal.classList.contains('visible'), debug: debugModal.classList.contains('visible'), autocomplete: acVisible, status: statusPill.textContent }),
+  snapshot: () => { const s = { machine: machine(), value: editor.value, auto: autoSemicolon, a: editor.selectionStart, b: editor.selectionEnd, top: editor.scrollTop }; return s; },
+  restore: (s) => { if (s.machine) applyMachine(s.machine.type, s.machine.multi, { silent: true }); hideAutocomplete(); cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); if (autoSemicolon !== s.auto) autoSemicolonBtn.click(); editor.value = s.value; updateLineNumbers(); editor.setSelectionRange(s.a, s.b); editor.scrollTop = s.top; statusPill.classList.remove('show'); },
+  state: () => ({ machine: machine().type + (machine().multi ? ' + multiaxis' : ''), units: sel('#units-badge').textContent, 'auto ;': autoSemicolon, lines: editor.value.split('\n').length, 'cheat sheet': cheatSheetModal.classList.contains('visible'), debug: debugModal.classList.contains('visible'), autocomplete: acVisible, status: statusPill.textContent }),
   heal: (K, force) => { if (force) { cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); } hideAutocomplete(); },
   baseline: async (K) => {
+    applyMachine('mill', false, { silent: true }); syncMachine();   // (every journey starts as a plain mill, the default)
     cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); hideAutocomplete();
     if (autoSemicolon) autoSemicolonBtn.click();
     editor.value = BASE.value; updateLineNumbers(); editor.setSelectionRange(editor.value.length, editor.value.length); statusPill.classList.remove('show');
   },
   check: (K) => {
+    syncMachine(); machineInvariants(K);
     const v = editor.value, lines = v.split('\n');
     const nums = lineNums.children.length;
     K.check('line numbers match the number of lines', nums === lines.length && (lines.length > 300 || all('div', lineNums).every((d, i) => d.textContent === String(i + 1)))) || K.find('state', 'error', `The editor has ${lines.length} lines but the margin shows ${nums} line numbers`, { where: 'line numbers' });
@@ -305,7 +353,7 @@ window.__devApi = {
           const want = (r.auto ? (s) => s.split('\n').map(addSemi).join('\n') : (s) => s);
           K.check('G-code typed before a phrase is kept', r.newLine.startsWith(pre) || r.newLine.toUpperCase().startsWith(pre)) || K.find('oracle', 'error', `"${line}" became "${r.newLine}": the typed G-code "${pre}" was lost`, { where: 'mixed lost ' + pre.replace(/\d+/g, '#'), sample: `typed: ${line}\nresult: ${r.newLine}` });
           K.check('the phrase after the G-code is converted', r.newLine !== line && r.newLine.includes(want(alone).split('\n')[0].replace(/;$/, ''))) || K.find('oracle', 'warn', `"${line}" was left as "${r.newLine}" instead of converting "${phr}"`, { where: 'mixed not converted' });
-          const probs = checkOut(r.newLine, { strict: true, auto: r.auto, templates: tmpl(line) }); probs.forEach((p) => K.find('gcode', p.sev === 'info' ? 'info' : p.sev, `"${line}" -> ${p.msg}`, { where: p.msg.replace(/[\d.]+/g, '#').slice(0, 60) }));
+          const probs = checkOut(r.newLine, { strict: true, auto: r.auto, templates: tmpl(line), noTable: true }); probs.forEach((p) => K.find('gcode', p.sev === 'info' ? 'info' : p.sev, `"${line}" -> ${p.msg}`, { where: p.msg.replace(/[\d.]+/g, '#').slice(0, 60) }));
         }
         K.feature('G-code mixed with a phrase'); return line;
       } },
@@ -398,6 +446,14 @@ window.__devApi = {
         K.check('a very long program is drawn promptly', ms < 2500) || K.find('slow', 'warn', `${n} lines took ${Math.round(ms)} ms to draw`, { where: 'paste slow' });
         K.key('Enter', {}, editor); K.feature('long programs'); return `${n} lines in ${Math.round(ms)} ms`;
       } },
+    { id: 'machine', weight: 6, prior: 4.5, purpose: 'switch between Mill and Lathe (and tick Multiaxis in mill mode), then convert a phrase and check only the phrases of the machine that is on are recognized', expect: 'exactly one of Mill / Lathe is on, Multiaxis exists only in mill mode and starts off, and the converter follows the toggle',
+      run: async (K) => {
+        const how = K.ri(0, 3), before = machine();
+        if (how === 0) await K.realClick(radios().lathe); else if (how === 1) await K.realClick(radios().mill); else if (how === 2 && machine().type === 'mill') await K.realClick(multiBox()); else { const o = machine().type === 'mill' ? 'lathe' : 'mill'; K.key('ArrowRight', {}, radios()[machine().type]); K.check('an arrow key on the toggle switches machine', machine().type === o) || K.find('state', 'warn', 'Arrow keys on the Mill / Lathe toggle did not switch machine', { where: 'machine arrow' }); }
+        syncMachine(); machineInvariants(K);
+        const f = fill(K, GOOD(K), false), r = pressEnter(K, f.text); judge(K, r, f, { strict: true });
+        K.feature('machine switched: ' + machine().type + (machine().multi ? ' + multiaxis' : '')); return `${before.type}${before.multi ? '+multi' : ''} -> ${machine().type}${machine().multi ? '+multi' : ''}: ${f.text.slice(0, 40)}`;
+      } },
   ],
   flows: {},
   setups: {},
@@ -408,7 +464,7 @@ FL['build and check complete programs'] = async (K) => {
     K.check('a program built from phrases is a complete, safe program', probs.length === 0); probs.forEach((p) => K.find('gcode', 'error', p.msg, { where: 'program ' + p.msg.replace(/[\d.]+/g, '#').replace(/"[^"]*"/g, '"."').slice(0, 70), sample: text.slice(0, 700) })); }
 };
 FL['every documented phrase gives the documented G-code'] = async (K) => {
-  const table = typeof _LEGACY_DEBUG_START !== 'undefined' ? _LEGACY_DEBUG_START : [];
+  const table = typeof window.__documentedCases === 'function' ? window.__documentedCases() : [];
   let n = 0;
   for (const t of table) {
     if (++n % 4 === 0) await K.raf();
@@ -493,4 +549,110 @@ SS['rapid typing: 20 x size keystrokes into a program of 200 lines'] = async (K,
   for (let i = 0; i < 20 * level; i++) { K.key(K.pick(['a', 'x', ' ', '1', '.', 'Backspace', 'Enter', 'ArrowDown']), {}, editor); if (i % 200 === 0) await K.raf(); }
 };
 SU['CRLF line endings pasted'] = async (K) => { K.typeInto(editor, 'G20\r\nG90\r\nrapid to X1 Y2\r\n'); };
+SU['a lathe'] = async (K) => { await setMachineUI(K, 'lathe'); };
+SU['a mill with Multiaxis'] = async (K) => { await setMachineUI(K, 'mill', true); };
+FL['Mill and Lathe are never both, and Multiaxis follows'] = async (K) => {
+  for (let i = 0; i < 28; i++) {
+    const pick = K.ri(0, 4);
+    if (pick === 0) await K.realClick(radios().mill); else if (pick === 1) await K.realClick(radios().lathe); else if (pick === 2 && machine().type === 'mill') await K.realClick(multiBox());
+    else if (pick === 3) { K.key(K.pick(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']), {}, radios()[machine().type]); } else await K.realClick(radios()[machine().type]);   // (clicking the one that is on changes nothing)
+    syncMachine(); machineInvariants(K); await K.raf();
+  }
+  await setMachineUI(K, 'lathe'); K.check('switching to lathe turns multiaxis off', machine().multi === false);
+  await setMachineUI(K, 'mill'); K.check('coming back to mill, Multiaxis is off', machine().multi === false && multiBox().checked === false) || K.find('state', 'error', 'Multiaxis was on after switching lathe -> mill: it must start off', { where: 'multiaxis default' });
+  await setMachineUI(K, 'mill', true); K.check('Multiaxis can be checked in mill mode', machine().type === 'mill' && machine().multi === true && multiBox().checked) || K.find('state', 'error', 'Multiaxis could not be checked in mill mode', { where: 'multiaxis check' });
+  await K.realClick(multiBox()); K.check('and unchecked again', machine().multi === false);
+  // a first visit (nothing saved) starts as a mill with Multiaxis off
+  let saved; try { saved = localStorage.getItem('speedcoder.machine.v1'); localStorage.removeItem('speedcoder.machine.v1'); } catch (e) { saved = null; }
+  const fresh = loadMachine(); K.check('with nothing saved the page starts as a mill with Multiaxis off', fresh.type === 'mill' && fresh.multi === false) || K.find('state', 'error', `A first visit starts as ${JSON.stringify(fresh)}`, { where: 'machine default' });
+  try { if (saved != null) localStorage.setItem('speedcoder.machine.v1', saved); } catch (e) { /* ignore */ }
+  try { localStorage.setItem('speedcoder.machine.v1', '{"type":"lathe","multi":true}'); } catch (e) { /* ignore */ }
+  const odd = loadMachine(); K.check('a saved lathe can never come back with multiaxis', odd.type === 'lathe' && odd.multi === false) || K.find('state', 'error', `A saved "lathe + multi" loads as ${JSON.stringify(odd)}`, { where: 'machine saved lathe multi' });
+  try { localStorage.setItem('speedcoder.machine.v1', 'not json{'); } catch (e) { /* ignore */ }
+  const bad = loadMachine(); K.check('a damaged saved choice falls back to a mill', bad.type === 'mill' && bad.multi === false);
+  try { if (saved != null) localStorage.setItem('speedcoder.machine.v1', saved); else localStorage.removeItem('speedcoder.machine.v1'); } catch (e) { /* ignore */ }
+  await setMachineUI(K, 'mill'); machineInvariants(K);
+};
+FL['each machine recognizes only its own phrases'] = async (K) => {
+  const names = (m) => { GC.setMachine(m.type, m.multi); const a = GC.getCheatSheetItems().filter((i) => i.category === 'Shortcut' || i.category === 'Natural Language'); return { phrases: new Set(a.map((i) => i.code)), g: new Set(GC.getCheatSheetItems().filter((i) => i.category === 'G-Code').map((i) => i.code)) }; };
+  const keep = machine(); const mill = names({ type: 'mill', multi: false }), multi = names({ type: 'mill', multi: true }), lathe = names({ type: 'lathe' }); GC.setMachine(keep.type, keep.multi);
+  const onlyMill = [...mill.phrases].filter((c) => !lathe.phrases.has(c)), onlyLathe = [...lathe.phrases].filter((c) => !mill.phrases.has(c)), onlyMulti = [...multi.phrases].filter((c) => !mill.phrases.has(c));
+  K.check('there are phrases that only a mill has', onlyMill.length > 5) || K.find('oracle', 'error', 'No mill-only phrases found', { where: 'mill only empty' });
+  K.check('there are phrases that only a lathe has', onlyLathe.length > 5) || K.find('oracle', 'error', 'No lathe-only phrases found', { where: 'lathe only empty' });
+  K.check('there are phrases that only Multiaxis has', onlyMulti.length >= 1) || K.find('oracle', 'error', 'No multiaxis-only phrases found', { where: 'multi only empty' });
+  /* phrases that exist on both machines under slightly different names (rapid, feed, arcs, tool change, feed per rev ...) are fine on both; only these words mark a phrase as one machine's own */
+  const MILL_WORDS = /drill|peck|\btap|bor(?:e|ing)|chip break|tool comp|cutter comp|rotate|scale|pocket|probe|orient|rigid|quick tool|axis index|tcp|center point/i;
+  const LATHE_WORDS = /\bcss\b|surface speed|max spindle speed|spindle clamp|rough turn|finish pass|thread|nose comp|turn to|face to|home x|rpm mode/i;
+  const tryAll = async (list, mach, want, label) => {
+    await setMachineUI(K, mach.type, mach.multi); let n = 0;
+    for (const code of list) {
+      if (++n % 5 === 0) await K.raf(); if (autoSemicolon) autoSemicolonBtn.click();
+      const f = fill(K, code, false), r = pressEnter(K, f.text), did = r.exp.kind === 'convert' && r.exp.conv !== null;
+      if (want) { if (!judge(K, r, f, { strict: true })) K.find('oracle', 'warn', `"${code}" (typed "${f.text}") is not recognized in ${label}`, { where: 'own phrase missed ' + label + ' ' + code }); }
+      else { K.check(`a phrase from another machine is not recognized (${label})`, !did) || K.find('oracle', 'error', `"${f.text}" belongs to another machine but ${label} converted it to "${(r.newLine || '').slice(0, 50)}"`, { where: 'foreign phrase ' + label + ' ' + code }); }
+    }
+  };
+  await tryAll(onlyMill, { type: 'mill', multi: false }, true, 'mill');
+  await tryAll(onlyLathe.filter((c) => LATHE_WORDS.test(c)), { type: 'mill', multi: false }, false, 'mill');
+  await tryAll(onlyLathe, { type: 'lathe' }, true, 'lathe');
+  await tryAll(onlyMill.filter((c) => MILL_WORDS.test(c)), { type: 'lathe' }, false, 'lathe');
+  await tryAll(onlyMulti, { type: 'mill', multi: true }, true, 'mill + multiaxis');
+  await tryAll(onlyMulti, { type: 'mill', multi: false }, false, 'mill without multiaxis');
+  await tryAll(onlyMulti, { type: 'lathe' }, false, 'lathe');
+  // G codes: a lathe has no drilling cycles, a mill has no threading cycles
+  K.check('a lathe lists no mill drilling cycles', !['G81', 'G83', 'G84', 'G85'].some((g) => lathe.g.has(g))) || K.find('oracle', 'error', 'The lathe cheat sheet lists a mill drilling cycle', { where: 'lathe g table' });
+  K.check('a mill lists no lathe turning cycles', !['G32', 'G70', 'G71', 'G72', 'G75', 'G96', 'G97'].some((g) => mill.g.has(g))) || K.find('oracle', 'error', 'The mill cheat sheet lists a lathe turning cycle', { where: 'mill g table' });
+  K.check('only a multiaxis mill lists G43.4', multi.g.has('G43.4') && !mill.g.has('G43.4') && !lathe.g.has('G43.4')) || K.find('oracle', 'error', 'G43.4 is not listed exactly when Multiaxis is on', { where: 'g43.4 table' });
+  await setMachineUI(K, 'mill');
+};
+FL['axis letters: a mill X Y Z, Multiaxis adds A B C, a lathe X Z U W'] = async (K) => {
+  const cases = [
+    ['mill', false, 'rapid to X1 Y2 Z3', true], ['mill', false, 'rapid to X1 A45', false], ['mill', false, 'rapid to B10', false], ['mill', false, 'rapid to X1 U2', false], ['mill', false, 'feed to X1 W2 at 10', false],
+    ['mill', true, 'rapid to X1 A45', true], ['mill', true, 'rapid to B10 C20', true], ['mill', true, 'rapid to X1 U2', false],
+    ['lathe', false, 'rapid to X1 Z2', true], ['lathe', false, 'rapid to X1 U2 W3', true], ['lathe', false, 'rapid to X1 Y2', false], ['lathe', false, 'rapid to A45', false], ['lathe', false, 'turn to X1 Z-2 at .01', true], ['lathe', false, 'arc clockwise to X1 Z-1 R1', true], ['lathe', false, 'arc clockwise to X1 Z-1 J1', false],
+  ];
+  for (const [type, multi, text, ok] of cases) {
+    await setMachineUI(K, type, multi); if (autoSemicolon) autoSemicolonBtn.click();
+    const r = pressEnter(K, text), did = r.exp.kind === 'convert' && r.exp.conv !== null;
+    K.check('axis letters follow the machine', did === ok) || K.find('oracle', 'error', `"${text}" in ${type}${multi ? ' + multiaxis' : ''} ${did ? 'was converted (to "' + (r.newLine || '').slice(0, 40) + '")' : 'was not converted'} but it should ${ok ? '' : 'not '}be`, { where: `axes ${type} ${multi} ${text}` });
+    if (did) checkOut(r.newLine, { strict: true }).forEach((p) => K.find('gcode', p.sev === 'info' ? 'info' : p.sev, `"${text}" (${type}) -> ${p.msg}`, { where: 'axes check ' + p.msg.replace(/[\d.]+/g, '#').slice(0, 50) }));
+  }
+  await setMachineUI(K, 'mill');
+};
+FL['the cheat sheet, autocomplete and Debug follow the machine'] = async (K) => {
+  for (const [type, multi] of [['mill', false], ['mill', true], ['lathe', false], ['mill', false]]) {
+    await setMachineUI(K, type, multi);
+    await K.realClick(sel('#cheat-sheet-btn')); const rows = all('.cheat-item', cheatSheetContent);
+    K.check('the cheat sheet lists exactly the items of the machine that is on', rows.length === ITEMS.length && rows.every((r, i) => r.querySelector('.cheat-code').textContent === ITEMS[i].code)) || K.find('oracle', 'error', `${type}${multi ? ' + multiaxis' : ''}: the cheat sheet shows ${rows.length} rows but the machine has ${ITEMS.length}`, { where: 'cheat sheet machine ' + type + multi });
+    const other = type === 'lathe' ? 'mill' : 'lathe'; await setMachineUI(K, other, false);
+    K.check('the open cheat sheet updates when the machine changes', all('.cheat-item', cheatSheetContent).length === ITEMS.length) || K.find('state', 'error', 'The open cheat sheet did not update after switching machine', { where: 'cheat sheet live update' });
+    cheatSheetModal.classList.remove('visible'); await setMachineUI(K, type, multi);
+    await K.realClick(sel('#debug-btn')); const fails = all('.debug-row.fail', debugBody);
+    K.check('the Debug self-test passes on every machine', fails.length === 0) || K.find('oracle', 'error', `${type}${multi ? ' + multiaxis' : ''}: Debug reports ${fails.length} failing conversion(s): ${fails.slice(0, 3).map((r) => r.querySelector('.debug-input').textContent).join(', ')}`, { where: 'debug machine ' + type + multi });
+    debugModal.classList.remove('visible');
+    for (const pre of ['css', 'drill', 'thread', 'rough', 'tcp', 'b axis', 'cutter', 'nose']) {
+      const got = GC.getAutocompleteSuggestions(pre), known = new Set(ITEMS.map((i) => i.code));
+      K.check('autocomplete only suggests what the machine has', got.every((g) => known.has(g.code))) || K.find('oracle', 'error', `${type}${multi ? ' + multiaxis' : ''}: typing "${pre}" suggests "${got.find((g) => !known.has(g.code)).code}" which is not on this machine`, { where: 'autocomplete machine ' + type + pre });
+    }
+  }
+  await setMachineUI(K, 'mill');
+};
+FL['switching machine swaps the sample but never your own program'] = async (K) => {
+  await setMachineUI(K, 'mill'); K.typeInto(editor, window.__samplePrograms.mill); await setMachineUI(K, 'lathe');
+  K.check('the unchanged mill sample becomes the lathe sample', editor.value === window.__samplePrograms.lathe) || K.find('state', 'error', 'Switching to lathe did not swap in the lathe sample program', { where: 'sample swap' });
+  await setMachineUI(K, 'mill'); K.check('and back again', editor.value === window.__samplePrograms.mill);
+  const mine = 'G20\nrapid to X1 Z2\n(MY OWN PROGRAM ' + K.ri(1, 99999) + ')'; K.typeInto(editor, mine);
+  await setMachineUI(K, 'lathe'); K.check('your own program is never replaced', editor.value === mine) || K.find('state', 'error', 'Switching machine replaced a program the user typed', { where: 'own program kept' });
+  await setMachineUI(K, 'mill'); K.check('and is still there after switching back', editor.value === mine);
+};
+FL['whole lathe programs'] = async (K) => {
+  await setMachineUI(K, 'lathe');
+  for (const units of ['inch', 'metric']) { const b = buildProgram(K, { units }), text = await typeProgram(K, b.lines), probs = checkProgram(text, { units: units === 'inch' ? 'in' : 'mm', tools: b.tools });
+    K.check('a lathe program built from phrases is a complete, safe program', probs.length === 0); probs.forEach((p) => K.find('gcode', 'error', p.msg, { where: 'lathe program ' + p.msg.replace(/[\d.]+/g, '#').replace(/"[^"]*"/g, '"."').slice(0, 70), sample: text.slice(0, 700) })); }
+  await setMachineUI(K, 'mill');
+};
+/* every flow and action starts by reading the machine that is on, so the phrase lists, the G / M tables and the checkers match it */
+{ const A2 = window.__devApi, wrap = (fn) => function (...a) { syncMachine(); return fn.apply(this, a); };
+  A2.actions.forEach((a) => { const r = a.run; a.run = wrap(r); });
+  Object.keys(FL).forEach((k) => { const f = FL[k]; FL[k] = wrap(f); }); Object.keys(SU).forEach((k) => { const f = SU[k]; SU[k] = wrap(f); }); }
 })();
