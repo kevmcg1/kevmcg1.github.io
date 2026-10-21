@@ -40,6 +40,34 @@
   }
 
   // ----------------------------------------------------------
+  // MACHINE MODE  (mill or lathe, never both; multiaxis only exists in mill mode and is off by default)
+  // Every shortcut, phrase, suggestion and code below carries a machine tag (m: 'mill' | 'lathe' | 'both'; multi: true = needs
+  // multiaxis). Only the ones that belong to the chosen machine are recognized, suggested and listed. Axis letters are limited
+  // the same way: a mill knows X Y Z (and A B C with multiaxis), a lathe knows X Z U W.
+  // ----------------------------------------------------------
+
+  const MACHINE = { type: 'mill', multi: false };
+  const AXIS_WORDS = 'XYZABCUVWIJK';
+  function allowedAxisLetters() {
+    if (MACHINE.type === 'lathe') return 'XZUWIK';
+    return 'XYZIJK' + (MACHINE.multi ? 'ABC' : '');
+  }
+  function setMachine(type, multi) {
+    MACHINE.type = type === 'lathe' ? 'lathe' : 'mill';
+    MACHINE.multi = MACHINE.type === 'mill' && !!multi;
+    return getMachine();
+  }
+  function getMachine() { return { type: MACHINE.type, multi: MACHINE.multi }; }
+  const isActive = (x) => (x.m === undefined || x.m === 'both' || x.m === MACHINE.type) && (!x.multi || (MACHINE.type === 'mill' && MACHINE.multi));
+  /* the converted text may only use axis letters the chosen machine has (so "rapid to X1 Y2" is not a lathe phrase) */
+  function lettersOk(out) {
+    const allowed = allowedAxisLetters(), code = String(out).replace(/\([^)]*\)/g, ' ');
+    const re = /(?:^|[\s;])([A-Z])(?=-?[\d.])/g; let m;
+    while ((m = re.exec(code))) { if (AXIS_WORDS.includes(m[1]) && !allowed.includes(m[1])) return false; }
+    return true;
+  }
+
+  // ----------------------------------------------------------
   // UNIT DETECTION
   // ----------------------------------------------------------
 
@@ -88,7 +116,7 @@
       desc: 'Safety line (metric)', convert: () => 'G00 G17 G21 G40 G49 G80 G90' },
     { name: 'program header', pattern: /^(?:program\s+header|new\s+program|start\s+program)$/i,
       desc: 'New program header block',
-      convert: () => `%\nO0001 (PART NAME)\n(DATE: ${new Date().toLocaleDateString()})\n(PROGRAMMER: )\n(MATERIAL: )\n(MACHINE: VF-2)` },
+      convert: () => `%\nO0001 (PART NAME)\n(DATE: ${new Date().toLocaleDateString()})\n(PROGRAMMER: )\n(MATERIAL: )\n(MACHINE: ${MACHINE.type === 'lathe' ? 'ST-20' : 'VF-2'})` },
     { name: 'home z', pattern: /^(?:home\s+z|z\s+home|retract\s+z)$/i,
       desc: 'Home Z (G28)', convert: () => 'G28 G91 Z0.\nG90' },
     { name: 'home all', pattern: /^(?:home\s+all|home\s+xy|home\s+xyz|return\s+home|go\s+home)$/i,
@@ -399,6 +427,140 @@
     { code: 'pocket milling ccw', desc: 'G13', type: 'nl' },
   ];
 
+
+  // ----------------------------------------------------------
+  // MACHINE TAGS  (which rules belong to a mill, a lathe, or both)
+  // Anything not listed here works on both. New lathe / multiaxis rules are added below the tags.
+  // ----------------------------------------------------------
+
+  const tagBy = (list, key, map) => list.forEach((x, i) => { const t = map[key(x, i)]; if (t) { x.m = t.m || t; if (t.multi) x.multi = true; } });
+  const MILL = 'mill', LATHE = 'lathe';
+  tagBy(SHORTCUTS, (x) => x.name, {
+    'safety line': MILL, 'safety line inch': MILL, 'safety line metric': MILL, 'home z': MILL, 'home all': MILL, 'tool change block': MILL,
+    'end block': MILL, 'drill block': MILL, 'peck block': MILL, 'tap block': MILL, 'bore block': MILL, 'chip break block': MILL,
+    'fine bore block': MILL, 'part zero': MILL, 'clear z': MILL, 'wcs block': MILL, 'probe block': MILL,
+    'css block': LATHE, 'css off block': LATHE, 'max spindle speed': LATHE, 'spindle clamp': LATHE,
+    'b axis index': { m: MILL, multi: true },
+  });
+  const NL_MILL = [0, 1, 2, 23, 24, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 47, 49, 52, 53, 54, 60, 61, 62, 63], NL_LATHE = [7, 8, 9, 10];
+  NL_RULES.forEach((r, i) => { if (NL_MILL.includes(i)) r.m = MILL; else if (NL_LATHE.includes(i)) r.m = LATHE; });
+  NL_RULES[16].skipIf = { lathe: /\bmill\s+to\b/i };   // ("mill to" is a mill phrase)
+  NL_RULES[5].skipIf = { mill: /\bmax\s+spindle\s+speed\b/i };   // ("max spindle speed" is the lathe's G97 / G50 wording)
+  tagBy(NL_SUGGESTIONS, (x) => x.code, {
+    'safety line': MILL, 'safety line inch': MILL, 'safety line metric': MILL, 'home z': MILL, 'home all': MILL, 'tool change block': MILL,
+    'end block': MILL, 'css block': LATHE, 'css off block': LATHE, 'drill block': MILL, 'peck block': MILL, 'tap block': MILL, 'bore block': MILL,
+    'chip break block': MILL, 'fine bore block': MILL, 'part zero': MILL, 'clear z': MILL, 'wcs block': MILL, 'probe block': MILL,
+    'quick tool change T##': MILL, 'change tool to T##': MILL, 'CSS ### sfm': LATHE, 'CSS ### sfm max #### rpm': LATHE, 'CSS off': LATHE,
+    'max spindle speed ####': LATHE, 'spindle clamp ####': LATHE, 'drill at X# Y# Z# R# F#': MILL, 'peck drill X# Y# Z# Q# R# F#': MILL,
+    'tap at X# Y# Z# R# F#': MILL, 'chip break drill X# Y# Z# Q# R# F#': MILL, 'boring at X# Y# Z# R# F#': MILL, 'enable tool comp H##': MILL,
+    'cancel tool comp': MILL, 'cutter comp left D##': MILL, 'cutter comp right D##': MILL, 'cancel cutter comp': MILL, 'rotate coords ## deg': MILL,
+    'rigid tap mode ####': MILL, 'scale factor #.#': MILL, 'rapid to X# Y# Z#': MILL, 'feed to X# Y# Z# at ##': MILL, 'arc clockwise to X# Y# R#': MILL, 'arc counterclockwise to X# Y# R#': MILL, 'pocket milling cw': MILL, 'pocket milling ccw': MILL,
+  });
+
+  // ---- lathe-only additions (turning phrases; a lathe knows X, Z and the incremental U, W) ----
+  const NUM = '(?:\\d+\\.?\\d*|\\.\\d+)', LCO = '((?:[XZUW]-?' + NUM + '\\s*)+?)';
+  const toolNo = (v) => v.replace(/^0+(?=\d)/, '').padStart(2, '0');
+  const lathe = (o) => Object.assign({ m: LATHE }, o);
+  SHORTCUTS.push(
+    lathe({ name: 'safety line', pattern: /^(?:safety\s+line(?:\s+for\s+lathe)?|lathe\s+safety|safe\s+start|init\s+line)$/i, desc: 'Lathe safety line', convert: () => 'G00 G18 G40 G80 G99' }),
+    lathe({ name: 'safety line inch', pattern: /^(?:safety\s+line\s+inch|inch\s+safety|safe\s+start\s+inch)$/i, desc: 'Lathe safety line (inch)', convert: () => 'G00 G18 G20 G40 G80 G99' }),
+    lathe({ name: 'safety line metric', pattern: /^(?:safety\s+line\s+metric|metric\s+safety|safe\s+start\s+metric)$/i, desc: 'Lathe safety line (metric)', convert: () => 'G00 G18 G21 G40 G80 G99' }),
+    lathe({ name: 'home x', pattern: /^(?:home\s+x|x\s+home|retract\s+x)$/i, desc: 'Home X (G28 U0.)', convert: () => 'G28 U0.' }),
+    lathe({ name: 'home z', pattern: /^(?:home\s+z|z\s+home|retract\s+z)$/i, desc: 'Home Z (G28 W0.)', convert: () => 'G28 W0.' }),
+    lathe({ name: 'home all', pattern: /^(?:home\s+all|home\s+xz|home\s+xyz|return\s+home|go\s+home)$/i, desc: 'Home X then Z', convert: () => 'G28 U0.\nG28 W0.' }),
+    lathe({ name: 'tool change block', pattern: /^(?:tool\s+change\s+block|tc\s+block)$/i, desc: 'Full lathe tool change sequence', convert: () => 'M05\nM09\nG28 U0.\nG28 W0.\nT____\nG97 S____ M03\nG54\nM08' }),
+    lathe({ name: 'end block', pattern: /^(?:end\s+block|program\s+end\s+block|safe\s+end)$/i, desc: 'Safe end-of-program block (lathe)', convert: () => 'M05\nM09\nG28 U0.\nG28 W0.\nM30\n%' }),
+    lathe({ name: 'part zero', pattern: /^(?:part\s+zero|go\s+to\s+zero|xz\s+zero|move\s+to\s+zero)$/i, desc: 'Rapid to part zero in G54', convert: () => 'G00 G54 X0. Z0.' }),
+    lathe({ name: 'clear z', pattern: /^(?:clear\s+z|z\s+clear|z\s+safe|safe\s+z)$/i, desc: 'G00 Z to safe distance', convert: () => 'G00 Z.1' }),
+    lathe({ name: 'wcs block', pattern: /^(?:wcs\s+block|work\s+coord\s+block|set\s+wcs)$/i, desc: 'G10 work coord set (lathe)', convert: () => 'G10 L2 P1 X__. Z__.' }),
+  );
+  NL_RULES.push(
+    lathe({ pattern: new RegExp('(?:turn\\s+to|face\\s+to)\\s+' + LCO + '(?:\\s+(?:at|feed|f)\\s+(' + NUM + ')(?:\\s*(?:ipr|mmpr|in\\/rev|mm\\/rev|ipm|mm\\/min))?)?$', 'i'),
+      convert: (m) => { const c = parseCoords(m[1]); return m[2] ? `G01 ${c} F${fmtNum(m[2])}` : `G01 ${c}`; } }),
+    lathe({ pattern: /(?:change\s+tool\s+to|tool\s+change\s+to?|use\s+tool|load\s+tool|select\s+tool|switch\s+to\s+tool)\s+T?(\d+)(?:\s+(?:offset|off|wear)\s+(\d+))?/i,
+      convert: (m) => { const t = toolNo(m[1]), o = toolNo(m[2] != null ? m[2] : m[1]); return t.length > 2 || o.length > 2 ? null : `T${t}${o}`; } }),
+    lathe({ pattern: /(?:home\s+z|z\s+home|retract\s+z)/i, convert: () => 'G28 W0.' }),
+    lathe({ pattern: /(?:home\s+x|x\s+home|retract\s+x)/i, convert: () => 'G28 U0.' }),
+    lathe({ pattern: /(?:go\s+(?:to\s+)?(?:machine\s+)?home|return\s+to\s+(?:machine\s+)?home|home\s+(?:all\s+)?axes)/i, convert: () => 'G28 U0.\nG28 W0.' }),
+    lathe({ pattern: /feed\s+per\s+rev(?:olution)?/i, convert: () => 'G99' }),
+    lathe({ pattern: /feed\s+per\s+min(?:ute)?/i, convert: () => 'G98' }),
+    lathe({ pattern: /cancel\s+(?:tool\s+)?nose\s+comp(?:ensation)?/i, convert: () => 'G40' }),
+    lathe({ pattern: /(?:tool\s+)?nose\s+comp(?:ensation)?\s+left/i, convert: () => 'G41' }),
+    lathe({ pattern: /(?:tool\s+)?nose\s+comp(?:ensation)?\s+right/i, convert: () => 'G42' }),
+    lathe({ pattern: new RegExp('rough(?:ing)?\\s+turn(?:ing)?\\s+N?(\\d+)\\s+(?:to\\s+)?N?(\\d+)((?:\\s+[DRUWF]\\s*' + NUM + ')*)$', 'i'),
+      convert: (m) => { const k = {}; String(m[3] || '').replace(new RegExp('([DRUWF])\\s*(' + NUM + ')', 'gi'), (_, l, v) => { k[l.toUpperCase()] = fmtNum(v); return ''; });
+        return `G71 U${k.D || '__.'} R${k.R || '__.'}\nG71 P${m[1]} Q${m[2]}${k.U ? ' U' + k.U : ''}${k.W ? ' W' + k.W : ''}${k.F ? ' F' + k.F : ''}`; } }),
+    lathe({ pattern: new RegExp('finish(?:ing)?\\s+(?:pass|cycle)\\s+N?(\\d+)\\s+(?:to\\s+)?N?(\\d+)(?:\\s+F\\s*(' + NUM + '))?$', 'i'),
+      convert: (m) => `G70 P${m[1]} Q${m[2]}${m[3] ? ' F' + fmtNum(m[3]) : ''}` }),
+    lathe({ pattern: new RegExp('thread(?:ing)?(?:\\s+to)?\\s+' + LCO + '\\s*(?:pitch|lead|f)\\s*(' + NUM + ')$', 'i'),
+      convert: (m) => `G32 ${parseCoords(m[1])} F${fmtNum(m[2])}` }),
+  );
+  NL_SUGGESTIONS.push(
+    lathe({ code: 'safety line', desc: 'G00 G18 G40 G80 G99', type: 'shortcut' }),
+    lathe({ code: 'safety line inch', desc: '+ G20', type: 'shortcut' }),
+    lathe({ code: 'safety line metric', desc: '+ G21', type: 'shortcut' }),
+    lathe({ code: 'home x', desc: 'G28 U0.', type: 'shortcut' }),
+    lathe({ code: 'home z', desc: 'G28 W0.', type: 'shortcut' }),
+    lathe({ code: 'home all', desc: 'G28 U0. + W0.', type: 'shortcut' }),
+    lathe({ code: 'tool change block', desc: 'Full lathe TC sequence', type: 'shortcut' }),
+    lathe({ code: 'end block', desc: 'Safe end of program', type: 'shortcut' }),
+    lathe({ code: 'part zero', desc: 'G00 to X0 Z0 in G54', type: 'shortcut' }),
+    lathe({ code: 'clear z', desc: 'G00 Z.1', type: 'shortcut' }),
+    lathe({ code: 'wcs block', desc: 'G10 offset set', type: 'shortcut' }),
+    lathe({ code: 'change tool to T## offset ##', desc: 'T#### (tool + offset)', type: 'nl' }),
+    lathe({ code: 'rapid to X# Z#', desc: 'G00', type: 'nl' }),
+    lathe({ code: 'feed to X# Z# at ##', desc: 'G01 F##', type: 'nl' }),
+    lathe({ code: 'arc clockwise to X# Z# R#', desc: 'G02', type: 'nl' }),
+    lathe({ code: 'arc counterclockwise to X# Z# R#', desc: 'G03', type: 'nl' }),
+    lathe({ code: 'turn to X# Z# at #', desc: 'G01 F#', type: 'nl' }),
+    lathe({ code: 'face to X# Z# at #', desc: 'G01 F#', type: 'nl' }),
+    lathe({ code: 'rough turn N## N## D# R# U# W# F#', desc: 'G71 rough turn cycle', type: 'nl' }),
+    lathe({ code: 'finish pass N## N## F#', desc: 'G70 finish cycle', type: 'nl' }),
+    lathe({ code: 'thread to X# Z# pitch #', desc: 'G32 thread', type: 'nl' }),
+    lathe({ code: 'nose comp left / right', desc: 'G41 / G42', type: 'nl' }),
+    lathe({ code: 'cancel nose comp', desc: 'G40', type: 'nl' }),
+    lathe({ code: 'feed per rev / minute', desc: 'G99 / G98', type: 'nl' }),
+  );
+
+  // ---- multiaxis mill additions (only when Multiaxis is checked in mill mode) ----
+  const multi = (o) => Object.assign({ m: MILL, multi: true }, o);
+  SHORTCUTS.push(
+    multi({ name: 'a axis index', pattern: /^(?:a\s+axis\s+index|index\s+a)$/i, desc: 'A-axis index stub', convert: () => 'G00 G90 A__.\nM19' }),
+    multi({ name: 'c axis index', pattern: /^(?:c\s+axis\s+index|index\s+c)$/i, desc: 'C-axis index stub', convert: () => 'G00 G90 C__.\nM19' }),
+    multi({ name: 'tcp on', pattern: /^(?:tcp\s+on|tool\s+center\s+point\s+on)$/i, desc: 'Tool center point control on (G43.4)', convert: () => 'G43.4 H__' }),
+    multi({ name: 'tcp off', pattern: /^(?:tcp\s+off|tool\s+center\s+point\s+off)$/i, desc: 'Tool center point control off (G49)', convert: () => 'G49' }),
+  );
+  NL_SUGGESTIONS.push(
+    multi({ code: 'b axis index', desc: 'B-axis index stub', type: 'shortcut' }),
+    multi({ code: 'a axis index', desc: 'A-axis index stub', type: 'shortcut' }),
+    multi({ code: 'c axis index', desc: 'C-axis index stub', type: 'shortcut' }),
+    multi({ code: 'tcp on', desc: 'G43.4 H__', type: 'shortcut' }),
+    multi({ code: 'tcp off', desc: 'G49', type: 'shortcut' }),
+  );
+
+  // ---- G / M code tables per machine ----
+  const G_LATHE_ONLY = { G32: 'Thread cutting', G70: 'Finish cycle', G71: 'Rough turn cycle', G72: 'Rough face cycle', G75: 'OD / ID groove cycle', G96: 'CSS mode', G97: 'RPM mode' };
+  const G_LATHE_DESC = { G50: 'Max spindle clamp', G73: 'Pattern repeat cycle', G74: 'Peck drill / face groove', G76: 'Threading cycle', G98: 'Feed per minute', G99: 'Feed per revolution' };
+  const G_MILL_ONLY = new Set(['G12', 'G13', 'G17', 'G19', 'G43', 'G44', 'G49', 'G51', 'G68', 'G69', 'G81', 'G82', 'G83', 'G84', 'G85', 'G86', 'G87', 'G89', 'G94', 'G95']);
+  const G_MILL_DESC = { G50: 'Cancel scaling', G73: 'Chip break drill', G74: 'Left-hand tap', G76: 'Fine boring', G98: 'Return initial plane', G99: 'Return R plane' };
+  const M_MILL_ONLY = new Set(['M06', 'M19', 'M29']);
+  function gTable() {
+    const out = {};
+    for (const [c, d] of Object.entries(GCODES)) {
+      if (c in G_LATHE_ONLY || c in G_LATHE_DESC) continue;
+      if (MACHINE.type === 'lathe' && G_MILL_ONLY.has(c)) continue;
+      out[c] = d;
+    }
+    if (MACHINE.type === 'lathe') Object.assign(out, G_LATHE_ONLY, G_LATHE_DESC);
+    else { Object.keys(G_MILL_DESC).forEach((c) => { out[c] = G_MILL_DESC[c]; }); if (MACHINE.multi) out['G43.4'] = 'Tool center point control'; }
+    return Object.fromEntries(Object.entries(out).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true })));
+  }
+  function mTable() {
+    const out = {};
+    for (const [c, d] of Object.entries(MCODES)) { if (MACHINE.type === 'lathe' && M_MILL_ONLY.has(c)) continue; out[c] = d; }
+    return out;
+  }
+
   // ----------------------------------------------------------
   // CORE CONVERTER
   // ----------------------------------------------------------
@@ -412,12 +574,15 @@
     if (!hasNL && /^[GMTNOFSXYZABCUVW][- \d]/.test(trimmed)) return null;
 
     for (const sc of SHORTCUTS) {
+      if (!isActive(sc)) continue;
       const m = trimmed.match(sc.pattern);
-      if (m) { const r = sc.convert(m, context); if (r != null) return r; }
+      if (m) { const r = sc.convert(m, context); if (r != null && lettersOk(r)) return r; }
     }
     for (const rule of NL_RULES) {
+      if (!isActive(rule)) continue;
+      if (rule.skipIf && rule.skipIf[MACHINE.type] && rule.skipIf[MACHINE.type].test(trimmed)) continue;
       const m = trimmed.match(rule.pattern);
-      if (m) { const r = rule.convert(m, context); if (r != null) return r; }
+      if (m) { const r = rule.convert(m, context); if (r != null && lettersOk(r)) return r; }
     }
     return null;
   }
@@ -433,16 +598,17 @@
     const p = prefix.toLowerCase();
     const seen = new Set(), results = [];
     for (const s of NL_SUGGESTIONS) {
+      if (!isActive(s)) continue;
       if (s.code.toLowerCase().includes(p) || s.desc.toLowerCase().includes(p)) {
         if (!seen.has(s.code)) { seen.add(s.code); results.push(s); }
       }
     }
-    for (const [c, d] of Object.entries(GCODES)) {
+    for (const [c, d] of Object.entries(gTable())) {
       if (c.toLowerCase().includes(p) || d.toLowerCase().includes(p)) {
         if (!seen.has(c)) { seen.add(c); results.push({ code: c, desc: d, type: 'gcode' }); }
       }
     }
-    for (const [c, d] of Object.entries(MCODES)) {
+    for (const [c, d] of Object.entries(mTable())) {
       if (c.toLowerCase().includes(p) || d.toLowerCase().includes(p)) {
         if (!seen.has(c)) { seen.add(c); results.push({ code: c, desc: d, type: 'mcode' }); }
       }
@@ -460,18 +626,20 @@
       /^air blast on/i, /^conveyor on/i, /^quick tool change T##/i
     ];
     for (const sc of SHORTCUTS) {
+      if (!isActive(sc)) continue;
       if (sc.hidden) continue;   // (listed with its #### placeholder under the phrases)
       const isQuick = quickSetupPatterns.some(p => p.test(sc.name));
       items.push({ code: sc.name, desc: sc.desc, category: 'Shortcut', isQuickSetup: isQuick });
     }
     for (const s of NL_SUGGESTIONS) {
+      if (!isActive(s)) continue;
       const isQuick = quickSetupPatterns.some(p => p.test(s.code));
       items.push({ code: s.code, desc: s.desc, category: 'Natural Language', isQuickSetup: isQuick });
     }
-    for (const [code, desc] of Object.entries(GCODES)) {
+    for (const [code, desc] of Object.entries(gTable())) {
       items.push({ code, desc, category: 'G-Code', isQuickSetup: false });
     }
-    for (const [code, desc] of Object.entries(MCODES)) {
+    for (const [code, desc] of Object.entries(mTable())) {
       items.push({ code, desc, category: 'M-Code', isQuickSetup: false });
     }
     items.sort((a, b) => {
@@ -496,6 +664,9 @@
     fmtNum,
     parseCoords,
     getCheatSheetItems,
+    setMachine,
+    getMachine,
+    allowedAxisLetters,
   };
 
 })();
