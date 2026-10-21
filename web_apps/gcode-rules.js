@@ -67,6 +67,25 @@
     return true;
   }
 
+  /* A phrase is only converted when the G-code it would give is sane: a feed above zero, a tool, spindle speed, offset or axis value in
+     range, and no axis twice in one block. Otherwise the line is left exactly as typed (so "feed to X1 at 0", "spindle on 99999999999" and
+     "boring at X0x10" are not turned into bad G-code). */
+  function outputOk(out) {
+    for (const raw of String(out).split('\n')) {
+      const line = raw.replace(/\([^)]*\)/g, ' '), seen = {}, re = /(?:^|[\s;])([A-Z])(-?(?:\d+\.?\d*|\.\d+))(?=$|[\s;])/g; let m;
+      while ((m = re.exec(line))) {
+        const L = m[1], v = parseFloat(m[2]); if (!Number.isFinite(v)) return false;
+        if (L === 'F' && !(v > 0 && v <= 100000)) return false;
+        if (L === 'S' && !(v >= 0 && v <= 60000)) return false;
+        if (L === 'T' && !(Number.isInteger(v) && v >= 0 && v <= (MACHINE.type === 'lathe' ? 9999 : 99))) return false;
+        if ((L === 'H' || L === 'D') && !(Number.isInteger(v) && v >= 0 && v <= 999)) return false;
+        if ('XYZABCUVWIJKRQP'.includes(L) && Math.abs(v) > 1e5) return false;
+        if ('XYZABCUVWIJK'.includes(L)) { if (seen[L]) return false; seen[L] = 1; }
+      }
+    }
+    return true;
+  }
+
   // ----------------------------------------------------------
   // UNIT DETECTION
   // ----------------------------------------------------------
@@ -320,9 +339,9 @@
     { pattern: /(?:cancel|disable|remove|turn\s+off)\s+tool\s+(?:length\s+)?comp(?:ensation)?/i,
       convert: () => 'G49' },
     { pattern: /cutter\s+comp(?:ensation)?\s+(?:left|climb)\s*(?:D\s*(\d+))?/i,
-      convert: m => (m[1] ? `G41 D${m[1]}` : 'G41') },
+      convert: m => (m[1] ? `G41 D${m[1]}` : 'G41 D__') },
     { pattern: /cutter\s+comp(?:ensation)?\s+(?:right|conventional)\s*(?:D\s*(\d+))?/i,
-      convert: m => (m[1] ? `G42 D${m[1]}` : 'G42') },
+      convert: m => (m[1] ? `G42 D${m[1]}` : 'G42 D__') },
     { pattern: /cancel\s+cutter\s+comp(?:ensation)?/i, convert: () => 'G40' },
     { pattern: /(?:drill\s+(?:hole\s+)?at|simple\s+drill)\s+((?:[XYZRQ]-?(?:\d+\.?\d*|\.\d+)\s*)*)(?:F(-?(?:\d+\.?\d*|\.\d+)))?/i,
       convert: (m) => `G81 G99 ${parseCoords(m[1])}${m[2] ? ' F' + m[2] : ''}` },
@@ -576,13 +595,13 @@
     for (const sc of SHORTCUTS) {
       if (!isActive(sc)) continue;
       const m = trimmed.match(sc.pattern);
-      if (m) { const r = sc.convert(m, context); if (r != null && lettersOk(r)) return r; }
+      if (m) { const r = sc.convert(m, context); if (r != null && lettersOk(r) && outputOk(r)) return r; }
     }
     for (const rule of NL_RULES) {
       if (!isActive(rule)) continue;
       if (rule.skipIf && rule.skipIf[MACHINE.type] && rule.skipIf[MACHINE.type].test(trimmed)) continue;
       const m = trimmed.match(rule.pattern);
-      if (m) { const r = rule.convert(m, context); if (r != null && lettersOk(r)) return r; }
+      if (m) { const r = rule.convert(m, context); if (r != null && lettersOk(r) && outputOk(r)) return r; }
     }
     return null;
   }

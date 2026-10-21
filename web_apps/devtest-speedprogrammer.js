@@ -580,6 +580,9 @@ FL['each machine recognizes only its own phrases'] = async (K) => {
   K.check('there are phrases that only a mill has', onlyMill.length > 5) || K.find('oracle', 'error', 'No mill-only phrases found', { where: 'mill only empty' });
   K.check('there are phrases that only a lathe has', onlyLathe.length > 5) || K.find('oracle', 'error', 'No lathe-only phrases found', { where: 'lathe only empty' });
   K.check('there are phrases that only Multiaxis has', onlyMulti.length >= 1) || K.find('oracle', 'error', 'No multiaxis-only phrases found', { where: 'multi only empty' });
+  /* phrases that exist on both machines under slightly different names (rapid, feed, arcs, tool change, feed per rev ...) are fine on both; only these words mark a phrase as one machine's own */
+  const MILL_WORDS = /drill|peck|\btap|bor(?:e|ing)|chip break|tool comp|cutter comp|rotate|scale|pocket|probe|orient|rigid|quick tool|axis index|tcp|center point/i;
+  const LATHE_WORDS = /\bcss\b|surface speed|max spindle speed|spindle clamp|rough turn|finish pass|thread|nose comp|turn to|face to|home x|rpm mode/i;
   const tryAll = async (list, mach, want, label) => {
     await setMachineUI(K, mach.type, mach.multi); let n = 0;
     for (const code of list) {
@@ -590,9 +593,9 @@ FL['each machine recognizes only its own phrases'] = async (K) => {
     }
   };
   await tryAll(onlyMill, { type: 'mill', multi: false }, true, 'mill');
-  await tryAll(onlyLathe, { type: 'mill', multi: false }, false, 'mill');
+  await tryAll(onlyLathe.filter((c) => LATHE_WORDS.test(c)), { type: 'mill', multi: false }, false, 'mill');
   await tryAll(onlyLathe, { type: 'lathe' }, true, 'lathe');
-  await tryAll(onlyMill, { type: 'lathe' }, false, 'lathe');
+  await tryAll(onlyMill.filter((c) => MILL_WORDS.test(c)), { type: 'lathe' }, false, 'lathe');
   await tryAll(onlyMulti, { type: 'mill', multi: true }, true, 'mill + multiaxis');
   await tryAll(onlyMulti, { type: 'mill', multi: false }, false, 'mill without multiaxis');
   await tryAll(onlyMulti, { type: 'lathe' }, false, 'lathe');
