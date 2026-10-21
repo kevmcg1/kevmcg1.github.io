@@ -14,8 +14,10 @@
   function fmtNum(numStr) {
     const n = parseFloat(numStr);
     if (isNaN(n)) return numStr;
+    if (!isFinite(n) || Math.abs(n) >= 1e21) return numStr;   // too big to format: keep exactly what was typed (never 1e+21 notation)
     if (Number.isInteger(n)) return n + '.';
-    let s = n.toString();
+    let s = Math.abs(n) < 1e-6 ? n.toFixed(12) : n.toString();   // (toString would give 1e-7 notation)
+    if (/^-?0\.0*$/.test(s)) return '0.';
     s = s.replace(/(\.\d*[1-9])0+$/, '$1');
     if (s.endsWith('.')) return s;
     // Strip leading zero: 0.5 → .5, -0.5 → -.5
@@ -29,7 +31,7 @@
   }
 
   function parseCoords(str) {
-    return formatCoords(str.trim().toUpperCase().replace(/\s+/g, ' '));
+    return formatCoords(str.trim().toUpperCase().replace(/\s+/g, ' ').replace(/([\d.])([A-Z])/g, '$1 $2'));
   }
 
   function applyUnitFormat(str, currentUnits) {
@@ -146,9 +148,9 @@
       convert: () => '(PROBE - SET WCS)\nG65 P9810 Z__. F__.\nG65 P9811 X__. D__. Z__.' },
     { name: 'b axis index', pattern: /^(?:b\s+axis\s+index|index\s+b)$/i,
       desc: 'B-axis index stub', convert: () => 'G00 G90 B__.\nM19' },
-    { name: 'max spindle speed', pattern: /^(?:max\s+spindle\s+speed)\s+(\d+)$/i,
+    { name: 'max spindle speed', hidden: true, pattern: /^(?:max\s+spindle\s+speed)\s+(\d+)$/i,
       desc: 'Max spindle speed (G97 S... M03)', convert: m => `G97 S${m[1]} M03` },
-    { name: 'spindle clamp', pattern: /^(?:spindle\s+(?:clamp|max|limit))\s+(\d+)$/i,
+    { name: 'spindle clamp', hidden: true, pattern: /^(?:spindle\s+(?:clamp|max|limit))\s+(\d+)$/i,
       desc: 'Max spindle clamp (G50)', convert: m => `G50 S${m[1]}` },
   ];
 
@@ -196,15 +198,15 @@
   const NL_RULES = [
     { pattern: /quick\s+tool\s+change\s+T(\d+)/i,
       convert: m => {
-        const t = String(parseInt(m[1])).padStart(2, '0');
-        const h = String(parseInt(m[1])).padStart(2, '0');
+        const t = m[1].replace(/^0+(?=\d)/, '').padStart(2, '0');
+        const h = m[1].replace(/^0+(?=\d)/, '').padStart(2, '0');
         return `T${t} M06\nG00 G90 G40 G49 G54\nG00 G54 X0 Y0\nS1000 M03\nG43 H${h} Z0.1\nM08`;
       }
     },
     { pattern: /(?:change\s+tool\s+to|tool\s+change\s+to?|use\s+tool|load\s+tool|select\s+tool|switch\s+to\s+tool)\s+T?(\d+)/i,
-      convert: m => { const t = String(parseInt(m[1])).padStart(2, '0'); return `T${t} M06`; } },
+      convert: m => { const t = m[1].replace(/^0+(?=\d)/, '').padStart(2, '0'); return `T${t} M06`; } },
     { pattern: /^T(\d+)\s+M0?6$/i,
-      convert: m => { const t = String(parseInt(m[1])).padStart(2, '0'); return `T${t} M06`; } },
+      convert: m => { const t = m[1].replace(/^0+(?=\d)/, '').padStart(2, '0'); return `T${t} M06`; } },
     { pattern: /(?:spindle\s+(?:on|start|cw|clockwise)|start\s+spindle|turn\s+on\s+spindle)(?:\s+(?:at\s+)?(\d+)(?:\s*rpm)?)?/i,
       convert: m => m[1] ? `S${m[1]} M03` : `M03` },
     { pattern: /(?:spindle\s+(?:ccw|counterclockwise|reverse)|reverse\s+spindle)(?:\s+(?:at\s+)?(\d+)(?:\s*rpm)?)?/i,
@@ -222,11 +224,11 @@
     { pattern: /(?:coolant\s+off|turn\s+off\s+coolant|stop\s+coolant)/i, convert: () => 'M09' },
     { pattern: /(?:mist\s+(?:on|coolant)|coolant\s+mist)/i, convert: () => 'M07' },
     { pattern: /(?:through\s+(?:spindle\s+)?coolant|tsc\s+on|high\s+pressure)/i, convert: () => 'M88' },
-    { pattern: /(?:rapid(?:\s+to)?|go\s+rapid\s+to|move\s+rapid(?:ly)?\s+to|position\s+to)\s+((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
+    { pattern: /(?:rapid(?:\s+to)?|go\s+rapid\s+to|move\s+rapid(?:ly)?\s+to|position\s+to)\s+((?:[XYZABCUVW]-?(?:\d+\.?\d*|\.\d+)\s*)+?)(?:\s+(?:at|feed|f)\s+(\d+\.?\d*|\.\d+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
       convert: (m) => { const c = parseCoords(m[1]); return m[2] ? `G00 ${c} F${fmtNum(m[2])}` : `G00 ${c}`; } },
-    { pattern: /(?:feed(?:\s+to)?|linear\s+move(?:\s+to)?|mill\s+to|cut\s+to)\s+((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
+    { pattern: /(?:feed(?:\s+to)?|linear\s+move(?:\s+to)?|mill\s+to|cut\s+to)\s+((?:[XYZABCUVW]-?(?:\d+\.?\d*|\.\d+)\s*)+?)(?:\s+(?:at|feed|f)\s+(\d+\.?\d*|\.\d+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
       convert: (m) => { const c = parseCoords(m[1]); return m[2] ? `G01 ${c} F${fmtNum(m[2])}` : `G01 ${c}`; } },
-    { pattern: /(?:go\s+to|move\s+to|position\s+to)\s+((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
+    { pattern: /(?:go\s+to|move\s+to|position\s+to)\s+((?:[XYZABCUVW]-?(?:\d+\.?\d*|\.\d+)\s*)+?)(?:\s+(?:at|feed|f)\s+(\d+\.?\d*|\.\d+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
       convert: (m, ctx) => {
         let modal = 'G00';
         if (ctx && ctx.lastMotionModal) {
@@ -238,7 +240,7 @@
       }
     },
     // Arc CW with R
-    { pattern: /(?:arc\s+(?:cw|clockwise)|(?<![a-z])cw\s+arc)\s+(?:to\s+)?((?:[XYZABCUVW]-?[\d.]+\s*)+?)\s*R(-?[\d.]+)(?:\s*I(-?[\d.]+))?(?:\s*J(-?[\d.]+))?(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
+    { pattern: /(?:arc\s+(?:cw|clockwise)|(?<![a-z])cw\s+arc)\s+(?:to\s+)?((?:[XYZABCUVW]-?(?:\d+\.?\d*|\.\d+)\s*)+?)\s*R(-?(?:\d+\.?\d*|\.\d+))(?:\s*I(-?(?:\d+\.?\d*|\.\d+)))?(?:\s*J(-?(?:\d+\.?\d*|\.\d+)))?(?:\s+(?:at|feed|f)\s+(\d+\.?\d*|\.\d+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
       convert: m => {
         const c = parseCoords(m[1]);
         const f = m[5] ? ` F${fmtNum(m[5])}` : '';
@@ -246,7 +248,7 @@
       }
     },
     // Arc CW with I/J
-    { pattern: /(?:arc\s+(?:cw|clockwise)|(?<![a-z])cw\s+arc)\s+(?:to\s+)?((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:\s*I(-?[\d.]+))?(?:\s*J(-?[\d.]+))?(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
+    { pattern: /(?:arc\s+(?:cw|clockwise)|(?<![a-z])cw\s+arc)\s+(?:to\s+)?((?:[XYZABCUVW]-?(?:\d+\.?\d*|\.\d+)\s*)+?)(?:\s*I(-?(?:\d+\.?\d*|\.\d+)))?(?:\s*J(-?(?:\d+\.?\d*|\.\d+)))?(?:\s+(?:at|feed|f)\s+(\d+\.?\d*|\.\d+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
       convert: m => {
         const c = parseCoords(m[1]);
         const f = m[4] ? ` F${fmtNum(m[4])}` : '';
@@ -254,7 +256,7 @@
       }
     },
     // Arc CCW with R
-    { pattern: /(?:arc\s+(?:ccw|counterclockwise|counter-clockwise)|ccw\s+arc)\s+(?:to\s+)?((?:[XYZABCUVW]-?[\d.]+\s*)+?)\s*R(-?[\d.]+)(?:\s*I(-?[\d.]+))?(?:\s*J(-?[\d.]+))?(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
+    { pattern: /(?:arc\s+(?:ccw|counterclockwise|counter-clockwise)|ccw\s+arc)\s+(?:to\s+)?((?:[XYZABCUVW]-?(?:\d+\.?\d*|\.\d+)\s*)+?)\s*R(-?(?:\d+\.?\d*|\.\d+))(?:\s*I(-?(?:\d+\.?\d*|\.\d+)))?(?:\s*J(-?(?:\d+\.?\d*|\.\d+)))?(?:\s+(?:at|feed|f)\s+(\d+\.?\d*|\.\d+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
       convert: m => {
         const c = parseCoords(m[1]);
         const f = m[5] ? ` F${fmtNum(m[5])}` : '';
@@ -262,7 +264,7 @@
       }
     },
     // Arc CCW with I/J
-    { pattern: /(?:arc\s+(?:ccw|counterclockwise|counter-clockwise)|ccw\s+arc)\s+(?:to\s+)?((?:[XYZABCUVW]-?[\d.]+\s*)+?)(?:\s*I(-?[\d.]+))?(?:\s*J(-?[\d.]+))?(?:\s+(?:at|feed|f)\s+(-?[\d.]+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
+    { pattern: /(?:arc\s+(?:ccw|counterclockwise|counter-clockwise)|ccw\s+arc)\s+(?:to\s+)?((?:[XYZABCUVW]-?(?:\d+\.?\d*|\.\d+)\s*)+?)(?:\s*I(-?(?:\d+\.?\d*|\.\d+)))?(?:\s*J(-?(?:\d+\.?\d*|\.\d+)))?(?:\s+(?:at|feed|f)\s+(\d+\.?\d*|\.\d+)(?:\s*(?:ipm|fpm|mmpm|mm\/min|in\/min))?)?$/i,
       convert: m => {
         const c = parseCoords(m[1]);
         const f = m[4] ? ` F${fmtNum(m[4])}` : '';
@@ -270,7 +272,7 @@
       }
     },
     { pattern: /(?:dwell|wait|pause)\s+(\d+(?:\.\d+)?)\s*(?:s(?:ec(?:ond)?s?)?|ms|millisec(?:ond)?s?)?/i,
-      convert: m => { let v = parseFloat(m[1]); if (/ms|milli/i.test(m[0])) v /= 1000; return `G04 P${v}`; } },
+      convert: m => { let v = parseFloat(m[1]); if (/ms|milli/i.test(m[0])) v /= 1000; return `G04 P${v >= 1e21 ? m[1] : +v.toFixed(6)}`; } },   // (never 1e+21 notation)
     { pattern: /(?:home\s+z|z\s+home|retract\s+z)/i, convert: () => 'G28 G91 Z0.\nG90' },
     { pattern: /(?:go\s+(?:to\s+)?(?:machine\s+)?home|return\s+to\s+(?:machine\s+)?home|home\s+(?:all\s+)?axes)/i,
       convert: () => 'G28 G91 Z0.\nG28 X0. Y0.\nG90' },
@@ -290,20 +292,20 @@
     { pattern: /(?:cancel|disable|remove|turn\s+off)\s+tool\s+(?:length\s+)?comp(?:ensation)?/i,
       convert: () => 'G49' },
     { pattern: /cutter\s+comp(?:ensation)?\s+(?:left|climb)\s*(?:D\s*(\d+))?/i,
-      convert: m => `G41 D${m[1] ? m[1] : ''}` },
+      convert: m => (m[1] ? `G41 D${m[1]}` : 'G41') },
     { pattern: /cutter\s+comp(?:ensation)?\s+(?:right|conventional)\s*(?:D\s*(\d+))?/i,
-      convert: m => `G42 D${m[1] ? m[1] : ''}` },
+      convert: m => (m[1] ? `G42 D${m[1]}` : 'G42') },
     { pattern: /cancel\s+cutter\s+comp(?:ensation)?/i, convert: () => 'G40' },
-    { pattern: /(?:drill\s+(?:hole\s+)?at|simple\s+drill)\s+((?:[XYZRQ]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
+    { pattern: /(?:drill\s+(?:hole\s+)?at|simple\s+drill)\s+((?:[XYZRQ]-?(?:\d+\.?\d*|\.\d+)\s*)*)(?:F(-?(?:\d+\.?\d*|\.\d+)))?/i,
       convert: (m) => `G81 G99 ${parseCoords(m[1])}${m[2] ? ' F' + m[2] : ''}` },
-    { pattern: /(?:peck\s+drill(?:ing)?)\s+((?:[XYZRQ]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
+    { pattern: /(?:peck\s+drill(?:ing)?)\s+((?:[XYZRQ]-?(?:\d+\.?\d*|\.\d+)\s*)*)(?:F(-?(?:\d+\.?\d*|\.\d+)))?/i,
       convert: (m) => `G83 G99 ${parseCoords(m[1])}${m[2] ? ' F' + m[2] : ''}` },
     { pattern: /rigid\s+tap(?:\s+mode)?\s+(\d+)/i, convert: m => `M29 S${m[1]}` },
-    { pattern: /(?:tap(?:ping)?(?:\s+(?:hole\s+)?at)?)\s+((?:[XYZR]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
+    { pattern: /(?:tap(?:ping)?(?:\s+(?:hole\s+)?at)?)\s+((?:[XYZR]-?(?:\d+\.?\d*|\.\d+)\s*)*)(?:F(-?(?:\d+\.?\d*|\.\d+)))?/i,
       convert: (m) => `G84 G99 ${parseCoords(m[1])}${m[2] ? ' F' + m[2] : ''}` },
-    { pattern: /(?:chip\s+break(?:ing)?\s+drill)\s+((?:[XYZRQ]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
+    { pattern: /(?:chip\s+break(?:ing)?\s+drill)\s+((?:[XYZRQ]-?(?:\d+\.?\d*|\.\d+)\s*)*)(?:F(-?(?:\d+\.?\d*|\.\d+)))?/i,
       convert: (m) => `G73 G99 ${parseCoords(m[1])}${m[2] ? ' F' + m[2] : ''}` },
-    { pattern: /(?:boring(?:\s+cycle)?|bore\s+at)\s+((?:[XYZR]-?[\d.]+\s*)*)(?:F(-?[\d.]+))?/i,
+    { pattern: /(?:boring(?:\s+cycle)?|bore)(?:\s+at)?\s+((?:[XYZR]-?(?:\d+\.?\d*|\.\d+)\s*)*)(?:F(-?(?:\d+\.?\d*|\.\d+)))?/i,
       convert: (m) => `G85 G99 ${parseCoords(m[1])}${m[2] ? ' F' + m[2] : ''}` },
     { pattern: /cancel\s+(?:canned\s+)?cycle|end\s+(?:canned\s+)?cycle/i, convert: () => 'G80' },
     { pattern: /(?:select\s+)?XY\s+plane/i, convert: () => 'G17' },
@@ -322,7 +324,7 @@
     { pattern: /air\s+(?:blast\s+)?off/i, convert: () => 'M13' },
     { pattern: /(?:chip\s+)?conveyor\s+(?:on|fwd)/i, convert: () => 'M31' },
     { pattern: /(?:chip\s+)?conveyor\s+off/i, convert: () => 'M33' },
-    { pattern: /scale\s+factor\s+([\d.]+)/i, convert: m => `G51 X${m[1]} Y${m[1]} Z${m[1]}` },
+    { pattern: /scale\s+factor\s+(\d+\.?\d*|\.\d+)/i, convert: m => { const f = /\./.test(m[1]) ? m[1] : m[1] + '.'; return `G51 X${f} Y${f} Z${f}`; } },   // (axis words keep a decimal point)
     { pattern: /cancel\s+scale/i, convert: () => 'G50' },
     // Pocket milling
     { pattern: /(?:pocket\s+mill(?:ing)?\s+(?:cw|clockwise)|circular\s+pocket\s+(?:cw|clockwise))/i, convert: () => 'G12' },
@@ -458,6 +460,7 @@
       /^air blast on/i, /^conveyor on/i, /^quick tool change T##/i
     ];
     for (const sc of SHORTCUTS) {
+      if (sc.hidden) continue;   // (listed with its #### placeholder under the phrases)
       const isQuick = quickSetupPatterns.some(p => p.test(sc.name));
       items.push({ code: sc.name, desc: sc.desc, category: 'Shortcut', isQuickSetup: isQuick });
     }

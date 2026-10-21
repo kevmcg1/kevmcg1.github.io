@@ -689,25 +689,34 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
             handleInput();
         }
 
+        // Tool diameter in inches from a size such as 1/2", 1 1/2", .5", 0.5 inch or 12.7 mm.
+        // Returns null when there is no size or it is not a usable number (zero, 1/0, too big to be a real tool).
         function parseDiameter(sizeString) {
             if (!sizeString) return null;
+            const s = String(sizeString).toLowerCase();
+            let d = null, m;
 
-            const fractionMatch = sizeString.match(/(\d+)\/(\d+)"/);
-            if (fractionMatch) {
-                return parseFloat(fractionMatch[1]) / parseFloat(fractionMatch[2]);
+            if ((m = s.match(/^(\d+)\s+(\d+)\/(\d+)\s*(?:"|inch)$/))) {
+                d = parseFloat(m[1]) + parseFloat(m[2]) / parseFloat(m[3]);
+            } else if ((m = s.match(/^(\d+)\/(\d+)\s*(?:"|inch)$/))) {
+                d = parseFloat(m[1]) / parseFloat(m[2]);
+            } else if ((m = s.match(/^(\d+(?:\.\d*)?|\.\d+)\s*(?:"|inch)$/))) {
+                d = parseFloat(m[1]);
+            } else if ((m = s.match(/^(\d+(?:\.\d*)?|\.\d+)\s*mm$/))) {
+                d = parseFloat(m[1]) / 25.4;
             }
 
-            const decimalInchMatch = sizeString.match(/(\d*\.?\d+)"/);
-            if (decimalInchMatch) {
-                return parseFloat(decimalInchMatch[1]);
-            }
+            return Number.isFinite(d) && d >= 0.0001 && d <= 100 ? d : null;
+        }
 
-            const mmMatch = sizeString.match(/(\d*\.?\d+)\s*mm/);
-            if (mmMatch) {
-                return parseFloat(mmMatch[1]) / 25.4;
-            }
+        // Escape text typed by the person before it goes into innerHTML.
+        function esc(text) {
+            return String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
 
-            return null;
+        // A number read from the text that is usable in a calculation, or the fallback.
+        function finiteOr(value, fallback) {
+            return Number.isFinite(value) ? value : fallback;
         }
 
         function getSizeCategory(diameter) {
@@ -821,10 +830,10 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
     const materialSpecs = isCarbide ? material.carbide : material.hss;
 
     const sizeCategory = getSizeCategory(diameter);
-    const flutes = tool.specs.flutes ? parseInt(tool.specs.flutes[0]) : 2;
+    const flutes = tool.specs.flutes ? finiteOr(parseInt(tool.specs.flutes[0], 10), 2) : 2;
 
-    const stepoverPercent = tool.specs.stepover ? parseFloat(tool.specs.stepover[0]) : 50;
-    const docPercent = tool.specs.doc ? parseFloat(tool.specs.doc[0]) : 50;
+    const stepoverPercent = tool.specs.stepover ? finiteOr(parseFloat(tool.specs.stepover[0]), 50) : 50;
+    const docPercent = tool.specs.doc ? finiteOr(parseFloat(tool.specs.doc[0]), 50) : 50;
 
     const stepoverAdj = calculateStepoverAdjustment(stepoverPercent);
     const docAdj = calculateDocAdjustment(docPercent);
@@ -839,7 +848,8 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
         maxRpm = Math.round(maxRpm * rpmReduction);
     }
 
-        const customFpt = tool.specs.fpt ? parseFloat(tool.specs.fpt[0]) : null;
+        const typedFpt = tool.specs.fpt ? parseFloat(tool.specs.fpt[0]) : null;
+        const customFpt = typedFpt > 0 && Number.isFinite(typedFpt) ? typedFpt : null;   // 0 or too large to be a number: use the table values
 
         let fptRange, minIpm, maxIpm;
 
@@ -885,12 +895,13 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
             },
             {
                 key: 'size',
-                regex: /(\d+(?:\/\d+)?"|\d+\.?\d*\s*mm|\d+\.?\d*\s*inch|\d+\.?\d*")/gi,
+                // 1/2"  1 1/2"  .5"  0.5"  1/2 inch  0.5 inch  12.7mm  12.7 mm  (the digit runs cannot backtrack, so a long run of digits stays fast)
+                regex: /(?<![\d./])(\d+\s+\d+\/\d+\s*(?:"|inch)|\d+\/\d+\s*(?:"|inch)|(?:\d+(?:\.\d*)?|\.\d+)(?:"|\s*inch|\s*mm))/gi,
                 label: 'Size/Diameter'
             },
             {
                 key: 'flutes',
-                regex: /(\d+)\s*flute[s]?/gi,
+                regex: /(?<!\d)(\d+)\s*flute[s]?/gi,
                 label: 'Flute Count'
             },
             {
@@ -920,17 +931,17 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
             },
             {
                 key: 'fpt',
-                regex: /(\d*\.?\d+)\s*fpt/gi,
+                regex: /(?<![\d.])(\d+(?:\.\d*)?|\.\d+)\s*fpt/gi,
                 label: 'Feed Per Tooth'
             },
             {
                 key: 'stepover',
-                regex: /(\d*\.?\d+)%?\s*stepover/gi,
+                regex: /(?<![\d.])(\d+(?:\.\d*)?|\.\d+)%?\s*stepover/gi,
                 label: 'Stepover %'
             },
             {
                 key: 'doc',
-                regex: /(\d*\.?\d+)%?\s*doc/gi,
+                regex: /(?<![\d.])(\d+(?:\.\d*)?|\.\d+)%?\s*doc/gi,
                 label: 'Depth of Cut %'
             }
         ];
@@ -953,10 +964,10 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
                             let valueToStore = match.trim();
 
                             if (pattern.key === 'fpt') {
-                                const numberMatch = match.match(/(\d*\.?\d+)/);
+                                const numberMatch = match.match(/(\d+(?:\.\d*)?|\.\d+)/);
                                 valueToStore = numberMatch ? numberMatch[1] : match.trim();
                             } else if (pattern.key === 'stepover' || pattern.key === 'doc') {
-                                const numberMatch = match.match(/(\d*\.?\d+)/);
+                                const numberMatch = match.match(/(\d+(?:\.\d*)?|\.\d+)/);
                                 valueToStore = numberMatch ? numberMatch[1] : match.trim();
                             }
 
@@ -1073,7 +1084,7 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
                 : `Tool ${index + 1}`;
 
             const summary = generateToolSummary(tool.specs);
-            html += `<div class="tool-header">${toolId} - ${summary}</div>`;
+            html += `<div class="tool-header">${esc(toolId)} - ${esc(summary)}</div>`;
 
             html += `<div class="tool-specs">`;
             html += `<div class="spec-grid">`;
@@ -1093,7 +1104,7 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
                     html += `
                       <div class="spec-item ${highlightClass}">
                           <span class="spec-label">${label}${isCustomFpt ? ' (Custom)' : ''}</span>
-                          <span class="spec-value">${value.toUpperCase()}${isStepover || isDoc ? '%' : ''}</span>
+                          <span class="spec-value">${esc(value.toUpperCase())}${isStepover || isDoc ? '%' : ''}</span>
                       </div>
                   `;
                 });
@@ -1181,6 +1192,38 @@ Tool #6 - 5/8" face mill, carbide, .003 fpt, 60% stepover, 40% doc`;
     toolInput.addEventListener('keyup', handleInput);
 
     toolInput.focus();
+</script>
+
+<script>
+/* Dev tool: press the backtick key (`) (or Ctrl+` while typing in a text box) to open the automatic UX tester. devtest.js and its small adapter for this page
+   (devtest-speedsnfeeds.js) are loaded on first use. Open the page with ?dev=quick | standard | thorough | problems to start a run by itself. */
+(() => {
+  let loading = false;
+  const FILES = ['devtest-speedsnfeeds.js?v=1', 'devtest.js?v=1'];
+  const load = (done) => {
+    if (loading) return; loading = true; let i = 0;
+    const next = () => {
+      if (i >= FILES.length) { loading = false; return done(); }
+      const sc = document.createElement('script'); sc.src = FILES[i++]; sc.onload = next;
+      sc.onerror = () => { loading = false; console.warn('Could not load the dev tool (' + sc.src + ')'); };
+      document.head.appendChild(sc);
+    };
+    next();
+  };
+  addEventListener('keydown', (e) => {
+    if (e.key !== '`' || !e.isTrusted || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (!e.ctrlKey && t && (t.tagName === 'TEXTAREA' || t.isContentEditable || (t.tagName === 'INPUT' && /^(text|number|search|email|url|tel|password)$/.test(t.type)))) return;
+    e.preventDefault(); e.stopPropagation();
+    if (window.DevTest) { window.DevTest.toggle(); return; }
+    load(() => { window.DevTest && window.DevTest.toggle(true); });
+  }, true);
+  const auto = /[?&]dev=(quick|standard|thorough|problems|free)\b/.exec(location.search);
+  if (auto) setTimeout(() => load(() => {
+    window.DevTest.toggle(true); const m = document.getElementById('dtMode'); if (m) { m.value = auto[1]; m.onchange && m.onchange(); }
+    const go = document.querySelector('#devtest [data-a=start]'); if (go) go.click();
+  }), 2500);
+})();
 </script>
 
 <!-- alpha notice: shown every time this page opens -->
