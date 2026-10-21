@@ -52,8 +52,8 @@ function checkOut(text, o = {}) {
       if (!WORD.test(tok)) { add('error', `malformed word "${tok}" in "${t}" (a letter needs a plain number)`); return; }
       const L = tok[0], v = parseFloat(tok.slice(1)); ws.push({ L, v, tok });
       if (L !== 'G' && L !== 'M') { seen[L] = (seen[L] || 0) + 1; if (seen[L] > 1 && 'XYZABCFSTHDPQRIJKL'.includes(L)) add(rangeSev, `word ${L} appears twice in "${t}"`); }
-      if (L === 'G') { if (!GSET.has(Number.isInteger(v) ? 'G' + pad2(v) : 'G' + String(v))) add('warn', `G code ${tok} in "${t}" is not in the ${machine().type} rules table`); }
-      else if (L === 'M') { if (!MSET.has('M' + pad2(Math.floor(v))) || !Number.isInteger(v)) add('warn', `M code ${tok} in "${t}" is not in the ${machine().type} rules table`); }
+      if (L === 'G') { if (!o.noTable && !GSET.has(Number.isInteger(v) ? 'G' + pad2(v) : 'G' + String(v))) add('warn', `G code ${tok} in "${t}" is not in the ${machine().type} rules table`); }
+      else if (L === 'M') { if (!o.noTable && !MSET.has('M' + pad2(Math.floor(v))) || !Number.isInteger(v)) add('warn', `M code ${tok} in "${t}" is not in the ${machine().type} rules table`); }
       else if (L === 'T') { const tmax = machine().type === 'lathe' ? 9999 : 99; if (!Number.isInteger(v) || v < 0 || v > tmax) add(rangeSev, `tool number ${tok} in "${t}" is out of range 0..${tmax}`); }
       else if (L === 'S') { if (v < 0 || v > 60000) add(rangeSev, `spindle speed ${tok} in "${t}" is out of range 0..60000`); }
       else if (L === 'F') { if (!(v > 0)) add(rangeSev === 'error' ? 'error' : 'warn', `feed ${tok} in "${t}" is not above zero`); else if (v > 100000) add(rangeSev, `feed ${tok} in "${t}" is above 100000`); }
@@ -353,7 +353,7 @@ window.__devApi = {
           const want = (r.auto ? (s) => s.split('\n').map(addSemi).join('\n') : (s) => s);
           K.check('G-code typed before a phrase is kept', r.newLine.startsWith(pre) || r.newLine.toUpperCase().startsWith(pre)) || K.find('oracle', 'error', `"${line}" became "${r.newLine}": the typed G-code "${pre}" was lost`, { where: 'mixed lost ' + pre.replace(/\d+/g, '#'), sample: `typed: ${line}\nresult: ${r.newLine}` });
           K.check('the phrase after the G-code is converted', r.newLine !== line && r.newLine.includes(want(alone).split('\n')[0].replace(/;$/, ''))) || K.find('oracle', 'warn', `"${line}" was left as "${r.newLine}" instead of converting "${phr}"`, { where: 'mixed not converted' });
-          const probs = checkOut(r.newLine, { strict: true, auto: r.auto, templates: tmpl(line) }); probs.forEach((p) => K.find('gcode', p.sev === 'info' ? 'info' : p.sev, `"${line}" -> ${p.msg}`, { where: p.msg.replace(/[\d.]+/g, '#').slice(0, 60) }));
+          const probs = checkOut(r.newLine, { strict: true, auto: r.auto, templates: tmpl(line), noTable: true }); probs.forEach((p) => K.find('gcode', p.sev === 'info' ? 'info' : p.sev, `"${line}" -> ${p.msg}`, { where: p.msg.replace(/[\d.]+/g, '#').slice(0, 60) }));
         }
         K.feature('G-code mixed with a phrase'); return line;
       } },
