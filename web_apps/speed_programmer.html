@@ -85,6 +85,8 @@
   }
   #editor-wrap { flex: 1; display: flex; overflow: hidden; position: relative; }
   #line-numbers { width: 52px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 10px 12px 0; font-family: var(--font-mono); font-size: 13px; line-height: 22px; color: var(--text-dim); text-align: right; overflow: hidden; user-select: none; font-style: italic; }
+  /* only the lines on screen (plus a margin) are drawn in the margin and the colour layer; a script moves them to line up with the text */
+  #line-numbers > div, #highlight > div { white-space: pre; will-change: transform; }
   #editor-inner { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
   #highlight { position: absolute; inset: 0; font-family: var(--font-mono); font-size: 13px; line-height: 22px; padding: 12px 16px; white-space: pre; overflow: hidden; pointer-events: none; font-style: italic; text-transform: uppercase; color: transparent; }
   #editor { position: absolute; inset: 0; background: transparent; color: transparent; caret-color: #ffffff99; font-family: var(--font-mono); font-size: 13px; line-height: 22px; padding: 12px 16px; border: none; outline: none; resize: none; overflow-y: scroll; overflow-x: auto; white-space: pre; tab-size: 4; font-style: italic; text-transform: uppercase; -webkit-text-fill-color: transparent; }
@@ -245,9 +247,9 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     </div>
   </div>
   <div id="editor-wrap">
-    <div id="line-numbers"></div>
+    <div id="line-numbers"><div></div></div>
     <div id="editor-inner">
-      <div id="highlight" aria-hidden="true"></div>
+      <div id="highlight" aria-hidden="true"><div></div></div>
       <textarea id="editor" aria-label="G-code editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
       <div id="autocomplete"></div>
     </div>
@@ -440,24 +442,41 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     return text.split('\n').map(highlightLine).join('\n');
   }
 
-  function syncHighlight() {
-    highlight.innerHTML = highlightCode(editor.value);
-    highlight.scrollTop = editor.scrollTop;
-    highlight.scrollLeft = editor.scrollLeft;
+  // The margin and the colour layer draw only the lines on screen plus LINE_BUFFER above and below, so a 5000-line paste costs the same as a short one.
+  const LINE_H = 22, LINE_BUFFER = 40;
+  const numsInner = lineNums.firstElementChild, hlInner = highlight.firstElementChild;
+  let edLines = [''], winFirst = 0, winLast = -1, winDirty = true;
+
+  function positionWindow() {
+    const y = winFirst * LINE_H - editor.scrollTop;
+    numsInner.style.transform = `translateY(${y}px)`;
+    hlInner.style.transform = `translate(${-editor.scrollLeft}px, ${y}px)`;
   }
 
+  function renderWindow() {
+    const n = edLines.length;
+    const top = Math.min(Math.floor(editor.scrollTop / LINE_H), n - 1);
+    const bottom = Math.min(n - 1, top + Math.ceil((editor.clientHeight || 600) / LINE_H) + 1);
+    if (winDirty || top < winFirst || bottom > winLast) {
+      const first = Math.max(0, top - LINE_BUFFER), last = Math.min(n - 1, bottom + LINE_BUFFER);
+      let nums = '';
+      for (let i = first; i <= last; i++) nums += (i > first ? '\n' : '') + (i + 1);
+      numsInner.textContent = nums;
+      hlInner.innerHTML = highlightCode(edLines.slice(first, last + 1).join('\n'));
+      winFirst = first; winLast = last; winDirty = false;
+    }
+    positionWindow();
+  }
+
+  function syncHighlight() { winDirty = true; renderWindow(); }
+
   function updateLineNumbers() {
-    const lines = editor.value.split('\n');
-    lineNums.innerHTML = lines.map((_,i) => `<div style="line-height:22px">${i+1}</div>`).join('');
-    lineNums.scrollTop = editor.scrollTop;
+    edLines = editor.value.split('\n');
     updateUnitsBadge();
     syncHighlight();
   }
-  editor.addEventListener('scroll', () => {
-    lineNums.scrollTop = editor.scrollTop;
-    highlight.scrollTop = editor.scrollTop;
-    highlight.scrollLeft = editor.scrollLeft;
-  });
+  editor.addEventListener('scroll', renderWindow);
+  window.addEventListener('resize', renderWindow);
 
   let statusTimer;
   function showStatus(msg) {
@@ -516,7 +535,11 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
       font:${style.font};line-height:${style.lineHeight};padding:${style.padding};
       border:${style.border};width:${editor.offsetWidth}px;`;
     document.body.appendChild(mirror);
-    mirror.innerHTML = editor.value.slice(0,editor.selectionStart).replace(/</g,'&lt;') + '<span id="_c">|</span>';
+    // (only the line the caret is on has text: the lines above it just need their height, and laying out thousands of full lines froze the page)
+    const before = editor.value.slice(0,editor.selectionStart), lineStart = before.lastIndexOf('\n') + 1;
+    mirror.style.whiteSpace = 'pre';
+    mirror.textContent = '\n'.repeat(before.split('\n').length - 1) + before.slice(lineStart);
+    mirror.appendChild(Object.assign(document.createElement('span'), { id: '_c', textContent: '|' }));
     const r = mirror.querySelector('#_c').getBoundingClientRect();
     const w = document.getElementById('editor-inner').getBoundingClientRect();
     document.body.removeChild(mirror);
@@ -1072,7 +1095,7 @@ G42 turn to X1.2 Z-1. at .005`
    (devtest-speedprogrammer.js) are loaded on first use. Open the page with ?dev=quick | standard | thorough | problems | stress | endless to start a run by itself. */
 (() => {
   let loading = false;
-  const FILES = ['devtest-speedprogrammer.js?v=1', 'devtest.js?v=1'];
+  const FILES = ['devtest-speedprogrammer.js?v=3', 'devtest.js?v=1'];
   const load = (done) => {
     if (loading) return; loading = true; let i = 0;
     const next = () => {
