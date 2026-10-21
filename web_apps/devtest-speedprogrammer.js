@@ -458,5 +458,39 @@ SU['the sample program with Auto ; on'] = async (K) => { if (!autoSemicolon) awa
 SU['one very long line'] = async (K) => { K.typeInto(editor, 'G01 ' + 'X1. '.repeat(3000)); };
 SU['two thousand lines'] = async (K) => { K.typeInto(editor, Array.from({ length: 2000 }, (_, i) => `rapid to X${i % 10} Y${i % 7}`).join('\n')); };
 SU['a metric program'] = async (K) => { K.typeInto(editor, 'safety line metric\nG21\n(METRIC)\n'); };
+
+/* ---------------------------------------------------------------- stress scenarios (Stress test mode): run at sizes 1, 2, 4, 8 ... (level) and timed */
+const SS = window.__devApi.stress = {};
+const STRESS_LINES = ['G00 G17 G40 G49 G80 G90', 'G01 X1.5 Y-2. F20.', 'G00 Z1.', 'T3 M06', 'S5000 M03', 'G43 H03 Z1.', '(OP 1 - FACE)', 'G02 X2. Y2. R1. F15.', 'G01 Z-.25 F10.', 'M08', 'G00 Z1.', 'M09'];
+const bigText = (n) => Array.from({ length: n }, (_, i) => STRESS_LINES[i % STRESS_LINES.length]).join('\n');
+const phraseText = (K, n) => Array.from({ length: n }, () => K.pick(['rapid to X1 Y2', 'feed to Z-.1 at 20', 'spindle on 5000', 'coolant on', 'change tool to T3', 'arc clockwise to X1 Y1 R.5', 'home z'])).join('\n');
+SS['paste a program of 100 x size lines'] = async (K, level) => { K.allowSlow(60000); K.typeInto(editor, bigText(100 * level)); await K.raf(); };
+SS['paste a program of 100 x size lines of plain-English phrases'] = async (K, level) => { K.allowSlow(60000); K.typeInto(editor, phraseText(K, 100 * level)); await K.raf(); };
+SS['one single line, 500 x size characters long'] = async (K, level) => { K.allowSlow(60000); K.typeInto(editor, 'G01 ' + 'X1. '.repeat(125 * level)); await K.raf(); };
+SS['press Enter on 10 x size phrases in a row at the end of a growing program'] = async (K, level) => {
+  K.allowSlow(60000); editor.value = ''; K.typeInto(editor, ''); let cur = '';
+  for (let i = 0; i < 10 * level; i++) { const r = pressEnter(K, cur + (i % 3 ? 'feed to X' + (i % 9) + ' Y1 at 20' : 'rapid to Z1')); cur = editor.value; if (i % 40 === 0) await K.raf(); }
+};
+SS['convert every cheat-sheet phrase, size times over'] = async (K, level) => { K.allowSlow(60000); const reps = Math.min(level, 32); for (let r = 0; r < reps; r++) for (const ph of PHRASES.slice(0, 80)) { pressEnter(K, ph); if (r === 0) await K.raf(); } };
+SS['Add ; then Remove ; on a program of 100 x size lines'] = async (K, level) => {
+  K.allowSlow(60000); const text = bigText(100 * level).replace(/\n\(OP 1 - FACE\)/g, ''); K.typeInto(editor, text); await K.raf();
+  await K.realClick(sel('#add-semicolons-btn')); await K.raf(); const added = editor.value; await K.realClick(sel('#remove-semicolons-btn')); await K.raf();
+  K.check('Add ; then Remove ; gives the program back', editor.value === text) || K.find('oracle', 'warn', 'Add ; then Remove ; did not give the same program back at ' + text.split('\n').length + ' lines', { where: 'semicolon round trip' });
+  K.check('Add ; puts a semicolon on every line', added.split('\n').filter((l) => l.trim()).every((l) => /;\s*$/.test(l)) || added.length > text.length);
+};
+SS['Tab autocomplete at the end of a program of 100 x size lines'] = async (K, level) => { K.allowSlow(60000); K.typeInto(editor, bigText(100 * level) + '\nrap'); editor.setSelectionRange(editor.value.length, editor.value.length); for (let i = 0; i < 3; i++) { K.key('Tab', {}, editor); await K.raf(); } };
+SS['edit in the middle of a program of 100 x size lines, 10 times'] = async (K, level) => {
+  K.allowSlow(60000); const lines = bigText(100 * level).split('\n'); K.typeInto(editor, lines.join('\n')); await K.raf();
+  for (let i = 0; i < 10; i++) { const at = lines.slice(0, Math.floor(lines.length / 2)).join('\n').length; const v = editor.value; K.typeInto(editor, v.slice(0, at) + (i % 2 ? ' ' : 'X') + v.slice(at), { caret: at + 1 }); await K.raf(); }
+};
+SS['open and close the cheat sheet, Debug and Auto ; on a program of 100 x size lines'] = async (K, level) => {
+  K.allowSlow(60000); K.typeInto(editor, bigText(100 * level)); await K.raf();
+  for (const b of ['#cheat-sheet-btn', '#debug-btn', '#auto-semicolon-btn']) { await K.realClick(sel(b)); await K.raf(); cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); }
+  if (autoSemicolon) await K.realClick(sel('#auto-semicolon-btn'));
+};
+SS['rapid typing: 20 x size keystrokes into a program of 200 lines'] = async (K, level) => {
+  K.allowSlow(60000); K.typeInto(editor, bigText(200)); editor.focus();
+  for (let i = 0; i < 20 * level; i++) { K.key(K.pick(['a', 'x', ' ', '1', '.', 'Backspace', 'Enter', 'ArrowDown']), {}, editor); if (i % 200 === 0) await K.raf(); }
+};
 SU['CRLF line endings pasted'] = async (K) => { K.typeInto(editor, 'G20\r\nG90\r\nrapid to X1 Y2\r\n'); };
 })();
