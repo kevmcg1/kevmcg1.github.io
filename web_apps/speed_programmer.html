@@ -232,7 +232,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     <div id="line-numbers"></div>
     <div id="editor-inner">
       <div id="highlight" aria-hidden="true"></div>
-      <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+      <textarea id="editor" aria-label="G-code editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
       <div id="autocomplete"></div>
     </div>
   </div>
@@ -516,6 +516,10 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
         lastGcodeEnd = match.index + match[0].length;
       }
     }
+    // The phrase starts at its first real word (3+ letters, outside brackets). Pieces inside it that look like G-code ("Z-.5", "12.")
+    // belong to the phrase, so "G41 feed to Z-.5 at 12." keeps G41 and converts "feed to Z-.5 at 12.".
+    const firstWord = /[A-Za-z]{3,}/.exec(line.replace(/\([^)]*\)/g, m => ' '.repeat(m.length)));
+    if (firstWord && firstWord.index < lastGcodeEnd) lastGcodeEnd = firstWord.index;
     const trailing = line.slice(lastGcodeEnd);
     return { startIdx: lastGcodeEnd, trailing };
   }
@@ -580,7 +584,8 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
         if (trimmedTrailing) {
           const convertedTrailing = tryConvertLine(trimmedTrailing, context);
           if (convertedTrailing) {
-            newLine = currentLine.slice(0, startIdx) + convertedTrailing;
+            const head = currentLine.slice(0, startIdx).replace(/\s+$/, '');
+            newLine = head ? head + ' ' + convertedTrailing : convertedTrailing;
           }
         }
       }
@@ -648,6 +653,13 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
   cheatSheetBtn.addEventListener('click', () => {
     renderCheatSheet();
     cheatSheetModal.classList.add('visible');
+  });
+  // Escape closes whichever popup is open
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      cheatSheetModal.classList.remove('visible');
+      debugModal.classList.remove('visible');
+    }
   });
   closeCheatSheetBtn.addEventListener('click', () => {
     cheatSheetModal.classList.remove('visible');
@@ -919,6 +931,38 @@ max spindle speed 5000
 G41 feed to Z-.5 at 12.`;
 
   updateLineNumbers();
+</script>
+
+<script>
+/* Dev tool: press the backtick key (`) (or Ctrl+` while typing in a text box) to open the automatic UX tester. devtest.js and its small adapter for this page
+   (devtest-speedprogrammer.js) are loaded on first use. Open the page with ?dev=quick | standard | thorough | problems to start a run by itself. */
+(() => {
+  let loading = false;
+  const FILES = ['devtest-speedprogrammer.js?v=1', 'devtest.js?v=1'];
+  const load = (done) => {
+    if (loading) return; loading = true; let i = 0;
+    const next = () => {
+      if (i >= FILES.length) { loading = false; return done(); }
+      const sc = document.createElement('script'); sc.src = FILES[i++]; sc.onload = next;
+      sc.onerror = () => { loading = false; console.warn('Could not load the dev tool (' + sc.src + ')'); };
+      document.head.appendChild(sc);
+    };
+    next();
+  };
+  addEventListener('keydown', (e) => {
+    if (e.key !== '`' || !e.isTrusted || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (!e.ctrlKey && t && (t.tagName === 'TEXTAREA' || t.isContentEditable || (t.tagName === 'INPUT' && /^(text|number|search|email|url|tel|password)$/.test(t.type)))) return;
+    e.preventDefault(); e.stopPropagation();
+    if (window.DevTest) { window.DevTest.toggle(); return; }
+    load(() => { window.DevTest && window.DevTest.toggle(true); });
+  }, true);
+  const auto = /[?&]dev=(quick|standard|thorough|problems|free)\b/.exec(location.search);
+  if (auto) setTimeout(() => load(() => {
+    window.DevTest.toggle(true); const m = document.getElementById('dtMode'); if (m) { m.value = auto[1]; m.onchange && m.onchange(); }
+    const go = document.querySelector('#devtest [data-a=start]'); if (go) go.click();
+  }), 2500);
+})();
 </script>
 
 <!-- alpha notice: shown every time this page opens -->
