@@ -94,8 +94,10 @@
     let u = null;
     for (const line of text.split('\n')) {
       const t = line.replace(/\(.*?\)/g, '').toUpperCase();
-      if (/\bG20\b/.test(t)) u = 'inch';
-      if (/\bG21\b/.test(t)) u = 'metric';
+      // (G20 / G21 can be written with no space around them, like G20G90, X1G21 or G90G21, so a plain word boundary is not enough:
+      //  read every G word, skip one glued to a letter (that is not a G word), and look at its number)
+      const re = /G(\d+(?:\.\d+)?)/g; let m;
+      while ((m = re.exec(t))) { if (m.index > 0 && /[A-Z]/.test(t[m.index - 1])) continue; const v = parseFloat(m[1]); if (v === 20) u = 'inch'; else if (v === 21) u = 'metric'; }
     }
     return u;
   }

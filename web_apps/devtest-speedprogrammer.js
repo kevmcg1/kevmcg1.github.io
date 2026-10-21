@@ -165,7 +165,7 @@ function fill(K, code, awful) {
 function numbersIn(s) { return (String(s).match(/-?\d*\.?\d+(?:e[+-]?\d+)?/gi) || []).map(Number).filter(Number.isFinite); }
 const closeNum = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 const addSemi = (l) => { const t = l.replace(/\s+$/, ''); return t === '' || t.startsWith('(') || /^O\d+/.test(t) || t.startsWith('%') || t.endsWith(';') ? l : t + ';'; };
-const unitsOf = (text) => { let u = null; for (const line of text.split('\n')) { const t = line.replace(/\([^)]*\)/g, '').toUpperCase(); if (/(^|[^A-Z0-9.])G20(?![0-9])/.test(t)) u = 'inch'; if (/(^|[^A-Z0-9.])G21(?![0-9])/.test(t)) u = 'metric'; } return u; };
+const unitsOf = (text) => { let u = null; for (const line of text.split('\n')) { const code = line.replace(/\([^)]*\)/g, '').toUpperCase(); for (const m of code.matchAll(/G(\d+(?:\.\d+)?)/g)) { if (m.index > 0 && /[A-Z]/.test(code[m.index - 1])) continue; const v = Number(m[1]); if (v === 20) u = 'inch'; else if (v === 21) u = 'metric'; } } return u; };
 
 /* ---------------------------------------------------------------- pressing Enter in the editor, and what must come out */
 function expectedEnter(text, pos, auto) {
