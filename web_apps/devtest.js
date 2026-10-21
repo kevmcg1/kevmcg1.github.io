@@ -1,6 +1,6 @@
 /* =====================================================================
    Automatic UX tester (dev tool), shared by the small single-page apps (Speeds & Feeds, Speed Programmer, ...).
-   Press the ` key (or Ctrl+` while typing in a text box) to open it; there is no button. Open the page with ?dev=quick|standard|thorough|problems
+   Press the ` key (or Ctrl+` while typing in a text box) to open it; there is no button. Open the page with ?dev=quick|standard|thorough|problems|stress
    to start a run by itself. It clicks, types, fuzzes fields and presses keys on its own (about 10 actions a second, as many thousands as you like)
    while it checks that things work (script errors, rejected promises, console errors, the app's own state, independent re-calculations of what
    the app shows) and look right (controls covered or cut off, off-screen, low contrast, layout jumps, freezes), then tells you what went right
@@ -489,7 +489,7 @@ async function oneAction0(aseed) {
   // smoothness
   const allow = Math.max(cur.allow || 0, A.allowance ? A.allowance() : 0, cur.kind === 'macro' ? 1500 : 0);   // big inputs are allowed to take longer
   const worst = FM.max, jank = Math.max(80, T.base * 3.2, allow), freeze = Math.max(500, T.base * 9, allow);
-  if (!check('no long freezes', worst < freeze)) find('freeze', 'error', `The page froze for ${Math.round(worst)} ms after: ${cur.desc}`, { where: cur.kind + ':' + (cur.ctl || ''), sample: cur.desc });
+  if (!check('no long freezes', worst < freeze)) find('freeze', T.mode === 'stress' && worst < 3000 ? 'warn' : 'error', `The page froze for ${Math.round(worst)} ms after: ${cur.desc}`, { where: cur.kind + ':' + (cur.ctl || ''), sample: cur.desc });
   else if (!check('frames stay smooth', worst < jank)) { ks.jank++; find('jank', 'warn', `A frame took ${Math.round(worst)} ms (normal is ${Math.round(T.base)} ms) after: ${cur.kind}`, { where: cur.kind }); }
   const shift = T.shifts - sh0; if (!check('layout does not jump', shift < 0.25)) find('layout-shift', 'info', `The layout shifted (score ${shift.toFixed(2)}) after: ${cur.desc}`, { where: cur.kind + ':' + (cur.ctl || '') });
   const slow = cur.kind === 'macro' || (A.slowKinds && A.slowKinds.includes(cur.kind)) ? 30000 : Math.max(3000, allow * 4);
@@ -516,6 +516,7 @@ const MODES = {
   standard: { label: 'Standard: about 900 actions with awkward values, pairs, random runs and every flow twice', budget: 900 },
   thorough: { label: 'Thorough: about 3000 actions, every control many times, thousands of pairs and runs, every flow', budget: 3000 },
   problems: { label: 'Aim at problems: scouts for suspects, replays old problems, spends most of its time on what is most likely to break, shrinks every failure', budget: 450, scoutShare: .14 },
+  stress: { label: 'Stress test: pushes the app with bigger and bigger inputs, hammers it with back-to-back actions and repeats whole journeys, timing each step, to find where it slows down, freezes or breaks', budget: 0 },
   free: { label: 'Free run: the original open-ended run (your rate, max and seed below)', budget: 0 },
 };
 async function resetBaseline() {
@@ -557,6 +558,54 @@ async function runPlanned(mode) {
   const flows = Object.keys(FLOWS).map((m) => ({ kind: 'macro', macro: m })).concat(ACTS.map((a) => ({ kind: a.id, fuzz: true })), Object.keys(SETUPS).map((s) => ({ kind: 'setup', name: s })));
   if (!flows.length) flows.push({ kind: 'click' });
   let f = 0; while (T.running && T.n < target) { const spec = Object.assign({}, flows[f++ % flows.length]); if (f % flows.length === 1) flows.sort(() => rng() - 0.5); spec.seed = Math.floor(rng() * 4294967296); await scenarioRun('flow: ' + (spec.macro || spec.name || spec.kind), spec.kind === 'setup' ? [spec, { kind: 'click' }, { kind: 'form', fuzz: true }] : [spec]); }
+}
+
+
+/* stress test: the adapter's A.stress = { name: async (K, level) => {} } scenarios are run at doubling sizes (level 1, 2, 4 ...), timed, and
+   checked for slowing down faster than the input grows; then a hammer phase (long runs of back-to-back random actions with no resets) and a soak
+   phase (every whole journey over and over, watching memory). */
+const STRESS_MAX_MS = 8000;
+async function runStress() {
+  const SC = A.stress || {}, names = Object.keys(SC), levels = clamp(T.budgetOverride || 9, 3, 14), hammerN = 480, soakN = 120;
+  const S = T.stressRes = { rows: [], scaling: [], stopped: [], hammer: null, soak: null, levels };
+  T.plan = { total: names.length * levels + hammerN + soakN, mode: 'stress' }; T.plan['bigger and bigger inputs'] = names.length * levels; T.plan['hammering'] = hammerN; T.plan['soak: journeys on repeat'] = soakN;
+  const heap = () => (performance.memory ? performance.memory.usedJSHeapSize / 1048576 : null);
+  planPhase('bigger and bigger inputs', names.length * levels); const rampEnd = T.n + names.length * levels;
+  for (const name of names) {
+    let prev = null, stopped = false;
+    for (let i = 0; i < levels && T.running; i++) {
+      const level = 1 << i, key = 'stress: ' + name + ' (size ' + level + ')'; FLOWS[key] = async (KK) => { await SC[name](KK, level); };
+      if (stopped) { T.n++; T.pass++; continue; }
+      await resetBaseline(); const t0 = NOW(), n0 = T.n; await oneAction({ kind: 'macro', macro: key, seed: Math.floor(rng() * 4294967296) }); const ms = NOW() - t0;
+      delete FLOWS[key]; const row = { name, level, ms: Math.round(ms), fmax: Math.round(FM.max) }; S.rows.push(row);
+      if (prev && prev.ms >= 40 && ms >= 300) { const ratio = ms / prev.ms; if (ratio > 3.2) { S.scaling.push({ name, from: prev.level, to: level, ratio: Math.round(ratio * 10) / 10 }); find('scaling', 'warn', `${name}: doubling the input (${prev.level} to ${level}) made it ${ratio.toFixed(1)} times slower (${prev.ms} ms to ${Math.round(ms)} ms): it is slowing down faster than the input grows`, { where: name }); } }
+      if (ms > STRESS_MAX_MS) { stopped = true; S.stopped.push({ name, level, ms: Math.round(ms) }); find('slow', 'warn', `${name} took ${(ms / 1000).toFixed(1)} s at size ${level}: the app is too slow here (stopped making it bigger)`, { where: name + ':' + level }); }
+      prev = row;
+    }
+    if (!T.running) break;
+  }
+  if (T.running) {
+    planPhase('hammering', hammerN); const hEnd = T.n + hammerN, h0 = NOW(), n0 = T.n; let longest = 0;
+    while (T.running && T.n < hEnd) { const len = Math.min(hEnd - T.n, ri(40, 120)), t1 = NOW(); await scenarioRun('hammer', Array.from({ length: len }, () => ({}))); longest = Math.max(longest, len); if (T.n % 25 === 0) await raf(); }
+    S.hammer = { actions: T.n - n0, ms: Math.round(NOW() - h0), perSec: Math.round((T.n - n0) / Math.max(.001, (NOW() - h0) / 1000) * 10) / 10, longest };
+  }
+  if (T.running) {
+    planPhase('soak: journeys on repeat', soakN); const sEnd = T.n + soakN, m0 = heap(), s0 = NOW(), names2 = Object.keys(FLOWS).filter((k) => !k.startsWith('stress: ')); let rounds = 0, slowest = { name: '', ms: 0 };
+    await resetBaseline();
+    while (T.running && T.n < sEnd && names2.length) { const nm = names2[rounds++ % names2.length], t2 = NOW(); await scenarioRun('soak: ' + nm, [{ kind: 'macro', macro: nm, seed: Math.floor(rng() * 4294967296) }]); const d = NOW() - t2; if (d > slowest.ms) slowest = { name: nm, ms: Math.round(d) }; if (rounds % 12 === 0) await resetBaseline(); }
+    const m1 = heap(); S.soak = { rounds, ms: Math.round(NOW() - s0), heapStart: m0 && Math.round(m0), heapEnd: m1 && Math.round(m1), slowest };
+    if (m0 != null && m1 != null && m1 > m0 * 2 && m1 - m0 > 40) find('leak', 'warn', `JS memory grew from ${Math.round(m0)} MB to ${Math.round(m1)} MB while the same journeys ran over and over`, { where: 'soak' });
+  }
+}
+function stressText() {
+  const S = T.stressRes; if (!S) return [];
+  const L = ['', '## Stress results', `- Sizes tried: ${S.levels} doublings per scenario (1, 2, 4 ... ${1 << (S.levels - 1)}). Times are for the whole scenario at that size.`];
+  const by = {}; S.rows.forEach((r) => { (by[r.name] = by[r.name] || []).push(r); });
+  Object.keys(by).forEach((n) => { const r = by[n], last = r[r.length - 1], bad = S.scaling.filter((x) => x.name === n); L.push(`- ${n}: ${r.map((x) => x.level + '→' + x.ms + ' ms').join(', ')}${bad.length ? '  ⚠ slows down faster than the input grows' : last.ms > 1500 ? '  (slow at the largest size)' : '  ✓'}`); });
+  if (S.stopped.length) L.push('- Stopped growing (over ' + STRESS_MAX_MS / 1000 + ' s): ' + S.stopped.map((x) => `${x.name} at size ${x.level} (${(x.ms / 1000).toFixed(1)} s)`).join('; '));
+  if (S.hammer) L.push(`- Hammering: ${S.hammer.actions} back-to-back random actions with no resets in ${(S.hammer.ms / 1000).toFixed(1)} s (${S.hammer.perSec} per second), runs of up to ${S.hammer.longest} in a row.`);
+  if (S.soak) L.push(`- Soak: ${S.soak.rounds} journeys on repeat in ${(S.soak.ms / 1000).toFixed(1)} s; slowest was ${S.soak.slowest.name} (${S.soak.slowest.ms} ms)${S.soak.heapStart != null ? `; JS memory ${S.soak.heapStart} MB → ${S.soak.heapEnd} MB` : ''}.`);
+  return L;
 }
 
 /* aim at problems: what is remembered, scouting, replay, hunting, shrinking */
@@ -641,10 +690,10 @@ async function start(o = {}) {
   T.scripts0 = document.scripts.length; try { T.saved = A.snapshot ? A.snapshot() : null; } catch (e) { T.saved = null; }   // the person's own work is put back when the run ends
   hook(); logLine('ok', `Started: seed ${T.seed}, ${T.turbo ? 'full speed' : T.rate + ' actions/s'}${T.max ? ', ' + T.max + ' actions' : ', until stopped'}`); ui();
   await calibrate(); if (!T.running) return;
-  T.mode = MODES[o.mode] ? o.mode : 'free'; T.budgetOverride = o.budget || 0; T.speed = o.speed != null ? +o.speed : (T.mode === 'free' ? 1 : 10); T.phases = {}; T.phaseName = ''; T.plan = null; T.problems = null; T.live.trace = [];
+  T.stressRes = null; T.mode = MODES[o.mode] ? o.mode : 'free'; T.budgetOverride = o.budget || 0; T.speed = o.speed != null ? +o.speed : (T.mode === 'free' ? 1 : 10); T.phases = {}; T.phaseName = ''; T.plan = null; T.problems = null; T.live.trace = [];
   BG.start(T.speed);
   if (T.mode === 'free') { loop(); return; }
-  try { if (T.mode === 'problems') await runProblems(); else await runPlanned(T.mode); } catch (e) { find('js-error', 'error', 'Tester error: ' + (e && e.message), { stack: e && e.stack }); }
+  try { if (T.mode === 'problems') await runProblems(); else if (T.mode === 'stress') await runStress(); else await runPlanned(T.mode); } catch (e) { find('js-error', 'error', 'Tester error: ' + (e && e.message), { stack: e && e.stack }); }
   T.scenario = null; stop(T.running ? 'plan finished' : 'stopped');
 }
 function stop(why) { if (!T.running) return; T.running = false; if (T.phaseName && T.phases[T.phaseName]) { const ps = T.phases[T.phaseName]; ps.ms = NOW() - T.phaseT0; ps.done = T.n - ps.n0; } T.tEnd = now(); T.endReason = why || 'stopped'; FM.on = false; T.turboUsed = BG.turbo; T.bgFrames = BG.hiddenFrames; T.speedUsed = BG.speed; BG.stop(); logLine('ok', 'Finished: ' + T.endReason); autosave(); ui(); giveBack(); }
@@ -677,6 +726,7 @@ function reportText() {
   const verdict = R.errs.length ? 'NEEDS ATTENTION' : R.warns.length ? 'GOOD, WITH WARNINGS' : 'ALL CLEAR';
   L.push(`## Verdict: ${verdict}`, `- ${T.pass} of ${T.n} actions passed every check (${pct(T.pass, T.n)}%), ${T.fail} had a problem`, `- ${R.errs.length} errors, ${R.warns.length} warnings, ${R.infos.length} notes (distinct problems)`, `- Smoothness: ${R.fps.toFixed(0)} fps average, frame time typical ${R.p50.toFixed(0)} ms, 95th ${R.p95.toFixed(0)} ms, 99th ${R.p99.toFixed(0)} ms; ${T.longtasks.length} long tasks`, '');
   if (T.plan) L.push('', `Mode: ${MODES[T.mode].label.split(':')[0]} · plan of ${T.plan.total} actions · ${Object.keys(T.plan).filter((k) => !['total', 'mode'].includes(k)).map((k) => k + ' ' + Math.min(T.plan[k], (T.phases[k] || { done: 0 }).done || 0)).join(', ')}`);
+  stressText().forEach((l) => L.push(l));
   if (T.problems) { const P = T.problems; L.push('', '## Aimed at problems', `- ${T.n ? Math.round(100 * (T.n - P.scouted - P.explore) / T.n) : 0}% of the actions went to suspects (${Object.entries(P.types).map(([k, v]) => k + ' ' + v).join(', ')}); memory at the start: ${P.memory.suspects} suspect controls, ${P.memory.repros} old problems`,
     P.measured ? '- Suspects (score = what went wrong around them):' : '- Nothing went wrong, so there is no measured ranking. These are the controls the tester thinks most likely to break (a starting guess by kind of control):');
     P.suspects.forEach((x) => L.push(`    ${x.id}: ${P.measured ? 'score ' + x.score : 'likelihood about ' + x.prior + ' of 5'}, ${x.hits} problem(s)${x.remembered ? ' (remembered)' : ''}`));
@@ -704,7 +754,7 @@ function reportText() {
   if (R.miss.length) L.push(`- Not used yet (${R.miss.length}): ${R.miss.slice(0, 40).map((c) => c.label).join('; ')}${R.miss.length > 40 ? '; …' : ''}`);
   return L.join('\n');
 }
-function reportJSON() { const R = build(); return JSON.stringify({ mode: T.mode, plan: T.plan, problems: T.problems, seed: T.seed, actions: T.n, durationMs: Math.round(R.dur), rate: R.rate, pass: T.pass, fail: T.fail, issues: R.issues.map((i) => ({ kind: i.kind, severity: i.sev, message: i.msg, count: i.count, first: i.first, last: i.last, likelyCause: i.diag, stack: i.stack, state: i.state, sample: i.sample, during: [...i.actions], controls: [...i.ctl], repro: i.repro })), checks: Object.fromEntries([...T.checks.entries()].map(([k, v]) => [k, v])), kinds: Object.fromEntries([...T.kinds.entries()].map(([k, v]) => [k, { n: v.n, bad: v.bad, jank: v.jank }])), features: Object.fromEntries(T.features), coverage: { total: R.tot.length, used: R.hit.length, pairs: T.pairs.size, unused: R.miss.map((c) => c.label) }, smoothness: { fps: R.fps, p50: R.p50, p95: R.p95, p99: R.p99, longTasks: T.longtasks.length } }, null, 1); }
+function reportJSON() { const R = build(); return JSON.stringify({ mode: T.mode, plan: T.plan, problems: T.problems, stress: T.stressRes, seed: T.seed, actions: T.n, durationMs: Math.round(R.dur), rate: R.rate, pass: T.pass, fail: T.fail, issues: R.issues.map((i) => ({ kind: i.kind, severity: i.sev, message: i.msg, count: i.count, first: i.first, last: i.last, likelyCause: i.diag, stack: i.stack, state: i.state, sample: i.sample, during: [...i.actions], controls: [...i.ctl], repro: i.repro })), checks: Object.fromEntries([...T.checks.entries()].map(([k, v]) => [k, v])), kinds: Object.fromEntries([...T.kinds.entries()].map(([k, v]) => [k, { n: v.n, bad: v.bad, jank: v.jank }])), features: Object.fromEntries(T.features), coverage: { total: R.tot.length, used: R.hit.length, pairs: T.pairs.size, unused: R.miss.map((c) => c.label) }, smoothness: { fps: R.fps, p50: R.p50, p95: R.p95, p99: R.p99, longTasks: T.longtasks.length } }, null, 1); }
 function autosave() { try { localStorage.setItem('devtest-report:' + APP, JSON.stringify({ at: Date.now(), n: T.n, text: reportText() })); } catch (e) { /* ignore */ } }
 function download(name, text, type) { const b = new Blob([text], { type }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.dispatchEvent(new MouseEvent('click')); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); }
 
@@ -723,7 +773,7 @@ function build_ui() {
   const st = document.createElement('style'); st.id = 'devtest-css'; st.textContent = CSS; document.head.appendChild(st);
   el = document.createElement('div'); el.id = 'devtest'; el.hidden = true; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Automatic UX tester');
   el.innerHTML = `<div class="h"><b>UX tester</b><span class="dim">press ` + '`' + ` to hide</span><span class="sp"></span><button data-a="min" title="Collapse">–</button><button data-a="close" title="Hide (the test keeps running)">✕</button></div>
-<div class="row"><select id="dtMode" title="What kind of run"><option value="quick">Quick</option><option value="standard">Standard</option><option value="thorough">Thorough</option><option value="problems">Aim at problems</option><option value="free" selected>Free run</option></select><select id="dtSpeed" title="How much faster than real time the page's animations and timers run. Faster means more actions per second."><option value="1">Real time</option><option value="4">4× faster</option><option value="10" selected>10× faster</option><option value="20">20× faster</option></select><button data-a="forget" title="Forget the suspects and problems remembered from earlier Aim at problems runs">Forget memory</button></div>
+<div class="row"><select id="dtMode" title="What kind of run"><option value="quick">Quick</option><option value="standard">Standard</option><option value="thorough">Thorough</option><option value="problems">Aim at problems</option><option value="stress">Stress test</option><option value="free" selected>Free run</option></select><select id="dtSpeed" title="How much faster than real time the page's animations and timers run. Faster means more actions per second."><option value="1">Real time</option><option value="4">4× faster</option><option value="10" selected>10× faster</option><option value="20">20× faster</option></select><button data-a="forget" title="Forget the suspects and problems remembered from earlier Aim at problems runs">Forget memory</button></div>
 <div class="dim" id="dtLabel" style="padding:2px 10px"></div>
 <div class="row"><button class="go" data-a="start">▶ Start</button><button data-a="pause" disabled>❚❚ Pause</button><button class="no" data-a="stop" disabled>■ Stop</button>
 <label>per sec<input id="dtRate" type="number" min="1" max="60" value="10"></label><label>max<input id="dtMax" type="number" min="0" value="0" title="0 = keep going until stopped"></label><label>seed<input id="dtSeed" type="number" value="1"></label><label title="Ignore the rate and go as fast as the page allows"><input id="dtTurbo" type="checkbox" style="width:auto">turbo</label></div>
