@@ -2605,6 +2605,37 @@ function init() {
   window.addEventListener('beforeunload', save);
 }
 
+/* Dev tool: press the backtick key (`) to open the automatic UX tester (devtest.js, loaded on first use; normal use pays nothing). */
+(() => {
+  let loading = false;
+  const api = () => ({
+    get reminders() { return reminders; }, set reminders(v) { reminders = v; },
+    get settings() { return settings; }, set settings(v) { settings = v; },
+    get selectedId() { return selectedId; }, set selectedId(v) { selectedId = v; },
+    STORE_KEY, SETTINGS_KEY, THEMES, URGENCIES, REPEATS, DUE_PRESETS, END_PRESETS, SNOOZE, ICONS, HELP,
+    save, saveSettings, load, render, renderList, renderDetail, renderThemeGrid, applySettings, syncSettingToggles,
+    addReminder, selectReminder, toggleComplete, doDelete, performReorder, importTxt, exportTxt,
+    parseNaturalLanguage, parseDuration, detectDatetime, detectRepeat, detectEnd, detectSnooze,
+    fmtDate, escapeHtml, isRepeating, newReminder, uid, toast,
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key !== '`' || !e.isTrusted || e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target; if (t && (t.tagName === 'TEXTAREA' || t.isContentEditable || (t.tagName === 'INPUT' && /^(text|number|search|email|url|tel|password)$/.test(t.type)))) return;
+    e.preventDefault(); e.stopPropagation(); window.__devApi = api();
+    if (window.DevTest) { window.DevTest.toggle(); return; }
+    if (loading) return; loading = true;
+    const sc = document.createElement('script'); sc.src = 'devtest-reminders.js?v=1'; sc.onload = () => { loading = false; window.DevTest && window.DevTest.toggle(true); }; sc.onerror = () => { loading = false; toast('Could not load the dev tool (devtest.js)'); };
+    document.head.appendChild(sc);
+  }, true);
+  /* ?dev=quick | standard | thorough | problems | free opens the tester and starts that run by itself */
+  const auto = /[?&]dev=(quick|standard|thorough|problems|free)\b/.exec(location.search);
+  if (auto) setTimeout(() => {
+    window.__devApi = api(); const sc = document.createElement('script'); sc.src = 'devtest-reminders.js?v=1';
+    sc.onload = () => { window.DevTest.toggle(true); const m = document.getElementById('dtMode'); if (m) { m.value = auto[1]; m.onchange && m.onchange(); } const go = document.querySelector('#devtest [data-a=start]'); if (go) go.click(); };
+    document.head.appendChild(sc);
+  }, 2500);
+})();
+
 document.addEventListener('DOMContentLoaded', init);
 </script>
 <script>
@@ -2614,7 +2645,7 @@ document.addEventListener('DOMContentLoaded', init);
    (writes to localStorage are blocked while it runs, and state is restored after).
    Expected values are built here from plain date arithmetic, not by calling the app's own parser.
    ========================================================= */
-if (/[?&]dev\b/.test(location.search)) document.addEventListener('DOMContentLoaded', () => {
+if (/[?&]dev(&|$)/.test(location.search)) document.addEventListener('DOMContentLoaded', () => {
   const RD = Date;                       // the real Date
   const css = `
     #devFab{position:fixed;left:14px;bottom:14px;z-index:90;background:var(--bg-elev-2);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font:600 12px var(--font);cursor:pointer}
