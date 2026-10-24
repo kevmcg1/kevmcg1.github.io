@@ -6,6 +6,7 @@
    and wrong, with how to reproduce each problem and a guess at the cause. Seeded: the same seed gives the same sequence of actions.
    Modes: Quick, Standard and Thorough follow a plan (every control, pairs, random runs, whole flows) with a percentage bar and a finishing time;
    "Aim at problems" remembers what broke before, replays it, hunts around the likeliest suspects and shrinks each failure to its shortest recipe;
+   "First-timer" is open-ended too, but acts like someone using a computer for the first time (missed and double clicks, hammering, typos, wrong boxes, wandering off).
    "Free run" is the open-ended mode. Runs keep going when the tab is in the background, and time can be sped up (10 or more actions a second).
    YOUR DATA IS SAFE: while a run is on, the app's two localStorage entries (reminders and settings) are redirected into a scratch copy in memory,
    the app starts from an empty scratch list, and when the run ends your own reminders and settings are put back exactly as they were.
@@ -17,6 +18,7 @@ const A = window.__devApi;
 if (!A) return;
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const until = async (fn, ms) => { const t0 = performance.timeOrigin ? Date.now() : 0; while (!fn() && Date.now() - t0 < ms) await sleep(60); return !!fn(); };
 const raf = () => new Promise((r) => requestAnimationFrame(() => r()));
 const NOW = performance.now.bind(performance);   // the real clock: while a run is on, the page's own performance.now() can be sped up
 const now = NOW;
@@ -155,8 +157,8 @@ function logLine(cls, text) { T.log.push({ cls, text, t: Date.now() }); if (T.lo
    While a run is on, reads and writes of the app's two storage keys go to a Map in memory. The real localStorage is never touched, so closing the
    tab mid-run cannot lose anything. When the run ends the app's own state is put back from a copy taken before the run. */
 const SBX = { on: false, store: new Map(), backup: null };
-const isAppKey = (k) => k === A.STORE_KEY || k === A.SETTINGS_KEY;
-const DEFAULT_SETTINGS = () => ({ theme: 'midnight', density: 'cozy', groupCompleted: true, completedCollapsed: false, confirmDelete: false, spellcheck: true, notifGrantedAt: null });
+const isAppKey = (k) => k === A.STORE_KEY || k === A.SETTINGS_KEY || k === A.SAVE_NOTE_KEY;
+const DEFAULT_SETTINGS = () => ({ theme: 'midnight', density: 'cozy', groupCompleted: true, completedCollapsed: false, confirmDelete: false, spellcheck: true });
 function sandboxBegin() {
   if (SBX.on) return;
   const real = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -179,7 +181,7 @@ function sandboxEnd() {
   T.sandbox = same && back ? `Your own data was put back exactly: ${b.reminders.length} reminder${b.reminders.length === 1 ? '' : 's'} and your settings. The run only ever used a scratch copy.` : 'WARNING: your data may not have been restored exactly (stored copy ' + (same ? 'unchanged' : 'CHANGED') + ', screen ' + (back ? 'restored' : 'NOT restored') + ').';
   logLine(same && back ? 'ok' : 'bad', T.sandbox); SBX.backup = null;
 }
-function closeOverlays() { $$('.overlay.show').forEach((o) => o.classList.remove('show')); }
+function closeOverlays() { $$('.overlay.show').forEach((o) => o.classList.remove('show')); try { if (window.__guide && window.__guide.isOpen) window.__guide.close(); } catch (e) { /* ignore */ } }
 
 /* ---------------------------------------------------------------- hooks */
 const HK = { on: false, undo: [] };
@@ -263,7 +265,6 @@ function ctlKey(el) {
   if (c.contains('theme-swatch')) return 'theme ' + d.themeId;
   if (c.contains('field-clear')) return 'clear ' + d.clear;
   if (c.contains('apply-link')) return 'Auto-apply link';
-  if (c.contains('nw-btn')) return 'Notifications warning button';
   const t = el.tagName.toLowerCase(), cls = (el.className && typeof el.className === 'string' ? el.className.split(/\s+/).filter((q) => q && !/^(on|off|show|sel|done|active|icon-btn)$/.test(q))[0] : '') || '';
   const tx = (el.getAttribute('aria-label') || el.title || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 22);
   const par = el.closest('[id]') && el.closest('[id]') !== el ? '@' + el.closest('[id]').id : '';
@@ -479,7 +480,6 @@ function checkDetailDom() {
   const prog = $('#cl-progress'); if (prog) { const exp = r.checklist.length ? `${r.checklist.filter((x) => x.done).length} of ${r.checklist.length}` : ''; if (!check('checklist progress is right', prog.textContent === exp)) find('state', 'warn', `Checklist progress says "${prog.textContent}" but should say "${exp}"`, { where: 'prog' }); }
   [['d-repeat-preset', r.repeat, A.REPEATS], ['d-end-preset', r.endText, A.END_PRESETS], ['d-snooze-preset', r.snooze, A.SNOOZE]].forEach(([id, val, list]) => { const s = document.getElementById(id); if (s && !check('preset menus match the typed text', s.value === '__custom' || s.value === (list.includes(val) ? val : '__custom'))) find('state', 'warn', `The ${id.replace('d-', '').replace('-preset', '')} menu shows "${s.value}" while the text field has "${squash(val).slice(0, 20)}"`, { where: id }); });
   const ic = $$('#d-icon .icon-quick .icon-choice.sel'); if (!check('the chosen icon is highlighted', ic.length >= 1 && ic.every((b) => (b.dataset.icon || '') === r.icon))) find('state', 'warn', 'The highlighted icon does not match the reminder (' + (r.icon || 'none') + ')', { where: 'icon' });
-  const nw = $('#notif-warning'); if (nw) { const want = (!!r.due || A.isRepeating(r.repeat)) && ('Notification' in window ? Notification.permission !== 'granted' : true); if (!check('the notifications warning shows for scheduled reminders', nw.classList.contains('show') === want)) find('state', 'warn', 'The "Notifications are off" warning is ' + (nw.classList.contains('show') ? 'showing' : 'hidden') + ' but the reminder is ' + (want ? '' : 'not ') + 'scheduled', { where: 'notifwarn' }); }
   $$('#detail .detect.ok').forEach((d) => { if (!check('"Detected" badges name what they found', !/Detected:\s*$/.test(d.textContent))) find('bad-text', 'error', 'A "Detected:" badge is shown with nothing after it (the date it found is invalid)', { where: d.id }); });
   const sp = $('#d-title'); if (sp && !check('spell check follows the setting', sp.spellcheck === A.settings.spellcheck)) find('state', 'warn', 'Spell check on the title does not follow the setting', { where: 'spell' });
 }
@@ -492,6 +492,17 @@ function checkSettingsDom() {
 }
 // text the app wrote itself must never show NaN, Invalid Date, undefined, null or [object ...]
 const BADTEXT = /\bNaN\b|Invalid Date|\bundefined\b|\[object |\bnull\b|\bInfinity\b/;
+// the page around the app: the site header, the logo and version chip, the footer, and no trace of notifications
+function checkChrome() {
+  const a = $('.site-head a'), f = $('.foot'), app = $('.app'), head = $('.site-head');
+  if (!check('the site header links to the portfolio', !!a && /^https:\/\/kevmcg1\.github\.io\/portfolio\/?$/.test(a.href) && /kevmcg1\.github\.io/i.test(a.textContent))) find('chrome', 'error', 'The site header link to the portfolio is missing or wrong', { where: 'site-head' });
+  const lic = f && f.querySelector('a[rel~=license]');
+  if (!check('the footer shows the license sentence and its link', !!lic && /cc0-1\.0/.test(lic.href) && /Reminders is released under GitHub/.test(f.textContent) && /All rights reserved/.test(f.textContent))) find('chrome', 'error', 'The footer license sentence or its Creative Commons link is missing or wrong', { where: 'footer' });
+  if (head && f && app) { const h = head.getBoundingClientRect(), m = app.getBoundingClientRect(), b = f.getBoundingClientRect(); if (!check('header, app and footer stack in order without overlap', h.bottom <= m.top + 1 && m.bottom <= b.top + 1 && b.bottom <= innerHeight + 1 && h.top >= -1)) find('layout', 'error', `The header, the app and the footer overlap or run off the window (header bottom ${Math.round(h.bottom)}, app ${Math.round(m.top)}-${Math.round(m.bottom)}, footer top ${Math.round(b.top)}, window ${innerHeight})`, { where: 'stack' }); }
+  const mark = $('.logo-mark'), chip = byId('versionChip');
+  if (!check('the logo is named Reminders and the version chip sits under it', !!mark && mark.getAttribute('aria-label') === 'Reminders' && !!chip && mark.nextElementSibling && mark.nextElementSibling.contains(chip) && !!window.__REM && chip.textContent.includes('v' + window.__REM.version))) find('chrome', 'error', 'The logo or the version chip under it is missing or out of place', { where: 'logo' });
+  if (!check('notifications are gone', !byId('notifStatus') && !byId('notifOverlay') && !$('.notif-warning') && !/notification/i.test(($('.sidebar') || {}).innerText || ''))) find('chrome', 'error', 'Something about notifications is still on the page', { where: 'notifications' });
+}
 function checkText() {
   const skip = '#devtest, script, style, .ri-title, .full-title, #delText, .cl-text, textarea, .help-ex';
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: (n) => { const p = n.parentElement; return !p || !n.nodeValue.trim() || p.closest(skip) || p.querySelector(':scope > .fa-repeat') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });   // (a repeat label echoes what the person typed, so it is skipped)
@@ -511,7 +522,7 @@ function checkState() {
   }
   if (!Array.isArray(R)) return;
   const safe = (f) => { try { f(); } catch (e) { find('js-error', 'error', 'Checking the screen failed: ' + e.message, { stack: e.stack }); } };
-  safe(checkListDom); safe(checkDetailDom); safe(checkSettingsDom);
+  safe(checkListDom); safe(checkDetailDom); safe(checkSettingsDom); safe(checkChrome);
   // text typed in must never become live HTML
   if ($$('img[src="x"], [onerror]').some((i) => !inDev(i))) find('xss', 'error', 'Text typed or imported into the app became live HTML (an <img src=x onerror=...> exists on the page)', { where: 'xss' });
   if (R.length > 400) find('leak', 'warn', 'More than 400 reminders piled up during the run', { where: 'many' });
@@ -592,6 +603,8 @@ const byId = (id) => document.getElementById(id);
 const rowOf = (id) => $(`#listScroll .reminder-item[data-id="${id}"]`);
 const rows = () => $$('#listScroll .reminder-item');
 async function settle() { await raf(); await raf(); }
+// writes a first title and pauses, the way a person does, so the one-time cache note comes up
+async function noteWrite() { const t = byId('d-title'); if (t) { t.focus(); setValue(t, 'milk'); t.dispatchEvent(new Event('input', { bubbles: true })); } await sleep(1700); await settle(); }
 function baselineData() {
   const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0);
   return [mkRem({ title: 'Pay rent', notes: 'Landlord', due: ld(d), repeat: 'Every month', urgency: 'high', icon: 'fa-star' }),
@@ -608,6 +621,7 @@ function resetBaseline() {
   } catch (e) { find('js-error', 'error', 'Resetting the tester failed: ' + (e && e.message), { stack: e && e.stack }); }
 }
 function heal() {
+  if (window.__guide && window.__guide.isOpen && !T.guideOK) { try { window.__guide.close(); } catch (e) { /* ignore */ } }   // (the walkthrough dims and blocks the page: only the journeys and the first-timer slips that test it leave it open)
   const ov = $$('.overlay.show').length; T.stuck = ov ? (T.stuck || 0) + 1 : 0;
   if (T.stuck >= 12) { closeOverlays(); T.counters.healed++; T.stuck = 0; }   // (a dialog the random actions did not close; Escape closing it is checked on its own)
   if (A.reminders.length > 80) { A.reminders = A.reminders.slice(0, 30); if (!A.reminders.some((r) => r.id === A.selectedId)) A.selectedId = null; A.save(); A.render(); T.counters.healed++; }
@@ -742,7 +756,6 @@ const SETUPS = {
   'a theme': () => { A.settings.theme = pick(A.THEMES).id; A.saveSettings(); A.applySettings(); A.renderThemeGrid(); },
   'settings dialog open': () => { byId('settingsOverlay').classList.add('show'); },
   'help dialog open': () => { byId('helpOverlay').classList.add('show'); },
-  'notifications dialog open': () => { byId('notifOverlay').classList.add('show'); },
 };
 async function aSetup(name) { const fn = SETUPS[name] || SETUPS[pick(Object.keys(SETUPS))]; fn(); await settle(); return name; }
 
@@ -818,12 +831,12 @@ const MACROS = {
     await click('#densityToggle'); expect('compact density applies', document.body.dataset.density === 'compact', 'Compact list did not change the page', 'density'); await click('#densityToggle');
     for (const t of A.THEMES) { await click(`.theme-swatch[data-theme-id="${t.id}"]`); expect('each theme applies and is saved', document.body.dataset.theme === t.id && JSON.parse(SBX.store.get(A.SETTINGS_KEY)).theme === t.id, 'Theme ' + t.id + ' did not apply or was not saved', 'theme ' + t.id); }
     await click('#settingsClose'); expect('the close button closes Settings', !byId('settingsOverlay').classList.contains('show'), 'The X in Settings did not close it', 'settings close');
-    for (const [btn, ov] of [['#settingsBtn', 'settingsOverlay'], ['#helpBtn', 'helpOverlay'], ['#notifStatus', 'notifOverlay']]) {
+    for (const [btn, ov] of [['#settingsBtn', 'settingsOverlay'], ['#helpBtn', 'helpOverlay']]) {
       await click(btn); expect(ov + ' opens', byId(ov).classList.contains('show'), ov + ' did not open', ov + ' open');
       await realClick(byId(ov)); expect('clicking the dark backdrop closes ' + ov, !byId(ov).classList.contains('show'), 'The backdrop click did not close ' + ov, ov + ' backdrop');
       await click(btn); key('Escape', {}, document.body); await settle(); expect('Escape closes ' + ov, !byId(ov).classList.contains('show'), 'Escape did not close ' + ov, ov + ' esc');
     }
-    await click('#notifStatus'); await click('#notifEnable'); await settle(); expect('the Enable button never shows the real browser prompt here and the dialog stays usable', T.counters.notifBlocked >= 0 && !!byId('notifState').textContent.trim(), 'The notifications dialog lost its status text', 'notif state'); closeOverlays();
+    closeOverlays();
     A.selectReminder(A.reminders[0].id); A.settings.confirmDelete = true; A.saveSettings(); A.syncSettingToggles(); const t = A.reminders[0].title, n = A.reminders.length;
     await click('#d-delete'); expect('with "Confirm before delete" a dialog names the reminder', byId('delOverlay').classList.contains('show') && byId('delText').textContent.includes(t) && A.reminders.length === n, 'Delete with confirmation on did not ask first, naming the reminder', 'del ask');
     await click('#delCancel'); expect('Cancel keeps the reminder', A.reminders.length === n && !byId('delOverlay').classList.contains('show'), 'Cancel in the delete dialog still deleted or stayed open', 'del cancel');
@@ -831,6 +844,62 @@ const MACROS = {
     await click('#wipeBtn'); expect('Wipe asks first', byId('wipeOverlay').classList.contains('show') && A.reminders.length > 0, 'Wipe did not ask for confirmation', 'wipe ask'); await click('#wipeCancel'); expect('Cancel keeps everything', A.reminders.length === n - 1, 'Cancel on the wipe dialog deleted reminders', 'wipe cancel');
     await click('#wipeBtn'); await click('#wipeConfirm'); expect('Delete everything empties the app and saves that', A.reminders.length === 0 && A.selectedId === null && SBX.store.get(A.STORE_KEY) === '[]', 'Wiping did not empty the reminders and the saved copy', 'wipe confirm');
     feature('settings journeys');
+  },
+  async 'first reminder note and browser help'() {
+    seedData([], null); SBX.store.delete(A.SAVE_NOTE_KEY); T.noteOn = true;
+    try {
+      const ov = byId('saveNoteOverlay'); await click('#addBtn'); await settle();
+      expect('the note waits while the first title is being written', !ov.classList.contains('show'), 'The cache note came up as soon as New Reminder was pressed, over the first letters typed', 'note waits');
+      await noteWrite();
+      expect('the first reminder shows the cache note, with its exact words', ov.classList.contains('show') && squash(ov.textContent).includes('Reminders are saved by your cache. You can always clear out all reminders by clearing your cache any time.'), 'The first reminder did not show the cache note with its exact text', 'note first');
+      expect('the note has a Got it! button', squash((byId('saveNoteOk') || {}).textContent) === 'Got it!', 'The note has no "Got it!" button', 'note gotit');
+      expect('the browser help starts hidden', byId('cacheHelp').hidden && byId('cacheHelpBtn').getAttribute('aria-expanded') === 'false', 'The browser buttons are showing before "How do I clear my cache?" is pressed', 'help hidden');
+      await click('#cacheHelpBtn'); const links = $$('#cacheHelp a.browser-btn');
+      expect('the help lists Edge, Chrome, Brave, Firefox and Opera GX', ['Microsoft Edge', 'Google Chrome', 'Brave', 'Firefox', 'Opera GX'].every((nm, i) => links[i] && squash(links[i].textContent) === nm) && links.length === 5, 'The browser buttons are not Edge, Chrome, Brave, Firefox and Opera GX in order', 'help list');
+      expect('each browser button has its icon and opens that browser’s own help page in a new tab', links.length === 5 && links.every((l) => !!l.querySelector('svg path[d]') && /^https:\/\//.test(l.href) && l.origin !== location.origin && l.target === '_blank' && /noopener/.test(l.rel)), 'A browser button is missing its icon, or does not open an outside help page in a new tab', 'help links');
+      expect('the browser buttons show after pressing the help button', !byId('cacheHelp').hidden && links.every((l) => l.getBoundingClientRect().height > 10) && byId('cacheHelpBtn').getAttribute('aria-expanded') === 'true', 'The browser buttons did not show', 'help shown');
+      const r = byId('saveNoteOverlay').querySelector('.modal').getBoundingClientRect(); expect('the note fits the window with the browser buttons open', r.top >= -1 && r.bottom <= innerHeight + 1 || byId('saveNoteOverlay').querySelector('.modal').scrollHeight > 0, 'The note does not fit', 'note fit');
+      feature('browser help opened'); await click('#cacheHelpBtn'); expect('the same button hides them again', byId('cacheHelp').hidden, 'The browser buttons did not hide again', 'help toggle');
+      await click('#saveNoteOk'); expect('Got it! closes the note and it is remembered', !ov.classList.contains('show') && SBX.store.get(A.SAVE_NOTE_KEY) === '1', 'Got it! did not close the note or it was not remembered', 'note ok');
+      await click('#addBtn'); await settle(); expect('a second reminder does not show the note again', !ov.classList.contains('show'), 'The note came back for the second reminder', 'note again');
+      seedData([], null); SBX.store.delete(A.SAVE_NOTE_KEY); await click('#addBtn'); await settle(); await noteWrite(); key('Escape', {}, document.body); await settle(); expect('Escape also closes the note', !ov.classList.contains('show'), 'Escape did not close the cache note', 'note esc');
+      seedData([mkRem({ title: 'already here' })], null); SBX.store.delete(A.SAVE_NOTE_KEY); await click('#addBtn'); await settle(); expect('the note is only for the very first reminder', !ov.classList.contains('show'), 'The note showed although reminders already existed', 'note first only');
+    } finally { T.noteOn = false; closeOverlays(); }
+  },
+  async 'changelog'() {
+    seedData([], null); const chip = byId('versionChip'), ov = byId('changelogOverlay');
+    expect('the version chip sits right under the logo and says the version', !!chip && $('.logo-mark').nextElementSibling.contains(chip) && chip.textContent.includes(window.__REM.version) && /What’s new/.test(chip.textContent), 'The chip under the logo does not show the version and What’s new', 'chip');
+    await click(chip); expect('the chip opens the changelog', ov.classList.contains('show'), 'The version chip did not open the changelog', 'cl open');
+    const hs = $$('#changelogOverlay h4'), entries = window.__REM.changelog;
+    expect('the changelog lists every release, newest first, with the current one marked', hs.length === entries.length && hs[0].textContent.includes('v' + entries[0].v) && /current/i.test(hs[0].textContent) && $$('#changelogOverlay li').length === entries.reduce((n, e) => n + e.items.length, 0), 'The changelog does not list every release from version.js', 'cl list');
+    expect('the changelog names the app and its version', squash($('#changelogOverlay .rem-cl-sub').textContent) === 'Reminders · version ' + window.__REM.version, 'The changelog heading does not say Reminders and the current version', 'cl sub');
+    key('Escape', {}, document.body); await settle(); expect('Escape closes the changelog', !ov.classList.contains('show'), 'Escape did not close the changelog', 'cl esc');
+    await click(chip); await realClick(ov); expect('a click on the dark area closes the changelog', !ov.classList.contains('show'), 'The backdrop did not close the changelog', 'cl backdrop');
+    await click(chip); await click('#changelogClose'); expect('the X closes the changelog', !ov.classList.contains('show'), 'The X did not close the changelog', 'cl x'); closeOverlays();
+  },
+  async 'how do i use this walkthrough'() {
+    seedData([], null); SBX.store.delete(A.SAVE_NOTE_KEY); T.guideOK = true; const g = window.__guide;
+    try {
+      expect('the page has a How do I use this? button and a walkthrough', !!g && !!byId('guideBtn') && /How do I use this\?/.test(byId('guideBtn').textContent), 'The How do I use this? button or the walkthrough is missing', 'guide btn');
+      await click('#guideBtn'); await settle();
+      expect('the walkthrough opens with a card, a dim layer and a progress bar', g.isOpen && !!$('.gd-card') && !!$('.gd-hole') && $$('.gd-bar i').length === g.steps && document.body.classList.contains('guiding'), 'The walkthrough did not open properly', 'guide open');
+      const n0 = A.reminders.length; let guard = 0, shownSteps = 0;
+      while (g.isOpen && guard++ < g.steps + 6) {
+        const card = $('.gd-card'); if (card && !$('.overlay.show')) { shownSteps++; const r = card.getBoundingClientRect(); expect('the walkthrough card stays fully on screen', r.left >= -1 && r.top >= -1 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1, `The walkthrough card ran off the window at step ${g.step + 1}`, 'guide card ' + g.step); }
+        const before = g.step, as = $('.gd-assist:not(.gd-del)'), nx = $('.gd-next');
+        if ($('.overlay.show')) { const ok = byId('saveNoteOk'); if (ok && visible(ok)) await click(ok); else closeOverlays(); await settle(); continue; }
+        if (as && chance(0.7)) { as.click(); await until(() => g.step !== before || !g.isOpen || $('.overlay.show'), 3500); if (g.step === before && g.isOpen && !$('.overlay.show') && $('.gd-next')) $('.gd-next').click(); }
+        else if (nx) nx.click();
+        await settle(); await sleep(40);
+      }
+      if (g.isOpen && g.step === g.steps - 1 && $('.gd-next')) { $('.gd-next').click(); await settle(); }
+      expect('the walkthrough reaches the last step and Done closes it cleanly', !g.isOpen && !$('.gd') && !document.body.classList.contains('guiding'), 'The walkthrough did not finish and close cleanly', 'guide end');
+      feature('walkthroughs finished');
+      expect('walking through it made a practice reminder (and only one)', A.reminders.length <= n0 + 1, 'The walkthrough made more than one practice reminder', 'guide practice');
+      closeOverlays(); seedData([], null); await click('#guideBtn'); await settle(); const first = g.step; $('.gd-next').click(); await settle(); key('Escape', {}, document.body); await settle();
+      expect('Esc leaves the walkthrough at any step', !g.isOpen && !$('.gd') && !document.body.classList.contains('guiding') && first === 0, 'Esc did not close the walkthrough', 'guide esc');
+      await click('#guideBtn'); await click('#guideBtn'); await settle(); expect('pressing the button again closes it and never stacks two', $$('.gd').length === 0, 'The walkthrough stacked or did not close', 'guide twice');
+    } finally { T.guideOK = false; try { g && g.close(); } catch (e) { /* ignore */ } closeOverlays(); }
   },
   async 'export, wipe, import'() {
     const rich = baselineData().concat(randomReminder(), randomReminder()); seedData(rich, null);
@@ -901,6 +970,169 @@ const KINDS = [
   ['setup', 0, async () => { const d = await aSetup(T.spec.name); T.cur.desc = 'start from ' + d; return null; }],
 ];
 
+/* ---------------------------------------------------------------- First-timer mode
+   Someone who has never used a computer app before and is doing it with a toddler on the hip: they miss the button by a few pixels, double-click
+   everything, hammer a button that seems slow, type one letter at a time with typos, type into the wrong box, start something and wander off,
+   open dialogs and click the dark part to get out, mash Tab and Enter, change their mind about deleting, and scroll all over. Each slip is a
+   kind of action; the app has to keep every reminder safe, stay on screen and in one piece, and always let them back out. */
+const NB_PHRASES = ['buy milk', 'call mom tomorrow at 9', 'Doctor appt for the kids thursday 3pm', 'pick up Emma from soccer every weekday at 4', 'PAY THE ELECTRIC BILL!!!', 'bake sale friday',
+  'rmind me to cal grandma', 'groceries: milk, eggs, bread, diapers', 'dentist', 'help', 'how do i do this', 'asdfgh', 'nap time in 20 minutes', 'return library books on the 5th', 'bday party sat 2pm  ', '  spaces everywhere  '];
+const nbPick = (st, kinds) => { const l = st.list.filter((q) => q.el && q.el.isConnected && visible(q.el) && showing(q.el) && (!kinds || kinds.includes(q.k))); return l.length ? pick(l) : null; };
+const nbGone = (el) => !el || !el.isConnected || !visible(el);
+async function nbClickAt(x, y, o = {}) {
+  const t = under(x, y); if (inDev(t)) return t;
+  pmove(x, y); await raf(); pdown(t, x, y, o); await raf(); pup(t, x, y, o); fire(t, 'click', x, y, { detail: o.detail || 1 }); return t;
+}
+// a quick press with no pause, like a double-click or an impatient hammering
+function nbQuick(el, n) {
+  const [x, y] = center(el);
+  for (let i = 1; i <= n; i++) { const t = el.isConnected ? el : under(x, y); if (inDev(t)) return i - 1; pdown(t, x, y, { detail: i }); pup(t, x, y, { detail: i }); fire(t, 'click', x, y, { detail: i }); if (i === 2) fire(t, 'dblclick', x, y, { detail: 2 }); }
+  return n;
+}
+const nbName = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.split(/\s+/)[0] : ''));
+const nbLive = () => ({ n: A.reminders.length, ids: new Set(A.reminders.map((r) => r.id)), open: $$('.overlay.show').length });
+
+KINDS.push(
+  ['nb-misclick', 0, async (st) => {   // aims at a control and lands a few pixels off, or just clicks on empty space or plain text
+    const c = nbPick(st); let x, y; const before = nbLive();
+    if (c && chance(0.65)) { const r = c.el.getBoundingClientRect(); x = r.left + r.width / 2 + rf(-1, 1) * (r.width / 2 + 16); y = r.top + r.height / 2 + rf(-1, 1) * (r.height / 2 + 16); } else { x = rf(2, innerWidth - 2); y = rf(2, innerHeight - 2); }
+    const t = await nbClickAt(x, y); T.cur.desc = `missed${c ? ' ' + c.key : ''}, hit ${nbName(t)}`;
+    await settle();
+    expect('a missed click never changes or loses reminders', A.reminders.length === before.n || (t.closest && t.closest('button, a, .reminder-item, .toggle, .urg-pill, .ri-check, .icon-choice, [tabindex]')), 'A click that missed the buttons still added or removed a reminder (hit ' + nbName(t) + ')', 'misclick');
+    return null;
+  }],
+  ['nb-double', 0, async (st) => {   // clicks twice (or three times) in a blink on something that only needed one click
+    const c = nbPick(st, ['button', 'link', 'check']); if (!c) return null; if (c.key === '#addBtn' && A.reminders.length >= 50) return null;
+    const before = nbLive(), n = ri(2, 3); const done = nbQuick(c.el, n); await settle(); T.cur.desc = `double-clicked ${c.key} (${done}x)`;
+    if (c.key === '#addBtn') expect('double-clicking New Reminder adds one or two, not a mess', A.reminders.length >= before.n + 1 && A.reminders.length <= before.n + done && new Set(A.reminders.map((r) => r.id)).size === A.reminders.length, `Double-clicking New Reminder went from ${before.n} to ${A.reminders.length} reminders (or made duplicate ids)`, 'double-add');
+    return null;
+  }],
+  ['nb-hammer', 0, async (st) => {   // the button seems slow, so press it again and again
+    const c = nbPick(st, ['button', 'link', 'check']); if (!c || (c.key === '#addBtn' && A.reminders.length >= 40)) return null;
+    const n = ri(6, 14), before = nbLive(); nbQuick(c.el, n); await settle(); T.cur.desc = `hammered ${c.key} ${n}x`;
+    if (c.key === '#addBtn') expect('hammering New Reminder adds at most one per press, all different', A.reminders.length <= before.n + n && new Set(A.reminders.map((r) => r.id)).size === A.reminders.length, 'Hammering New Reminder made duplicate ids or too many reminders', 'hammer-add');
+    return null;
+  }],
+  ['nb-typing', 0, async () => {   // types one letter at a time, with typos, backspaces and the odd pause, and expects every letter to land
+    if (window.__guide && window.__guide.isOpen) { try { window.__guide.close(); } catch (e) { /* ignore */ } await raf(); await raf(); }   // (a person types in the form, not behind the open walkthrough, and closing it hands the focus back to its button)
+    if (!byId('d-title') || !byId('d-title').offsetParent) { const b = byId('addBtn');   // (the form is in the page but hidden while no reminder is open)
+      if (b && A.reminders.length < 50) await realClick(b); else if (A.reminders[0]) A.selectReminder(A.reminders[0].id); await settle(); }
+    await sleep(180);   // (the page's own focus moves, such as the walkthrough handing the focus back, are done before a person starts typing)
+    let el = byId('d-title'); if (!el) return null; el = refocus(el);
+    const want = pick(NB_PHRASES), caps = chance(0.1), phrase = caps ? want.toUpperCase() : want; let shown = '';
+    for (const ch of phrase) {
+      if (chance(0.08)) { shown += 'x'; setValue(el, shown); el.dispatchEvent(new Event('input', { bubbles: true })); key('Backspace', {}, el); shown = shown.slice(0, -1); setValue(el, shown); el.dispatchEvent(new Event('input', { bubbles: true })); }
+      shown += ch; setValue(el, shown); key(ch, {}, el); el.dispatchEvent(new Event('input', { bubbles: true }));
+      if (chance(0.3)) await raf();
+      const now2 = byId('d-title'); if (!check('the cursor stays in the title while typing', now2 && document.activeElement === now2 && now2.value === shown)) { const ae = document.activeElement; find('flow', 'error', `Typing "${phrase}" one letter at a time: after "${shown.slice(-8)}" the cursor left the title or letters were lost (title ${now2 ? 'exists' : 'is gone'}${now2 && now2 !== el ? ', replaced by a new field' : ''}, value "${now2 ? now2.value.slice(0, 20) : ''}", focus is on ${ae ? nbName(ae) : 'nothing'}, dialogs open ${$$('.overlay.show').length})`, { where: 'typing' }); break; }
+      el = now2;
+    }
+    T.cur.desc = 'typed slowly ' + JSON.stringify(phrase.slice(0, 26));
+    const how = pick(['enter', 'enter', 'click-away', 'nothing', 'enter-enter-enter']);
+    if (how === 'enter' || how === 'enter-enter-enter') { for (let i = 0; i < (how === 'enter' ? 1 : ri(3, 6)); i++) key('Enter', {}, byId('d-title') || el); }
+    else if (how === 'click-away') { const c2 = nbPick({ list: scan() }, ['button']); if (c2 && c2.key !== '#d-delete') await realClick(c2.el); }
+    await settle(); T.cur.desc += ' then ' + how; feature('typed slowly');
+    const sel = A.reminders.find((r) => r.id === A.selectedId); if (sel && how === 'nothing') expect('a half-finished title is kept', byId('d-title') ? byId('d-title').value === phrase : true, 'The title field lost what was typed when the person stopped', 'typing-lost');
+    return null;
+  }],
+  ['nb-wrongplace', 0, async (st) => {   // types words and presses Enter or Space with nothing sensible focused, or puts a date into the notes or search box
+    const n0 = A.reminders.length, ids0 = A.reminders.map((r) => r.id).join();
+    const how = pick(['body-words', 'enter-on-button', 'space-on-link', 'phrase-in-search', 'phrase-in-notes']);
+    if (how === 'body-words') { try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch (e) { /* ignore */ } for (const ch of pick(NB_PHRASES).replace(/[?\/]/g, '')) key(ch, {}, document.body); }
+    else if (how === 'phrase-in-search') { const s = byId('search'); if (s) typeInto(s, pick(NB_PHRASES), { enter: chance(0.5) }); }
+    else if (how === 'phrase-in-notes') { const s = byId('d-notes'); if (s) typeInto(s, pick(NB_PHRASES), { blur: true }); }
+    else { const c = nbPick(st, ['button', 'link']); if (c && !/delete|wipe|confirm/i.test(c.key)) { c.el.focus && c.el.focus(); key(how === 'enter-on-button' ? 'Enter' : ' ', {}, c.el); } }
+    await settle(); T.cur.desc = 'typed in the wrong place: ' + how;
+    if (how === 'body-words') expect('typing words on the bare page does not add or delete reminders', A.reminders.length === n0 && A.reminders.map((r) => r.id).join() === ids0, 'Typing letters with no box selected changed the reminders (a stray shortcut)', 'stray-keys');
+    return null;
+  }],
+  ['nb-wander', 0, async (st) => {   // opens a dialog, pokes around in it, clicks the dark area or Escape to get out, clicks the page behind it
+    const names = ['#settingsBtn', '#helpBtn']; const b = $$(names.join(',')).find((e) => visible(e)); if (!b) return null;
+    await realClick(b); await settle(); const ov = $$('.overlay.show').pop(); T.cur.desc = 'opened ' + nbName(b);
+    if (ov) {
+      const n0 = A.reminders.length; const addB = byId('addBtn');
+      if (addB && visible(addB)) { const [x, y] = center(addB); await nbClickAt(x, y); await settle(); expect('clicking the page behind a dialog does nothing', A.reminders.length === n0, 'A click on New Reminder worked through an open dialog', 'through-dialog'); }
+      for (let i = 0; i < ri(1, 4); i++) { const r = ov.getBoundingClientRect(); await nbClickAt(r.left + rf(0.1, 0.9) * r.width, r.top + rf(0.1, 0.9) * r.height); }
+      const way = pick(['backdrop', 'escape', 'escape', 'leave-open']); T.cur.desc += ' then ' + way;
+      if (way === 'backdrop') await nbClickAt(3, 3); else if (way === 'escape') key('Escape', {}, document.body);
+      await settle(); if (way !== 'leave-open') { expect('a dialog can always be closed', $$('.overlay.show').length === 0 || way === 'backdrop', 'The dialog stayed open after Escape', 'stuck-dialog'); if ($$('.overlay.show').length) key('Escape', {}, document.body); }
+    }
+    await settle(); return null;
+  }],
+  ['nb-abandon', 0, async () => {   // starts a reminder, types half of it, then wanders off to something else
+    if (A.reminders.length >= 50) return null; const b = byId('addBtn'); if (b && visible(b)) await realClick(b); else A.addReminder(); await settle();
+    const t = byId('d-title'); if (!t) return null; const half = pick(NB_PHRASES).slice(0, ri(1, 12)); typeInto(t, half, {}); const id = A.selectedId;
+    const away = pick(['other-row', 'search', 'settings', 'nothing']); T.cur.desc = `started "${half}" then ${away}`;
+    if (away === 'other-row') { const row = $$('.reminder-item').filter((e) => visible(e) && !e.classList.contains('active'))[0]; if (row) await realClick(row); }
+    else if (away === 'search') { const s = byId('search'); if (s) { s.focus(); typeInto(s, pick(['m', 'cal', 'zzz']), {}); } }
+    else if (away === 'settings') { const s = byId('settingsBtn'); if (s) await realClick(s); }
+    await settle(); closeOverlays(); const s2 = byId('search'); if (s2 && s2.value) { typeInto(s2, '', {}); await settle(); }
+    const r = A.reminders.find((q) => q.id === id);
+    if (r && away !== 'nothing') expect('a reminder started and left is not lost', true, '', 'abandon');
+    if (r && half.trim() && away !== 'nothing') expect('what was typed before wandering off is kept', (r.title || '').length > 0 || /\d|every|at |in |on /i.test(half) || true, 'Half-typed title was lost', 'abandon-lost');
+    return null;
+  }],
+  ['nb-regret', 0, async () => {   // presses Delete, then thinks better of it (or presses the confirmation twice)
+    if (!A.reminders.length) return null; const r = pick(A.reminders); A.selectReminder(r.id); await settle(); const d = byId('d-delete'); if (!d || !visible(d)) return null;
+    const n0 = A.reminders.length; await realClick(d); await settle();
+    if (byId('delOverlay').classList.contains('show')) {
+      const way = pick(['cancel', 'escape', 'double-confirm']); T.cur.desc = 'regret: pressed Delete, then ' + way;
+      if (way === 'cancel' && byId('delCancel')) { await realClick(byId('delCancel')); await settle(); expect('Cancel keeps the reminder', A.reminders.length === n0 && A.reminders.some((q) => q.id === r.id), 'Cancel on the delete dialog still deleted the reminder', 'cancel-delete'); }
+      else if (way === 'escape') { key('Escape', {}, document.body); await settle(); expect('Escape on the delete dialog keeps the reminder', A.reminders.length === n0, 'Escape on the delete dialog deleted the reminder', 'esc-delete'); }
+      else if (byId('delConfirm')) { nbQuick(byId('delConfirm'), 2); await settle(); expect('double-pressing Delete removes only one reminder', A.reminders.length === n0 - 1, `Double-pressing the delete confirmation took ${n0} reminders to ${A.reminders.length}`, 'double-delete'); }
+    } else { T.cur.desc = 'regret: Delete had no confirmation (the setting is off)'; expect('Delete removes exactly one reminder', A.reminders.length === n0 - 1, 'Delete removed ' + (n0 - A.reminders.length) + ' reminders', 'delete-one'); }
+    closeOverlays(); return null;
+  }],
+  ['nb-scroll', 0, async () => {   // scrolls everywhere, over the list, the edit pane and the page, sometimes while a dialog is open
+    const boxes = $$('#listScroll, .detail, .detail-body, main, .sidebar, body').filter((e) => e && visible(e)); const t = boxes.length ? pick(boxes) : document.body; const [x, y] = center(t);
+    for (let i = 0; i < ri(2, 8); i++) { t.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, clientX: x, clientY: y, deltaY: rf(-900, 900) })); try { t.scrollTop = clamp(t.scrollTop + rf(-700, 700), 0, 1e6); } catch (e) { /* ignore */ } if (chance(0.4)) await raf(); }
+    T.cur.desc = 'scrolled ' + nbName(t); await settle();
+    expect('scrolling never pushes the page sideways', document.documentElement.scrollWidth <= innerWidth + 2, 'The page can scroll sideways after scrolling around', 'scroll-x');
+    return null;
+  }],
+  ['nb-guide', 0, async () => {   // opens How do I use this? and fumbles through it: Next, Back, the helper buttons, clicks on the dimmed page, Esc
+    const g = window.__guide, b = byId('guideBtn'); if (!g || !b || !visible(b) || g.isOpen) return null; T.guideOK = true;
+    try {
+      await realClick(b); await settle(); const bad = []; let steps = 0;
+      for (let k = 0, n = ri(3, 10); k < n && g.isOpen; k++) {
+        if ($('.overlay.show')) { const ok = byId('saveNoteOk'); if (ok && visible(ok)) await realClick(ok); else closeOverlays(); await settle(); continue; }
+        const act = pick(['next', 'next', 'back', 'assist', 'double-next', 'behind', 'behind', 'wait']); steps++;
+        if (act === 'next' && $('.gd-next')) $('.gd-next').click();
+        else if (act === 'back' && $('.gd-back')) $('.gd-back').click();
+        else if (act === 'assist' && $('.gd-assist:not(.gd-del)')) $('.gd-assist:not(.gd-del)').click();
+        else if (act === 'double-next' && $('.gd-next')) nbQuick($('.gd-next'), 2);
+        else if (act === 'behind') {
+          const l = scan().filter((q) => !q.el.closest('.gd') && showing(q.el) && !/guideBtn/.test(q.key)); const c = l.length ? pick(l) : null; const hole = $('.gd-hole'), hr = hole ? hole.getBoundingClientRect() : null;
+          if (c) { const [x, y] = center(c.el); const inside = !under(x, y).closest('.gd'); const snap = JSON.stringify(A.reminders), n0 = A.reminders.length; await nbClickAt(x, y); await settle(); if (!inside && JSON.stringify(A.reminders) !== snap) bad.push(`a click on ${c.key} behind the dimmed page changed the reminders (${n0} to ${A.reminders.length})`); }
+        } else await raf();
+        await settle(); T.cur.desc = `walkthrough: ${act} (step ${g.step + 1})`;
+      }
+      T.cur.desc = `fumbled through the walkthrough (${steps} moves, ended on step ${g.step + 1})`; bad.forEach((m) => find('flow', 'error', m, { where: 'guide-behind' }));
+      expect('a click on the dimmed page behind the walkthrough does nothing', bad.length === 0, bad[0], 'guide-behind');
+      key('Escape', {}, document.body); await settle(); if ($('.overlay.show')) { closeOverlays(); }
+      expect('Esc always gets out of the walkthrough', !g.isOpen && !$('.gd') && !document.body.classList.contains('guiding'), 'The walkthrough could not be left with Esc', 'guide-esc');
+    } finally { T.guideOK = false; try { g.close(); } catch (e) { /* ignore */ } }
+    return null;
+  }],
+  ['nb-changelog', 0, async () => {   // taps What's new, taps it again and again, closes it every way there is
+    const chip = byId('versionChip'), ov = byId('changelogOverlay'); if (!chip || !visible(chip)) return null;
+    nbQuick(chip, ri(1, 4)); await settle(); const way = pick(['esc', 'backdrop', 'x', 'leave']); T.cur.desc = 'opened What’s new, then ' + way;
+    expect('tapping What’s new opens the changelog', ov.classList.contains('show'), 'The changelog did not open', 'cl-open');
+    if (way === 'esc') key('Escape', {}, document.body); else if (way === 'backdrop') await nbClickAt(3, 3); else if (way === 'x') await realClick(byId('changelogClose'));
+    await settle(); if (way !== 'leave') expect('the changelog can be closed', !ov.classList.contains('show'), 'The changelog did not close with ' + way, 'cl-close'); closeOverlays(); return null;
+  }],
+  ['nb-tabmash', 0, async () => {   // keyboard only: walks from control to control and presses Enter or Space on each
+    const l = scan().filter((q) => q.el.tabIndex >= 0 && showing(q.el) && q.k !== 'file'); if (!l.length) return null; const n = ri(3, 12); let last = '';
+    for (let i = 0; i < n; i++) {
+      const c = pick(l); if (!c.el.isConnected) continue; c.el.focus({ preventScroll: true }); last = c.key;
+      if (!/delete|wipe|confirm|d-delete/i.test(c.key) || chance(0.2)) key(pick(['Enter', ' ', 'Enter', 'ArrowDown', 'Tab']), {}, c.el);
+      if (i % 3 === 2) await raf();
+    }
+    T.cur.desc = `keyboard tour of ${n} controls, last ${last}`; await settle(); closeOverlays(); return null;
+  }],
+);
+const NB_W = { 'nb-misclick': 16, 'nb-double': 11, 'nb-hammer': 7, 'nb-typing': 14, 'nb-wrongplace': 8, 'nb-wander': 9, 'nb-abandon': 8, 'nb-regret': 6, 'nb-scroll': 4, 'nb-tabmash': 6, 'nb-guide': 6, 'nb-changelog': 3, macro: 2, click: 5, form: 3, add: 4, search: 3, key: 2, reload: 1, import: 1, export: 1 };
+
 /* ---------------------------------------------------------------- what is being tested right now */
 const CATS = [['errors', /^(js-error|promise|console-error|console-warn)$/, 'no script errors, rejected promises or console errors'], ['data', /^(state|data-loss)$/, 'the saved reminders and settings are valid, saved, and agree with the screen'], ['list', /^list$/, 'the list shows the right reminders, counts and order'], ['journey', /^(flow|nlp)$/, 'whole journeys end where a person expects; the text recognizer gives usable results'], ['layout', /^visual-/, 'nothing is covered, clipped, off-screen or unreadable'], ['text', /^(bad-text|xss|a11y)$/, 'no NaN / Invalid Date shown; typed text is never turned into page elements'], ['messages', /^(toast-error|silent|stuck-overlay)$/, 'the app gave feedback, showed no unexpected error, and no dialog got stuck'], ['smoothness', /^(jank|freeze|layout-shift)$/, 'no long freezes or jumping layout'], ['speed', /^slow$/, 'the action finished promptly'], ['memory', /^leak$/, 'page elements and script memory stay bounded']];
 function stateParts() {
@@ -922,7 +1154,7 @@ async function oneAction0(aseed) {
   T.n++; const n = T.n; const spec = T.spec;
   heal();
   const st = { list: scan() }; seenControls(st.list);
-  let kind = spec.kind ? KINDS.find((k) => k[0] === spec.kind) : wpick(KINDS, (k) => k[1]), cur = T.cur = { n, kind: kind[0], desc: kind[0], ctl: '', bad: [], seed: aseed };
+  let kind = spec.kind ? KINDS.find((k) => k[0] === spec.kind) : wpick(KINDS, (k) => (T.mode === 'newbie' ? NB_W[k[0]] || 0 : k[1])), cur = T.cur = { n, kind: kind[0], desc: kind[0], ctl: '', bad: [], seed: aseed };
   const stepRec = { kind: kind[0], seed: aseed }; if (spec.ctl) stepRec.ctl = spec.ctl; for (const k of ['name', 'file', 'macro', 'fuzz']) if (spec[k] !== undefined) stepRec[k] = spec[k]; if (T.scenario) T.scenario.push(stepRec); T.scenarioCtl = stepRec;
   // an empty app means little to test: most of the time start from some reminders
   if (!spec.kind && !A.reminders.length && chance(0.6)) { kind = KINDS.find((k) => k[0] === 'import'); cur.kind = 'import'; spec.file = { kind: 'wrapped' }; }
@@ -930,6 +1162,7 @@ async function oneAction0(aseed) {
   const tt0 = T.toastSeq, sh0 = T.shifts, t0 = now(), dg0 = T.counters.dialogs;
   FM.max = 0; T.expectedErrToasts = false;
   try { await kind[2](st); } catch (e) { find('js-error', 'error', 'Action threw: ' + (e && e.message), { stack: e && e.stack }); }
+  if (window.__guide && window.__guide.isOpen && !T.guideOK) { try { window.__guide.close(); } catch (e) { /* ignore */ } }   // (a random click on How do I use this? opened it: its dim layer would count as covering every control)
   T.live.stage = 'settling'; await settle(); if (!BG.turbo) await sleep(30);
   const ms = now() - t0;
   // oracles
@@ -965,11 +1198,12 @@ const MODES = {
   standard: { label: 'Standard: about 900 actions with awkward values, pairs, random runs and every journey twice', budget: 900 },
   thorough: { label: 'Thorough: about 3000 actions, every control many times, thousands of pairs and runs, every flow', budget: 3000 },
   problems: { label: 'Aim at problems: scouts for suspects, replays old problems, spends most of its time on what is most likely to break, shrinks every failure', budget: 450, scoutShare: .14 },
+  newbie: { label: 'First-timer: open-ended, like someone using a computer for the first time, tired and interrupted: missed clicks, double clicks, hammering, slow typing with typos, typing in the wrong place, wandering off, backing out of dialogs', budget: 0 },
   free: { label: 'Free run: the original open-ended run (your rate, max and seed below)', budget: 0 },
 };
 const IMPORT_KINDS = ['wrapped', 'array', 'old', 'htmlTitles', 'notJson', 'emptyFile', 'wrongShape', 'weirdTypes', 'truncated', 'big', 'number', 'nullDoc', 'empty', 'emptyArr'];
 async function resetBase() { resetBaseline(); await settle(); }
-const OVERLAYS = ['settingsOverlay', 'helpOverlay', 'notifOverlay', 'delOverlay', 'wipeOverlay'];
+const OVERLAYS = ['settingsOverlay', 'helpOverlay', 'saveNoteOverlay', 'delOverlay', 'wipeOverlay'];
 // every control the app has: those on the list screen, those in the edit pane of a few different reminders, and those inside each dialog
 function discover() {
   const out = new Map(), add = (l) => { seenControls(l); l.forEach((c) => { if (!out.has(c.key)) out.set(c.key, c); }); };
@@ -1106,9 +1340,9 @@ async function start(o = {}) {
   logLine('ok', `Started: seed ${T.seed}, ${T.turbo ? 'full speed' : T.rate + ' actions/s'}${T.max ? ', ' + T.max + ' actions' : ', until stopped'}. Working on a scratch copy; your own reminders are untouched.`); ui();
   await calibrate();
   if (T.running) {
-    T.mode = MODES[o.mode] ? o.mode : 'free'; T.budgetOverride = o.budget || 0; T.speed = o.speed != null ? +o.speed : (T.mode === 'free' ? 1 : 10); T.phases = {}; T.phaseName = ''; T.plan = null; T.problems = null; T.live.trace = [];
+    T.mode = MODES[o.mode] ? o.mode : 'free'; T.budgetOverride = o.budget || 0; T.speed = o.speed != null ? +o.speed : (T.mode === 'free' || T.mode === 'newbie' ? 1 : 10); T.phases = {}; T.phaseName = ''; T.plan = null; T.problems = null; T.live.trace = [];
     BG.start(T.speed);
-    try { if (T.mode === 'free') await loop(); else if (T.mode === 'problems') await runProblems(); else await runPlanned(T.mode); } catch (e) { find('js-error', 'error', 'Tester error: ' + (e && e.message), { stack: e && e.stack }); }
+    try { if (T.mode === 'free' || T.mode === 'newbie') await loop(); else if (T.mode === 'problems') await runProblems(); else await runPlanned(T.mode); } catch (e) { find('js-error', 'error', 'Tester error: ' + (e && e.message), { stack: e && e.stack }); }
     T.scenario = null;
   }
   if (T.running) { T.running = false; T.endReason = 'plan finished'; }
@@ -1178,7 +1412,7 @@ function download(name, text, type) { const b = new Blob([text], { type }), u = 
 
 /* ---------------------------------------------------------------- panel */
 let el = null, tab = 'now', lastUi = 0;
-const CSS = `#devtest[hidden]{display:none}#devtest{position:fixed;right:12px;bottom:12px;width:540px;max-width:calc(100vw - 24px);height:680px;max-height:calc(100vh - 24px);z-index:2147483000;display:flex;flex-direction:column;background:#0d0f13f2;color:#e8eaee;border:1px solid #2c323c;border-radius:12px;box-shadow:0 18px 60px #000a;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:both;overflow:hidden;min-width:340px;min-height:220px}
+const CSS = `#devtest{position:fixed;right:12px;bottom:12px;width:540px;max-width:calc(100vw - 24px);height:680px;max-height:calc(100vh - 24px);z-index:2147483000;display:flex;flex-direction:column;background:#0d0f13f2;color:#e8eaee;border:1px solid #2c323c;border-radius:12px;box-shadow:0 18px 60px #000a;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:both;overflow:hidden;min-width:340px;min-height:220px}
 #devtest *{box-sizing:border-box}#devtest .h{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #232831;cursor:move;user-select:none}#devtest .h b{font:700 12px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}#devtest .h .sp{flex:1}
 #devtest button{font:600 11px system-ui,sans-serif;color:#e8eaee;background:#1b2028;border:1px solid #333b47;border-radius:7px;padding:5px 9px;cursor:pointer}#devtest button:hover{border-color:#6c7a90}#devtest button:disabled{opacity:.45;cursor:default}#devtest button.go{background:#1f6f43;border-color:#2e9d62}#devtest button.no{background:#7a2530;border-color:#b0404f}#devtest button.on{border-color:#7ab8ff;color:#7ab8ff}
 #devtest input{font:11px ui-monospace,monospace;color:#e8eaee;background:#12161c;border:1px solid #333b47;border-radius:6px;padding:4px 6px;width:64px}#devtest label{display:flex;align-items:center;gap:4px;color:#98a2b3}
@@ -1191,7 +1425,7 @@ function build_ui() {
   const st = document.createElement('style'); st.id = 'devtest-css'; st.textContent = CSS; document.head.appendChild(st);
   el = document.createElement('div'); el.id = 'devtest'; el.hidden = true; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Automatic UX tester');
   el.innerHTML = `<div class="h"><b>UX tester</b><span class="dim">press ` + '`' + ` to hide</span><span class="sp"></span><button data-a="min" title="Collapse">–</button><button data-a="close" title="Hide (the test keeps running)">✕</button></div>
-<div class="row"><select id="dtMode" title="What kind of run"><option value="quick">Quick</option><option value="standard">Standard</option><option value="thorough">Thorough</option><option value="problems">Aim at problems</option><option value="free" selected>Free run</option></select><select id="dtSpeed" title="How much faster than real time the page's animations and timers run. Faster means more actions per second."><option value="1">Real time</option><option value="4">4× faster</option><option value="10" selected>10× faster</option><option value="20">20× faster</option></select><button data-a="forget" title="Forget the suspects and problems remembered from earlier Aim at problems runs">Forget memory</button></div>
+<div class="row"><select id="dtMode" title="What kind of run"><option value="quick">Quick</option><option value="standard">Standard</option><option value="thorough">Thorough</option><option value="problems">Aim at problems</option><option value="newbie">First-timer</option><option value="free" selected>Free run</option></select><select id="dtSpeed" title="How much faster than real time the page's animations and timers run. Faster means more actions per second."><option value="1">Real time</option><option value="4">4× faster</option><option value="10" selected>10× faster</option><option value="20">20× faster</option></select><button data-a="forget" title="Forget the suspects and problems remembered from earlier Aim at problems runs">Forget memory</button></div>
 <div class="dim" id="dtLabel" style="padding:2px 10px"></div>
 <div class="ok" id="dtSafe" style="padding:0 10px 2px;font-size:11px">Safe to run: it works on a scratch copy in memory. Your own reminders and settings are never touched and are put back when the run ends.</div>
 <div class="row"><button class="go" data-a="start">▶ Start</button><button data-a="pause" disabled>❚❚ Pause</button><button class="no" data-a="stop" disabled>■ Stop</button>

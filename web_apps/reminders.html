@@ -5,7 +5,6 @@
 <link rel="preload" href="../fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 
 <meta charset="UTF-8">
-<meta name="robots" content="noai, noimageai">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reminders</title>
 <link rel="stylesheet" href="../fa/css/all.min.css">
@@ -17,7 +16,6 @@
     --radius: 12px;
     --radius-sm: 8px;
     --transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
-    --on-accent: #0a0a0a;   /* label colour on accent fills: dark text passes 4.5:1 on every theme's accent */
   }
 
   /* Midnight (default) */
@@ -102,6 +100,7 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  body { display: flex; flex-direction: column; height: 100vh; }
   html, body {
     height: 100%;
     font-family: var(--font);
@@ -125,7 +124,8 @@
   .app {
     display: grid;
     grid-template-columns: 320px 1fr;
-    height: 100vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -176,7 +176,7 @@
     margin: 0 16px 12px;
     padding: 11px 14px;
     background: var(--accent);
-    color: var(--on-accent);
+    color: #fff;
     border: none;
     border-radius: var(--radius-sm);
     font-size: 14px;
@@ -283,7 +283,7 @@
   }
   .ri-check:hover { border-color: var(--accent); }
   .ri-check.done { background: var(--accent); border-color: var(--accent); }
-  .ri-check.done i { color: var(--on-accent); font-size: 9px; opacity: 1; }
+  .ri-check.done i { color: #fff; font-size: 9px; opacity: 1; }
   [data-theme="carbon"] .ri-check.done i { color: #0a0a0a; }
   .ri-check i { opacity: 0; font-size: 9px; }
 
@@ -328,61 +328,33 @@
   }
   .sidebar-footer .icon-btn { flex: 1; }
 
-  .notif-status {
-    display: flex; align-items: center; gap: 11px;
-    margin: 0 12px; padding: 10px 12px;
-    background: var(--bg-elev-2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); cursor: pointer; text-align: left;
-    transition: var(--transition); color: var(--text);
-  }
-  .notif-status:hover { background: var(--bg-hover); border-color: var(--text-faint); }
-  .notif-status > i:first-child { font-size: 15px; color: var(--danger); flex-shrink: 0; }
-  .notif-status.on > i:first-child { color: #4ade80; }
-  .notif-text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-  .notif-title { font-size: 13px; font-weight: 600; }
-  .notif-sub { font-size: 11.5px; color: var(--text-dim); }
-  .notif-chevron { font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
-  .notif-status.on .notif-chevron { opacity: 0.5; }
 
-  .notif-steps { list-style: none; margin: 20px 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-  .notif-steps li { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: var(--text-dim); line-height: 1.5; }
-  .notif-steps strong, .notif-steps em { color: var(--text); font-weight: 600; font-style: normal; }
-  .step-n {
-    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent-soft); color: var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700;
-  }
-  .notif-blocked {
-    display: none; gap: 11px; align-items: flex-start;
-    background: rgba(255,95,109,0.09); border: 1px solid rgba(255,95,109,0.25);
-    border-radius: var(--radius-sm); padding: 13px 15px; margin-bottom: 18px;
-    font-size: 13px; color: var(--text-dim); line-height: 1.55;
-  }
-  .notif-blocked.show { display: flex; }
-  .notif-blocked > i { color: var(--danger); margin-top: 2px; }
-  .notif-blocked strong { color: var(--text); }
-  .notif-note { font-size: 12.5px; color: var(--text-faint); margin-bottom: 18px; min-height: 0; }
+  /* ============ SITE HEADER + FOOTER (the same two bars as Shop Tool Sim) ============ */
+  .site-head { flex: none; display: flex; justify-content: center; align-items: center; padding: 6px 14px; background: var(--bg-elev); border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .site-head a, .foot a { color: var(--text); text-decoration: none; border-bottom: 1px solid transparent; }
+  .site-head a:hover, .site-head a:focus-visible, .foot a:hover, .foot a:focus-visible { color: var(--accent); border-bottom-color: currentColor; outline: none; }
+  .foot { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; text-align: center; gap: 6px 18px; padding: 8px 14px; background: var(--bg-elev); border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 640px) { .foot { padding: 8px 10px; } }
 
-  .notif-state {
-    display: flex; align-items: center; gap: 9px;
-    padding: 12px 14px; border-radius: var(--radius-sm);
-    background: var(--bg-elev-2); border: 1px solid var(--border);
-    font-size: 14px; font-weight: 600; margin-bottom: 18px;
-  }
-  .ns-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-faint); flex-shrink: 0; }
-  .ns-dot.on { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
-  .ns-dot.off { background: var(--danger); }
-  .notif-state .ns-sub { color: var(--text-dim); font-weight: 400; }
-  .notif-tip {
-    display: flex; gap: 11px; align-items: flex-start;
-    background: var(--accent-soft); border-radius: var(--radius-sm);
-    padding: 12px 14px; margin-bottom: 18px;
-    font-size: 13px; line-height: 1.55; color: var(--text-dim);
-  }
-  .notif-tip > i { color: var(--accent); margin-top: 2px; }
-  .notif-tip strong { color: var(--text); font-weight: 600; }
-  .notif-tip.hide { display: none; }
+  /* ============ LOGO (the Shop Tool Sim title: Bebas Neue, yellow brackets) ============ */
+  .logo-mark { margin: 0; font-family: 'Bebas Neue', var(--font); font-size: 2rem; font-weight: 400; letter-spacing: .055em; line-height: .9; color: var(--text); display: flex; align-items: center; gap: .28em; text-transform: none; }
+  .logo-stack { display: flex; flex-direction: column; align-items: center; }
+  .logo-top { display: block; white-space: nowrap; }
+  .brand-col { min-width: 0; }
+  .logo-brk { display: block; font-size: 1.55em; line-height: .78; color: #e8c547; opacity: .85; }
+
+  /* ============ CACHE NOTE ============ */
+  #saveNoteOverlay .modal { max-height: calc(100% - 24px); overflow-y: auto; }
+  .cache-help[hidden] { display: none; }
+  .cache-help { margin: -6px 0 20px; }
+  .cache-help-title { font-size: 12.5px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5; }
+  .browser-grid { display: flex; flex-direction: column; gap: 8px; }
+  .browser-btn { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: var(--transition); }
+  .browser-btn:hover, .browser-btn:focus-visible { border-color: var(--accent); background: var(--bg-hover); outline: none; }
+  .browser-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .browser-btn span { flex: 1; }
+  .browser-btn > i { font-size: 11px; color: var(--text-faint); }
+  .cache-help-tip { font-size: 12px; color: var(--text-faint); margin-top: 10px; line-height: 1.5; }
 
   .header-actions { display: flex; gap: 4px; }
   .modal kbd {
@@ -440,12 +412,12 @@
   }
   .detail-check:hover { border-color: var(--accent); }
   .detail-check.done { background: var(--accent); border-color: var(--accent); }
-  .detail-check i { opacity: 0; color: var(--on-accent); font-size: 12px; }
+  .detail-check i { opacity: 0; color: #fff; font-size: 12px; }
   [data-theme="carbon"] .detail-check.done i { color: #0a0a0a; }
   .detail-check.done i { opacity: 1; }
 
   .detail-title-input {
-    flex: 1; min-width: 0;
+    flex: 1;
     background: transparent;
     border: none;
     outline: none;
@@ -543,7 +515,7 @@
     display: flex; align-items: center; justify-content: center; transition: var(--transition);
   }
   .cl-check:hover { border-color: var(--accent); }
-  .cl-check i { opacity: 0; font-size: 9px; color: var(--on-accent); }
+  .cl-check i { opacity: 0; font-size: 9px; color: #fff; }
   .cl-check.done { background: var(--accent); border-color: var(--accent); }
   .cl-check.done i { opacity: 1; }
   [data-theme="carbon"] .cl-check.done i { color: #0a0a0a; }
@@ -590,21 +562,6 @@
     font-size: 12px; transition: var(--transition);
   }
   .field-clear:hover { background: rgba(255,95,109,0.12); border-color: rgba(255,95,109,0.4); color: var(--danger); }
-
-  .notif-warning { display: none; }
-  .notif-warning.show {
-    display: flex; align-items: center; gap: 13px;
-    background: rgba(255,95,109,0.12); border: 1px solid rgba(255,95,109,0.45);
-    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 24px; cursor: pointer;
-  }
-  .notif-warning > i { color: var(--danger); font-size: 18px; flex-shrink: 0; }
-  .notif-warning div { flex: 1; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
-  .notif-warning strong { color: var(--text); }
-  .nw-btn {
-    background: var(--danger); color: #fff; border: none; border-radius: 8px;
-    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  }
-  .nw-btn:hover { filter: brightness(1.1); }
 
   .field-icon {
     width: 30px; height: 30px; border-radius: var(--radius-sm);
@@ -668,8 +625,7 @@
   .icon-choice:hover { background: var(--bg-hover); color: var(--text); }
   .icon-choice.sel { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
-  .urgency-pills { display: flex; flex-wrap: wrap; gap: 7px; min-width: 0; }
-  .field-control { min-width: 0; }
+  .urgency-pills { display: flex; gap: 7px; }
   .urg-pill {
     padding: 7px 13px; border-radius: 20px; font-size: 12.5px; font-weight: 500;
     background: var(--bg-elev-2); border: 1px solid var(--border);
@@ -751,7 +707,7 @@
   .btn:hover { background: var(--bg-hover); }
   .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
   .btn-danger:hover { filter: brightness(1.1); background: var(--danger); }
-  .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   [data-theme="carbon"] .btn-primary { color: #0a0a0a; }
   .btn-primary:hover { filter: brightness(1.1); }
 
@@ -842,12 +798,11 @@
   /* ---- Tablets & phones: single pane, stacked field rows ---- */
   @media (max-width: 720px) {
     html, body { font-size: 15px; }
-    .app { grid-template-columns: minmax(0, 1fr); }
-    .sidebar, .main { min-width: 0; }
+    .app { grid-template-columns: 1fr; }
     .sidebar { border-right: none; }
     .sidebar.mobile-hidden { display: none; }
     .main.mobile-hidden { display: none; }
-    .main { height: 100vh; }
+    .main { height: 100%; }
 
     .detail { padding: 20px 16px 64px; max-width: 100%; }
     .detail-back { display: inline-flex; }
@@ -887,46 +842,28 @@
     .field-control select { max-width: 130px; }
   }
 </style>
-<style id="site-chrome">
-/* shared header and footer (same on every kevmcg1.github.io project): a strip linking back to the portfolio above the app, the license line below it */
-.site-head,.foot{--sh-bar:#08090a;--sh-line:#222428;--sh-ink:#ececee;--sh-muted:#8a8f97;--sh-accent:#5b93ea;--sh-hover:rgba(255,255,255,.04);box-sizing:border-box;flex:none;width:100%;margin:0;background:var(--sh-bar);font:400 12.5px/1.4 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:normal;text-transform:none;text-align:center;-webkit-text-size-adjust:100%}
-.site-head{display:block;padding:0;border-bottom:1px solid var(--sh-line)}
-.site-head a{display:block;width:100%;padding:6px 14px;box-sizing:border-box;text-align:center;color:var(--sh-ink);text-decoration:none;border:0;transition:color .2s ease,background-color .2s ease}
-.site-head a:hover,.site-head a:focus-visible{color:var(--sh-accent);background:var(--sh-hover);text-decoration:underline;text-underline-offset:3px;outline:none}
-.foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 18px;padding:8px 14px;border-top:1px solid var(--sh-line);font-size:12px;color:var(--sh-muted)}
-.foot a{color:var(--sh-ink);text-decoration:none;border-bottom:1px solid transparent}
-.foot a:hover,.foot a:focus-visible{color:var(--sh-accent);border-bottom-color:currentColor;outline:none}
-@media (max-width:640px){.foot{padding:8px 10px}}
-body{display:flex;flex-direction:column}.app{flex:1 1 auto;min-height:0;height:auto}
-</style>
 </head>
 <body data-theme="midnight" data-density="cozy">
+
 <header class="site-head" role="banner"><a href="https://kevmcg1.github.io/portfolio" target="_top" aria-label="Back to the portfolio at kevmcg1.github.io">KEVMCG1.GITHUB.IO</a></header>
 
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="brand"><i class="fa-solid fa-bell"></i> Reminders</div>
+      <div class="brand-col"><h1 class="brand logo-mark" aria-label="Reminders"><span class="logo-brk" aria-hidden="true">[</span><span class="logo-stack" aria-hidden="true"><span class="logo-top">Reminders</span></span><span class="logo-brk" aria-hidden="true">]</span></h1></div>
       <div class="header-actions">
         <button class="icon-btn" id="helpBtn" title="How to type"><i class="fa-regular fa-circle-question"></i></button>
         <button class="icon-btn" id="settingsBtn" title="Settings"><i class="fa-solid fa-sliders"></i></button>
       </div>
     </div>
+    <div class="guide-row"><button id="guideBtn" type="button" aria-label="How do I use this? A guided walkthrough of making a reminder"><span class="gd-q" aria-hidden="true">?</span><span>How do I use this?</span></button></div>
     <button class="add-btn" id="addBtn"><i class="fa-solid fa-plus"></i> New Reminder</button>
     <div class="search-wrap">
       <i class="fa-solid fa-magnifying-glass"></i>
       <input type="text" id="search" placeholder="Search reminders...">
     </div>
     <div class="list-scroll" id="listScroll"></div>
-    <button class="notif-status" id="notifStatus">
-      <i class="fa-solid fa-bell-slash"></i>
-      <div class="notif-text">
-        <span class="notif-title">No notifications on</span>
-        <span class="notif-sub">Click to change this</span>
-      </div>
-      <i class="fa-solid fa-chevron-right notif-chevron"></i>
-    </button>
     <div class="sidebar-footer">
       <button class="icon-btn" id="importBtn" title="Import from file"><i class="fa-solid fa-file-import"></i></button>
       <button class="icon-btn" id="exportBtn" title="Export to file"><i class="fa-solid fa-file-export"></i></button>
@@ -957,12 +894,14 @@ body{display:flex;flex-direction:column}.app{flex:1 1 auto;min-height:0;height:a
   </div>
 </div>
 
+<footer class="foot"><span>Reminders is released under GitHub’s <a href="https://github.com/github/choosealicense.com/blob/gh-pages/_licenses/cc0-1.0.txt" target="_blank" rel="license noopener noreferrer">Creative Commons Zero v1.0 Universal</a> license. All rights reserved.</span></footer>
+
 <!-- SETTINGS MODAL -->
 <div class="overlay" id="settingsOverlay">
   <div class="modal wide" style="position: relative;">
     <div class="modal-head">
       <h2>Settings</h2>
-      <button class="icon-btn" id="settingsClose"><i class="fa-solid fa-xmark"></i></button>
+      <button class="icon-btn" id="settingsClose" aria-label="Close settings"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <div class="settings-section">
@@ -977,28 +916,28 @@ body{display:flex;flex-direction:column}.app{flex:1 1 auto;min-height:0;height:a
           <div class="label">Compact list</div>
           <div class="sub">Denser sidebar, hides meta line</div>
         </div>
-        <div class="toggle" id="densityToggle"></div>
+        <div class="toggle" id="densityToggle" role="switch" tabindex="0" aria-label="Compact list"></div>
       </div>
       <div class="setting-row">
         <div>
           <div class="label">Separate completed</div>
           <div class="sub">Move done items out of the to-do list into their own collapsible section</div>
         </div>
-        <div class="toggle on" id="groupToggle"></div>
+        <div class="toggle on" id="groupToggle" role="switch" tabindex="0" aria-label="Separate completed"></div>
       </div>
       <div class="setting-row">
         <div>
           <div class="label">Confirm before delete</div>
           <div class="sub">Ask before deleting a single reminder</div>
         </div>
-        <div class="toggle" id="confirmDelToggle"></div>
+        <div class="toggle" id="confirmDelToggle" role="switch" tabindex="0" aria-label="Confirm before delete"></div>
       </div>
       <div class="setting-row">
         <div>
           <div class="label">Spell check</div>
           <div class="sub">Underline misspellings in titles &amp; notes</div>
         </div>
-        <div class="toggle on" id="spellcheckToggle"></div>
+        <div class="toggle on" id="spellcheckToggle" role="switch" tabindex="0" aria-label="Spell check"></div>
       </div>
     </div>
 
@@ -1014,6 +953,31 @@ body{display:flex;flex-direction:column}.app{flex:1 1 auto;min-height:0;height:a
 </div>
 
 <!-- DELETE ONE MODAL -->
+<div class="overlay" id="saveNoteOverlay">
+  <div class="modal">
+    <div class="modal-icon neutral"><i class="fa-solid fa-circle-info"></i></div>
+    <h2>Where your reminders live</h2>
+    <p>Reminders are saved by your cache. You can always clear out all reminders by clearing your cache any time.</p>
+    <div class="cache-help" id="cacheHelp" hidden>
+      <div class="cache-help-title">Pick your browser. Each button opens that browser’s own help page.</div>
+      <div class="browser-grid">
+        <a class="browser-btn" href="https://support.microsoft.com/en-us/edge/view-and-delete-browser-history-in-microsoft-edge" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#0078D4" d="M21.86 17.86q.14 0 .25.12.1.13.1.25t-.11.33l-.32.46-.43.53-.44.5q-.21.25-.38.42l-.22.23q-.58.53-1.34 1.04-.76.51-1.6.91-.86.4-1.74.64t-1.67.24q-.9 0-1.69-.28-.8-.28-1.48-.78-.68-.5-1.22-1.17-.53-.66-.92-1.44-.38-.77-.58-1.6-.2-.83-.2-1.67 0-1 .32-1.96.33-.97.87-1.8.14.95.55 1.77.41.82 1.02 1.5.6.68 1.38 1.21.78.54 1.64.9.86.36 1.77.56.92.2 1.8.2 1.12 0 2.18-.24 1.06-.23 2.06-.72l.2-.1.2-.05zm-15.5-1.27q0 1.1.27 2.15.27 1.06.78 2.03.51.96 1.24 1.77.74.82 1.66 1.4-1.47-.2-2.8-.74-1.33-.55-2.48-1.37-1.15-.83-2.08-1.9-.92-1.07-1.58-2.33T.36 14.94Q0 13.54 0 12.06q0-.81.32-1.49.31-.68.83-1.23.53-.55 1.2-.96.66-.4 1.35-.66.74-.27 1.5-.39.78-.12 1.55-.12.7 0 1.42.1.72.12 1.4.35.68.23 1.32.57.63.35 1.16.83-.35 0-.7.07-.33.07-.65.23v-.02q-.63.28-1.2.74-.57.46-1.05 1.04-.48.58-.87 1.26-.38.67-.65 1.39-.27.71-.42 1.44-.15.72-.15 1.38zM11.96.06q1.7 0 3.33.39 1.63.38 3.07 1.15 1.43.77 2.62 1.93 1.18 1.16 1.98 2.7.49.94.76 1.96.28 1 .28 2.08 0 .89-.23 1.7-.24.8-.69 1.48-.45.68-1.1 1.22-.64.53-1.45.88-.54.24-1.11.36-.58.13-1.16.13-.42 0-.97-.03-.54-.03-1.1-.12-.55-.1-1.05-.28-.5-.19-.84-.5-.12-.09-.23-.24-.1-.16-.1-.33 0-.15.16-.35.16-.2.35-.5.2-.28.36-.68.16-.4.16-.95 0-1.06-.4-1.96-.4-.91-1.06-1.64-.66-.74-1.52-1.28-.86-.55-1.79-.89-.84-.3-1.72-.44-.87-.14-1.76-.14-1.55 0-3.06.45T.94 7.55q.71-1.74 1.81-3.13 1.1-1.38 2.52-2.35Q6.68 1.1 8.37.58q1.7-.52 3.58-.52Z"/></svg><span>Microsoft Edge</span><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+        <a class="browser-btn" href="https://support.google.com/chrome/answer/2392709" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M12 0C8.21 0 4.831 1.757 2.632 4.501l3.953 6.848A5.454 5.454 0 0 1 12 6.545h10.691A12 12 0 0 0 12 0zM1.931 5.47A11.943 11.943 0 0 0 0 12c0 6.012 4.42 10.991 10.189 11.864l3.953-6.847a5.45 5.45 0 0 1-6.865-2.29zm13.342 2.166a5.446 5.446 0 0 1 1.45 7.09l.002.001h-.002l-5.344 9.257c.206.01.413.016.621.016 6.627 0 12-5.373 12-12 0-1.54-.29-3.011-.818-4.364zM12 16.364a4.364 4.364 0 1 1 0-8.728 4.364 4.364 0 0 1 0 8.728Z"/></svg><span>Google Chrome</span><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+        <a class="browser-btn" href="https://support.brave.com/hc/en-us/articles/360048833872-How-Do-I-Clear-Cookies-And-Site-Data-In-Brave" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FB542B" d="M15.68 0l2.096 2.38s1.84-.512 2.709.358c.868.87 1.584 1.638 1.584 1.638l-.562 1.381.715 2.047s-2.104 7.98-2.35 8.955c-.486 1.919-.818 2.66-2.198 3.633-1.38.972-3.884 2.66-4.293 2.916-.409.256-.92.692-1.38.692-.46 0-.97-.436-1.38-.692a185.796 185.796 0 01-4.293-2.916c-1.38-.973-1.712-1.714-2.197-3.633-.247-.975-2.351-8.955-2.351-8.955l.715-2.047-.562-1.381s.716-.768 1.585-1.638c.868-.87 2.708-.358 2.708-.358L8.321 0h7.36zm-3.679 14.936c-.14 0-1.038.317-1.758.69-.72.373-1.242.637-1.409.742-.167.104-.065.301.087.409.152.107 2.194 1.69 2.393 1.866.198.175.489.464.687.464.198 0 .49-.29.688-.464.198-.175 2.24-1.759 2.392-1.866.152-.108.254-.305.087-.41-.167-.104-.689-.368-1.41-.741-.72-.373-1.617-.69-1.757-.69zm0-11.278s-.409.001-1.022.206-1.278.46-1.584.46c-.307 0-2.581-.434-2.581-.434S4.119 7.152 4.119 7.849c0 .697.339.881.68 1.243l2.02 2.149c.192.203.59.511.356 1.066-.235.555-.58 1.26-.196 1.977.384.716 1.042 1.194 1.464 1.115.421-.08 1.412-.598 1.776-.834.364-.237 1.518-1.19 1.518-1.554 0-.365-1.193-1.02-1.413-1.168-.22-.15-1.226-.725-1.247-.95-.02-.227-.012-.293.284-.851.297-.559.831-1.304.742-1.8-.089-.495-.95-.753-1.565-.986-.615-.232-1.799-.671-1.947-.74-.148-.068-.11-.133.339-.175.448-.043 1.719-.212 2.292-.052.573.16 1.552.403 1.632.532.079.13.149.134.067.579-.081.445-.5 2.581-.541 2.96-.04.38-.12.63.288.724.409.094 1.097.256 1.333.256s.924-.162 1.333-.256c.408-.093.329-.344.288-.723-.04-.38-.46-2.516-.541-2.961-.082-.445-.012-.45.067-.579.08-.129 1.059-.372 1.632-.532.573-.16 1.845.009 2.292.052.449.042.487.107.339.175-.148.069-1.332.508-1.947.74-.615.233-1.476.49-1.565.986-.09.496.445 1.241.742 1.8.297.558.304.624.284.85-.02.226-1.026.802-1.247.95-.22.15-1.413.804-1.413 1.169 0 .364 1.154 1.317 1.518 1.554.364.236 1.355.755 1.776.834.422.079 1.08-.4 1.464-1.115.384-.716.039-1.422-.195-1.977-.235-.555.163-.863.355-1.066l2.02-2.149c.341-.362.68-.546.68-1.243 0-.697-2.695-3.96-2.695-3.96s-2.274.436-2.58.436c-.307 0-.972-.256-1.585-.461-.613-.205-1.022-.206-1.022-.206z"/></svg><span>Brave</span><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+        <a class="browser-btn" href="https://support.mozilla.org/en-US/kb/clear-cookies-and-site-data-firefox" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FF7139" d="M8.824 7.287c.008 0 .004 0 0 0zm-2.8-1.4c.006 0 .003 0 0 0zm16.754 2.161c-.505-1.215-1.53-2.528-2.333-2.943.654 1.283 1.033 2.57 1.177 3.53l.002.02c-1.314-3.278-3.544-4.6-5.366-7.477-.091-.147-.184-.292-.273-.446a3.545 3.545 0 01-.13-.24 2.118 2.118 0 01-.172-.46.03.03 0 00-.027-.03.038.038 0 00-.021 0l-.006.001a.037.037 0 00-.01.005L15.624 0c-2.585 1.515-3.657 4.168-3.932 5.856a6.197 6.197 0 00-2.305.587.297.297 0 00-.147.37c.057.162.24.24.396.17a5.622 5.622 0 012.008-.523l.067-.005a5.847 5.847 0 011.957.222l.095.03a5.816 5.816 0 01.616.228c.08.036.16.073.238.112l.107.055a5.835 5.835 0 01.368.211 5.953 5.953 0 012.034 2.104c-.62-.437-1.733-.868-2.803-.681 4.183 2.09 3.06 9.292-2.737 9.02a5.164 5.164 0 01-1.513-.292 4.42 4.42 0 01-.538-.232c-1.42-.735-2.593-2.121-2.74-3.806 0 0 .537-2 3.845-2 .357 0 1.38-.998 1.398-1.287-.005-.095-2.029-.9-2.817-1.677-.422-.416-.622-.616-.8-.767a3.47 3.47 0 00-.301-.227 5.388 5.388 0 01-.032-2.842c-1.195.544-2.124 1.403-2.8 2.163h-.006c-.46-.584-.428-2.51-.402-2.913-.006-.025-.343.176-.389.206-.406.29-.787.616-1.136.974-.397.403-.76.839-1.085 1.303a9.816 9.816 0 00-1.562 3.52c-.003.013-.11.487-.19 1.073-.013.09-.026.181-.037.272a7.8 7.8 0 00-.069.667l-.002.034-.023.387-.001.06C.386 18.795 5.593 24 12.016 24c5.752 0 10.527-4.176 11.463-9.661.02-.149.035-.298.052-.448.232-1.994-.025-4.09-.753-5.844z"/></svg><span>Firefox</span><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+        <a class="browser-btn" href="https://help.opera.com/en/latest/security-and-privacy/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FA1E4E" d="M24 12.01c0 3.412-1.462 6.674-4.013 8.943A12 12 0 0 1 11.992 24c-.178 0-.385-.019-.563-.019C5.016 23.681 0 18.403 0 11.991 0 5.37 5.372 0 11.99 0h.038c2.944 0 5.775 1.087 7.96 3.047A12.04 12.04 0 0 1 24 12.009zm-9.14 10.443c-2.729-.056-5.279-1.397-7.041-3.684-1.388-1.64-2.203-4.013-2.269-6.516v-.544c.047-2.521.881-4.893 2.269-6.534 1.744-2.269 4.294-3.61 7.012-3.666a10.67 10.67 0 0 0-2.784-.384h-.038c-5.99 0-10.865 4.894-10.865 10.866 0 5.812 4.528 10.584 10.34 10.847a10.087 10.087 0 0 0 3.375-.385zm7.996-10.444c0-3.065-1.303-5.99-3.59-8.053a7.69 7.69 0 0 0-4.228-1.284c-2.447 0-4.754 1.181-6.357 3.244-1.247 1.462-1.969 3.59-2.025 5.83v.526c.056 2.25.778 4.369 2.006 5.812l.02.02c1.602 2.071 3.909 3.252 6.355 3.252a7.69 7.69 0 0 0 4.229-1.284 10.894 10.894 0 0 0 3.59-8.063zm-3.75 0c0 4.05-2.184 7.341-4.912 7.585 2.128-1.388 3.61-4.257 3.61-7.585 0-3.328-1.463-6.197-3.61-7.575 2.728.244 4.912 3.525 4.912 7.575z"/></svg><span>Opera GX</span><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+      </div>
+      <div class="cache-help-tip">When it asks what to clear, include “Cookies and other site data”.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="cacheHelpBtn" aria-expanded="false" aria-controls="cacheHelp"><i class="fa-solid fa-circle-question"></i> How do I clear my cache?</button>
+      <button class="btn btn-primary" id="saveNoteOk">Got it!</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="changelogOverlay"><div class="modal wide"></div></div>
+
 <div class="overlay" id="delOverlay">
   <div class="modal">
     <div class="modal-icon danger"><i class="fa-solid fa-trash-can"></i></div>
@@ -1026,48 +990,12 @@ body{display:flex;flex-direction:column}.app{flex:1 1 auto;min-height:0;height:a
   </div>
 </div>
 
-<!-- NOTIFICATION TUTORIAL MODAL -->
-<div class="overlay" id="notifOverlay">
-  <div class="modal wide" style="position: relative;">
-    <div class="modal-head">
-      <h2>Notifications</h2>
-      <button class="icon-btn" id="notifClose"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="notif-state" id="notifState"></div>
-
-    <p id="notifIntro"></p>
-
-    <div class="notif-tip" id="notifTip">
-      <i class="fa-solid fa-lightbulb"></i>
-      <div>Recommended: when your browser asks, choose to <strong>remember the decision</strong> — look for &ldquo;Remember this decision&rdquo; or &ldquo;until I close this site&rdquo; — so you won't be prompted again.</div>
-    </div>
-
-    <ol class="notif-steps">
-      <li><span class="step-n">1</span> Click <strong>Enable notifications</strong> below.</li>
-      <li><span class="step-n">2</span> Your browser will ask — choose <strong>Allow</strong>, and remember the decision.</li>
-      <li><span class="step-n">3</span> The sidebar status switches to <em>Notifications on</em>.</li>
-    </ol>
-
-    <div class="notif-blocked" id="notifBlocked">
-      <i class="fa-solid fa-circle-info"></i>
-      <div id="notifBlockedText"></div>
-    </div>
-
-    <div class="notif-note" id="notifNote"></div>
-
-    <div class="modal-actions">
-      <button class="btn" id="notifDismiss">Close</button>
-      <button class="btn btn-primary" id="notifEnable"><i class="fa-solid fa-bell"></i> Enable notifications</button>
-    </div>
-  </div>
-</div>
-
 <!-- TYPING TUTORIAL MODAL -->
 <div class="overlay" id="helpOverlay">
   <div class="modal wide" style="position: relative;">
     <div class="modal-head">
       <h2>How typing works</h2>
-      <button class="icon-btn" id="helpClose"><i class="fa-solid fa-xmark"></i></button>
+      <button class="icon-btn" id="helpClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <p class="help-intro">Type plain English in the <strong>title</strong> or <strong>notes</strong> and the app recognizes dates, times, and repeats. When it spots something it shows an <span class="chip inline-chip"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-apply settings for…</span> prompt — press <kbd>Enter</kbd> (title) or <kbd>Ctrl</kbd>+<kbd>Enter</kbd> (notes), or click <strong>Apply</strong>. The schedule fields below accept the same phrases and show a live <span class="detect ok inline-detect"><i class="fa-solid fa-circle-check"></i> Detected</span> badge.</p>
 
@@ -1089,6 +1017,7 @@ body{display:flex;flex-direction:column}.app{flex:1 1 auto;min-height:0;height:a
 
 const STORE_KEY = 'reminders.app.v1';
 const SETTINGS_KEY = 'reminders.settings.v1';
+const SAVE_NOTE_KEY = 'reminders.saveNote.v1';   // set once the "saved by your cache" note has been shown
 
 const THEMES = [
   { id: 'midnight', name: 'Midnight', bg: '#16181f', accent: '#6d7cff' },
@@ -1132,7 +1061,7 @@ const QUICK_ICONS = ['fa-flag', 'fa-star', 'fa-heart'];
 // Content for the "How typing works" tutorial.
 const HELP = [
   { icon: 'fa-calendar-day', title: 'Dates', ex: ['today', 'tomorrow', 'next monday', 'dec 25', '12/25', 'in 3 days', 'on the 5th'] },
-  { icon: 'fa-clock', title: 'Times', ex: ['3pm', '3:30pm', '15:00', 'noon', 'midnight', 'this evening', 'tomorrow morning'] },
+  { icon: 'fa-clock', title: 'Times', ex: ['3pm', '3:30pm', 'at 15:00', 'noon', 'midnight', 'this evening', 'tomorrow morning'] },
   { icon: 'fa-wand-magic-sparkles', title: 'Date + time together', ex: ['call mom tomorrow at 9am', 'dentist dec 15 at 2pm', 'standup at 2pm'] },
   { icon: 'fa-repeat', title: 'Repeat', ex: ['every day', 'weekly', 'every 2 weeks', 'every weekday', 'hourly', 'every 3 days'] },
   { icon: 'fa-hourglass-half', title: 'Durations — for Repeat, Remind again, End', ex: ['13 mins', '2 hrs 3 mins', '90m', '1 hour 30 min'] },
@@ -1149,7 +1078,7 @@ function isPresetSnooze(v) { return SNOOZE.includes(v); }
 
 /* ---------- State ---------- */
 let reminders = [];
-let settings = { theme: 'midnight', density: 'cozy', groupCompleted: true, completedCollapsed: false, confirmDelete: false, spellcheck: true, notifGrantedAt: null };
+let settings = { theme: 'midnight', density: 'cozy', groupCompleted: true, completedCollapsed: false, confirmDelete: false, spellcheck: true };
 let selectedId = null;
 let pendingDeleteId = null;
 let dragId = null;
@@ -1180,13 +1109,16 @@ function load() {
 // Fill any missing fields on a stored reminder with current defaults,
 // preserving everything the user already saved (including its id).
 function migrateReminder(x) {
-  const merged = Object.assign(newReminder(), x);
-  if (!x || !x.id) merged.id = uid();
+  const text = (v, d = '') => typeof v === 'string' ? v : (typeof v === 'number' || typeof v === 'boolean') ? String(v) : d;
+  const safeId = v => typeof v === 'string' && /^[\w-]+$/.test(v);
+  const merged = Object.assign(newReminder(), x && typeof x === 'object' && !Array.isArray(x) ? x : {});
+  if (!safeId(merged.id)) merged.id = uid();
+  merged.snooze = text(merged.snooze, 'Off');
   if (LEGACY_SNOOZE[merged.snooze]) merged.snooze = LEGACY_SNOOZE[merged.snooze]; // old id -> label
   // Convert legacy structured repeat ids (and old "custom") to the new label form
   if (merged.repeat === 'custom') merged.repeat = `Every ${x.customInterval || 1} ${x.customUnit || 'days'}`;
   else if (LEGACY_REPEAT[merged.repeat]) merged.repeat = LEGACY_REPEAT[merged.repeat];
-  else if (typeof merged.repeat !== 'string' || !merged.repeat) merged.repeat = 'Never';
+  else if (typeof merged.repeat !== 'string') merged.repeat = 'Never';
   // Legacy end-of-repeat (structured) -> free-text endText
   if (!x || x.endText === undefined) {
     if (x && x.endRepeat === 'afterCount') merged.endText = `After ${x.endCount || 1} times`;
@@ -1198,9 +1130,17 @@ function migrateReminder(x) {
   if (typeof merged.icon !== 'string') merged.icon = '';
   // Checklist: ensure a clean array of {id,text,done}
   if (!Array.isArray(merged.checklist)) merged.checklist = [];
+  const seenIds = new Set();
   merged.checklist = merged.checklist
     .filter(it => it && typeof it === 'object')
-    .map(it => ({ id: it.id || uid(), text: String(it.text || ''), done: !!it.done }));
+    .map(it => { let id = safeId(it.id) && !seenIds.has(it.id) ? it.id : uid(); seenIds.add(id); return { id, text: text(it.text), done: !!it.done }; });
+  // Make every field the type the rest of the app relies on (old saves and imported files can hold anything)
+  merged.title = text(merged.title); merged.notes = text(merged.notes); merged.endText = text(merged.endText, 'Never');
+  merged.completed = !!merged.completed;
+  merged.due = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text(merged.due)) && !isNaN(new Date(merged.due)) ? merged.due : '';
+  if (!URGENCIES.some(u => u.id === merged.urgency)) merged.urgency = 'none';
+  if (merged.icon && !ICONS.includes(merged.icon)) merged.icon = '';
+  if (!Number.isFinite(merged.created)) merged.created = Date.now();
   return merged;
 }
 
@@ -1242,6 +1182,8 @@ function fmtDate(iso) {
    "pay rent on the 1st monthly" -> monthly on day 1
    ========================================================= */
 function toLocalInput(d) {
+  // a date the date picker cannot hold (invalid, or outside years 1000-9999) is "no date", never a garbled string
+  if (isNaN(d) || d.getFullYear() < 1000 || d.getFullYear() > 9999) return '';
   const p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
@@ -1254,9 +1196,7 @@ function parseNaturalLanguage(text) {
   let work = ' ' + text + ' ';
   const now = new Date();
   let m;
-  // strip(re, ok): remove the first match, but only when ok(match) says it is a real value (so "feb 30" or "25:00" are left alone)
-  const strip = (re, ok) => { const mm = work.match(re); if (!mm || (ok && !ok(mm))) return null; work = work.replace(mm[0], ' '); return mm; };
-  const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+  const strip = re => { const mm = work.match(re); if (mm) work = work.replace(mm[0], ' '); return mm; };
 
   /* ---- REPEAT (produces a free-text label) ---- */
   const normUnit = u => ({ min: 'minute', mins: 'minute', minute: 'minute', hr: 'hour', hrs: 'hour', hour: 'hour', day: 'day', week: 'week', month: 'month', year: 'year' }[u.toLowerCase()] || u.toLowerCase());
@@ -1306,11 +1246,8 @@ function parseNaturalLanguage(text) {
     const n = parseInt(m[1]), d = new Date(now), u = m[2].toLowerCase();
     if (u === 'day') d.setDate(d.getDate()+n);
     else if (u === 'week') d.setDate(d.getDate()+n*7);
-    else if (u === 'month' || u === 'year') {
-      // land on the same day, or the last day of a shorter month (31 Jan + 1 month = 28/29 Feb, never 3 Mar)
-      const t = new Date(now.getFullYear() + (u === 'year' ? n : 0), now.getMonth() + (u === 'month' ? n : 0), 1);
-      d.setTime(new Date(t.getFullYear(), t.getMonth(), Math.min(now.getDate(), dim(t.getFullYear(), t.getMonth()))).getTime());
-    }
+    else if (u === 'month') d.setMonth(d.getMonth()+n);
+    else if (u === 'year') d.setFullYear(d.getFullYear()+n);
     setD(d);
   }
   else if ((m = strip(/\b(?:next\s+|this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i))) {
@@ -1321,28 +1258,19 @@ function parseNaturalLanguage(text) {
     d.setDate(d.getDate() + diff);
     setD(d);
   }
-  else if ((m = strip(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i, x => {
-      const mi = months.indexOf(x[1].toLowerCase().slice(0,3)), di = parseInt(x[2]);
-      return di >= 1 && di <= 31 && di <= dim(now.getFullYear() + 4, mi) + (mi === 1 ? 0 : 0) && (mi !== 1 || di <= 29);
-    }))) {
+  else if ((m = strip(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i))) {
     mo = months.indexOf(m[1].toLowerCase().slice(0,3));
     dd = parseInt(m[2]);
     yy = now.getFullYear();
     if (new Date(yy, mo, dd) < new Date(now.getFullYear(), now.getMonth(), now.getDate())) yy++;
-    while (dd > dim(yy, mo)) yy++;   // 29 Feb waits for the next leap year
     res.dateSet = true;
   }
-  else if ((m = strip(/\bon\s+the\s+(\d{1,2})(?:st|nd|rd|th)\b/i, x => parseInt(x[1]) >= 1 && parseInt(x[1]) <= 31))) {
+  else if ((m = strip(/\bon\s+the\s+(\d{1,2})(?:st|nd|rd|th)\b/i))) {
     dd = parseInt(m[1]); mo = now.getMonth(); yy = now.getFullYear();
     if (dd < now.getDate()) mo++;
-    while (dd > dim(yy, mo)) mo++;   // the next month that actually has that day
     res.dateSet = true;
   }
-  else if ((m = strip(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/, x => {
-      const mi = parseInt(x[1]) - 1, di = parseInt(x[2]);
-      const yi = x[3] ? (x[3].length === 2 ? 2000 + parseInt(x[3]) : parseInt(x[3])) : now.getFullYear();
-      return mi >= 0 && mi <= 11 && di >= 1 && di <= dim(yi, mi);
-    }))) {
+  else if ((m = strip(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/))) {
     mo = parseInt(m[1]) - 1; dd = parseInt(m[2]);
     yy = m[3] ? (m[3].length === 2 ? 2000 + parseInt(m[3]) : parseInt(m[3])) : now.getFullYear();
     res.dateSet = true;
@@ -1350,10 +1278,10 @@ function parseNaturalLanguage(text) {
 
   /* ---- TIME ---- */
   let hh = null, mi = null;
-  if ((m = strip(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i, x => { const h = parseInt(x[1]), mn = x[2] ? parseInt(x[2]) : 0; return h >= 1 && h <= 12 && mn <= 59; }))) {
+  if ((m = strip(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i))) {
     hh = parseInt(m[1]) % 12; if (m[3].toLowerCase() === 'pm') hh += 12;
     mi = m[2] ? parseInt(m[2]) : 0; res.timeSet = true;
-  } else if ((m = strip(/\b(?:at\s+)?(\d{1,2}):(\d{2})\b/i, x => parseInt(x[1]) <= 23 && parseInt(x[2]) <= 59))) {
+  } else if ((m = strip(/\bat\s+(\d{1,2}):(\d{2})\b/i))) {
     hh = parseInt(m[1]); mi = parseInt(m[2]); res.timeSet = true;
   } else if (strip(/\b(noon|midday)\b/i)) { hh = 12; mi = 0; res.timeSet = true; }
   else if (strip(/\bmidnight\b/i)) { hh = 0; mi = 0; res.timeSet = true; }
@@ -1383,8 +1311,7 @@ function parseNaturalLanguage(text) {
     res.due = toLocalInput(res._exact); // "in N minutes/hours" — already exact
   } else if (res.dateSet || res.timeSet) {
     const d = new Date(now);
-    // built in one step: setting year, month and day one at a time overflows on the 29th-31st
-    if (res.dateSet) { d.setTime(new Date(yy, mo, dd, d.getHours(), d.getMinutes()).getTime()); }
+    if (res.dateSet) { d.setFullYear(yy); d.setMonth(mo); d.setDate(dd); }
     if (res.timeSet && hh !== null) d.setHours(hh, mi, 0, 0); else d.setHours(9, 0, 0, 0);
     // only-a-time that already passed today rolls to tomorrow
     if (res.timeSet && !res.dateSet && d < now) d.setDate(d.getDate() + 1);
@@ -1435,6 +1362,7 @@ function updateFullTitle() {
   }
 }
 
+let detailRendering = false; // re-rendering removes the focused field, which fires blur: that must not apply its text (again) mid-render
 function applyParse(reminder, parsed, key) {
   if (!parsed.matched) return;
   key = key || 'title';
@@ -1489,7 +1417,7 @@ function parseDuration(text) {
   if (leftover !== '') return null;
   let minutes = 0;
   const parts = [];
-  order.forEach(u => { if (acc[u]) { minutes += acc[u] * perMin[u]; parts.push(`${acc[u]} ${u}${acc[u] !== 1 ? 's' : ''}`); } });
+  order.forEach(u => { if (acc[u] !== undefined) { minutes += acc[u] * perMin[u]; parts.push(`${acc[u]} ${u}${acc[u] !== 1 ? 's' : ''}`); } });
   return { minutes, label: parts.join(' ') };
 }
 
@@ -1615,11 +1543,11 @@ function itemEl(r) {
   if (r.checklist && r.checklist.length) metaBits.push(`<span><i class="fa-solid fa-list-check"></i> ${r.checklist.filter(x=>x.done).length}/${r.checklist.length}</span>`);
 
   el.innerHTML = `
-    <button class="ri-check ${r.completed ? 'done' : ''}" data-check="${r.id}"><i class="fa-solid fa-check"></i></button>
+    <button class="ri-check ${r.completed ? 'done' : ''}" data-check="${r.id}" aria-label="${r.completed ? 'Mark as not completed' : 'Mark as completed'}"><i class="fa-solid fa-check"></i></button>
     <div class="ri-body">
       <div class="ri-title">
         ${r.icon ? `<i class="fa-solid ${r.icon}" style="color:var(--accent);font-size:11px;"></i>` : ''}
-        ${r.title.trim() ? escapeHtml(r.title) : '<span style="color:var(--text-faint)">Untitled</span>'}
+        ${escapeHtml(r.title.trim()) || '<span style="color:var(--text-faint)">Untitled</span>'}
       </div>
       <div class="ri-meta">
         <span class="urg-dot-wrap"><span class="urg-dot u-${r.urgency}"></span></span>
@@ -1653,7 +1581,7 @@ function itemEl(r) {
 }
 
 function escapeHtml(s) {
-  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 /* ---------- Detail view ---------- */
@@ -1670,15 +1598,17 @@ function renderDetail() {
   empty.classList.add('hidden');
   detail.classList.remove('hidden');
 
-  detail.innerHTML = `
+  detailRendering = true;
+  try { detail.innerHTML = `
     <button class="detail-back" id="d-back"><i class="fa-solid fa-chevron-left"></i> All reminders</button>
     <div class="detail-top">
-      <button class="detail-check ${r.completed ? 'done' : ''}" id="d-check"><i class="fa-solid fa-check"></i></button>
+      <button class="detail-check ${r.completed ? 'done' : ''}" id="d-check" aria-label="${r.completed ? 'Mark as not completed' : 'Mark as completed'}"><i class="fa-solid fa-check"></i></button>
       <input class="detail-title-input" id="d-title" placeholder="Reminder title" value="${escapeHtml(r.title)}" autocomplete="off" spellcheck="${settings.spellcheck}">
     </div>
     <div class="full-title" id="full-title"></div>
     <div class="nlp-hint" id="nlp-hint"></div>
-    <textarea class="detail-notes" id="d-notes" placeholder="Add notes..." spellcheck="${settings.spellcheck}">${escapeHtml(r.notes)}</textarea>
+    <textarea class="detail-notes" id="d-notes" placeholder="Add notes..." spellcheck="${settings.spellcheck}">
+${escapeHtml(r.notes)}</textarea>
     <div class="nlp-hint" id="nlp-hint-notes"></div>
 
     <div class="group-title row">
@@ -1693,7 +1623,6 @@ function renderDetail() {
       </div>
     </div>
 
-    <div class="notif-warning" id="notif-warning"></div>
 
     <div class="group-title">Schedule</div>
     <div class="field-card">
@@ -1711,7 +1640,7 @@ function renderDetail() {
                 ${DUE_PRESETS.map(s => `<option value="${escapeHtml(s)}">${s}</option>`).join('')}
               </select>
             </div>
-            <input type="datetime-local" id="d-due" value="${r.due || ''}">
+            <input type="datetime-local" id="d-due" aria-label="Exact date and time" value="${r.due || ''}">
           </div>
           <div class="detect empty" id="detect-datetime"></div>
         </div>
@@ -1796,7 +1725,7 @@ function renderDetail() {
       <span class="created-note">Created ${new Date(r.created).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</span>
       <button class="delete-btn" id="d-delete"><i class="fa-solid fa-trash-can"></i> Delete</button>
     </div>
-  `;
+  `; } finally { detailRendering = false; }
 
   wireDetail(r);
 }
@@ -1806,36 +1735,17 @@ function renderIconPicker(r, gridOpen) {
   const box = document.getElementById('d-icon');
   if (!box) return;
   const extra = (r.icon && !QUICK_ICONS.includes(r.icon))
-    ? `<button class="icon-choice sel" data-icon="${r.icon}"><i class="fa-solid ${r.icon}"></i></button>` : '';
+    ? `<button class="icon-choice sel" data-icon="${r.icon}" aria-label="${r.icon.slice(3)} icon"><i class="fa-solid ${r.icon}"></i></button>` : '';
   box.innerHTML = `
     <div class="icon-quick">
-      <button class="icon-choice ${!r.icon ? 'sel' : ''}" data-icon="" title="None"><i class="fa-solid fa-ban"></i></button>
-      ${QUICK_ICONS.map(ic => `<button class="icon-choice ${r.icon === ic ? 'sel' : ''}" data-icon="${ic}"><i class="fa-solid ${ic}"></i></button>`).join('')}
+      <button class="icon-choice ${!r.icon ? 'sel' : ''}" data-icon="" title="None" aria-label="No icon"><i class="fa-solid fa-ban"></i></button>
+      ${QUICK_ICONS.map(ic => `<button class="icon-choice ${r.icon === ic ? 'sel' : ''}" data-icon="${ic}" aria-label="${ic.slice(3)} icon"><i class="fa-solid ${ic}"></i></button>`).join('')}
       ${extra}
       <button class="icon-choice icon-more ${gridOpen ? 'open' : ''}" data-more title="More icons"><i class="fa-solid fa-ellipsis"></i></button>
     </div>
     <div class="icon-grid" ${gridOpen ? '' : 'hidden'}>
-      ${ICONS.map(ic => `<button class="icon-choice ${r.icon === ic ? 'sel' : ''}" data-icon="${ic}"><i class="fa-solid ${ic}"></i></button>`).join('')}
+      ${ICONS.map(ic => `<button class="icon-choice ${r.icon === ic ? 'sel' : ''}" data-icon="${ic}" aria-label="${ic.slice(3)} icon"><i class="fa-solid ${ic}"></i></button>`).join('')}
     </div>`;
-}
-
-// Shows a prominent warning when a reminder has a schedule but notifications are off.
-function updateNotifWarning(r) {
-  const el = document.getElementById('notif-warning');
-  if (!el) return;
-  const scheduled = !!r.due || isRepeating(r.repeat);
-  if (scheduled && notifPermission() !== 'granted') {
-    el.className = 'notif-warning show';
-    el.innerHTML =
-      `<i class="fa-solid fa-triangle-exclamation"></i>` +
-      `<div><strong>Notifications are off.</strong> You won't be alerted for this scheduled reminder.</div>` +
-      `<button class="nw-btn" type="button">Turn on</button>`;
-    el.onclick = () => { refreshNotifModal(); showOverlay('notifOverlay'); };
-  } else {
-    el.className = 'notif-warning';
-    el.innerHTML = '';
-    el.onclick = null;
-  }
 }
 
 // Renders just the checklist items + progress (so toggling doesn't reflow the whole detail).
@@ -1845,7 +1755,7 @@ function renderChecklist(r) {
   if (!box) return;
   box.innerHTML = r.checklist.map(it => `
     <div class="cl-item ${it.done ? 'done' : ''}" data-id="${it.id}">
-      <button class="cl-check ${it.done ? 'done' : ''}" data-act="toggle" tabindex="-1"><i class="fa-solid fa-check"></i></button>
+      <button class="cl-check ${it.done ? 'done' : ''}" data-act="toggle" tabindex="-1" aria-label="${it.done ? 'Mark item as not done' : 'Mark item as done'}"><i class="fa-solid fa-check"></i></button>
       <input class="cl-text" value="${escapeHtml(it.text)}" data-act="text" placeholder="Item">
       <button class="cl-del" data-act="del" tabindex="-1" title="Remove"><i class="fa-solid fa-xmark"></i></button>
     </div>`).join('');
@@ -1888,6 +1798,7 @@ function wireDetail(r) {
       if (key === 'notes') autoGrow(input);
       save();
       if (key === 'title') { renderList(); updateFullTitle(); }
+      else if (document.getElementById('search').value.trim()) renderList(); // notes are searched too
       refresh();
     });
     input.addEventListener('keydown', e => {
@@ -1901,6 +1812,7 @@ function wireDetail(r) {
       }
     });
     input.addEventListener('blur', () => {
+      if (detailRendering) return;
       const parsed = parseNaturalLanguage(input.value);
       if (parsed.matched) applyParse(r, parsed, key);
     });
@@ -1910,7 +1822,6 @@ function wireDetail(r) {
   wireField($('d-notes'), $('nlp-hint-notes'), 'notes');
   autoGrow($('d-notes'));
   updateFullTitle();
-  updateNotifWarning(r);
 
   // Red "clear" buttons — reset a single setting to its default
   document.querySelectorAll('#detail .field-clear').forEach(btn => {
@@ -1935,11 +1846,11 @@ function wireDetail(r) {
   const dueText = $('d-due-text'), duePreset = $('d-due-preset'), duePick = $('d-due');
   function commitDueText() {
     const v = dueText.value.trim();
-    if (v === '') { r.due = ''; duePick.value = ''; duePreset.value = '__custom'; save(); renderList(); updateNotifWarning(r); return; }
+    if (v === '') { r.due = ''; duePick.value = ''; duePreset.value = '__custom'; save(); renderList(); return; }
     const parsed = parseNaturalLanguage(v);
     if (parsed.due) { r.due = parsed.due; duePick.value = r.due; }
     duePreset.value = DUE_PRESETS.includes(v) ? v : '__custom';
-    save(); renderList(); updateNotifWarning(r);
+    save(); renderList();
   }
   dueText.addEventListener('input', () => updateDetect('datetime', dueText.value));
   dueText.addEventListener('change', commitDueText);
@@ -1950,14 +1861,16 @@ function wireDetail(r) {
     if (parsed.due) { r.due = parsed.due; duePick.value = r.due; }
     dueText.value = e.target.value;
     updateDetect('datetime', dueText.value);
-    save(); renderList(); updateNotifWarning(r);
+    save(); renderList();
   });
   duePick.addEventListener('change', e => {
-    r.due = e.target.value;
+    // the picker lets a person type a year with more than 4 digits; only YYYY-MM-DDTHH:MM is stored
+    r.due = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(e.target.value) ? e.target.value : '';
+    e.target.value = r.due;
     dueText.value = r.due ? fmtDate(r.due) : '';
     duePreset.value = '__custom';
     updateDetect('datetime', dueText.value);
-    save(); renderList(); updateNotifWarning(r);
+    save(); renderList();
   });
 
   // --- Repeat combo: text + preset dropdown mirror each other ---
@@ -1967,7 +1880,7 @@ function wireDetail(r) {
     repeatPreset.value = isPresetRepeat(r.repeat) ? r.repeat : '__custom';
     toggleRepeatRows();
     updateDetect('repeat', r.repeat);
-    save(); renderList(); updateNotifWarning(r);
+    save(); renderList();
   });
   repeatPreset.addEventListener('change', e => {
     if (e.target.value === '__custom') return;
@@ -1975,7 +1888,7 @@ function wireDetail(r) {
     repeatInput.value = r.repeat;
     toggleRepeatRows();
     updateDetect('repeat', r.repeat);
-    save(); renderList(); updateNotifWarning(r);
+    save(); renderList();
   });
 
   // --- End repeat combo: text + preset dropdown ---
@@ -2103,7 +2016,26 @@ function showListPane() {
   document.getElementById('sidebar')?.classList.remove('mobile-hidden');
 }
 
+// The note about the cache comes up once the first reminder has been written, never while someone is still typing it (it would take their
+// first letters): when the title field is left, or the typing stops for a moment.
+let saveNotePending = false, saveNoteTimer = 0;
+function maybeShowSaveNote(isFirst) {
+  if (!isFirst || (window.DevTest && window.DevTest.state && window.DevTest.state.running && !window.DevTest.state.noteOn)) return;   // (the UX tester makes hundreds of reminders; it must not be stopped by the note)
+  try { if (localStorage.getItem(SAVE_NOTE_KEY)) return; } catch(e) { return; }
+  saveNotePending = true;
+}
+function showSaveNoteNow() {
+  if (!saveNotePending) return;
+  saveNotePending = false; clearTimeout(saveNoteTimer);
+  try { if (localStorage.getItem(SAVE_NOTE_KEY)) return; localStorage.setItem(SAVE_NOTE_KEY, '1'); } catch(e) { return; }
+  showOverlay('saveNoteOverlay');
+  setTimeout(() => document.getElementById('saveNoteOk')?.focus(), 30);
+}
+document.addEventListener('input', (e) => { if (saveNotePending && e.target && e.target.id === 'd-title') { clearTimeout(saveNoteTimer); saveNoteTimer = setTimeout(showSaveNoteNow, 1400); } });
+document.addEventListener('focusout', (e) => { if (saveNotePending && e.target && e.target.id === 'd-title') setTimeout(showSaveNoteNow, 60); });
+
 function addReminder() {
+  const isFirst = reminders.length === 0;
   const r = newReminder();
   reminders.unshift(r);
   selectedId = r.id;
@@ -2111,6 +2043,7 @@ function addReminder() {
   render();
   showDetailPane();
   setTimeout(() => document.getElementById('d-title')?.focus(), 30);
+  maybeShowSaveNote(isFirst);
 }
 
 function selectReminder(id) {
@@ -2225,9 +2158,12 @@ function performReorder(id, beforeId) {
   if (beforeId && beforeId !== id) {
     const bi = reminders.findIndex(x => x.id === beforeId);
     reminders.splice(bi < 0 ? reminders.length : bi, 0, moved);
-  } else if (settings.groupCompleted && !moved.completed) {
-    const fc = reminders.findIndex(x => x.completed);
-    reminders.splice(fc < 0 ? reminders.length : fc, 0, moved);
+  } else if (settings.groupCompleted) {
+    // end of the dragged item's own group: right after the last reminder with the same completed state
+    // (completed ones can sit anywhere in the saved order, so "before the first completed" is not the end of the to-do list)
+    let last = -1;
+    reminders.forEach((x, i) => { if (!!x.completed === !!moved.completed) last = i; });
+    reminders.splice(last + 1, 0, moved);
   } else {
     reminders.push(moved);
   }
@@ -2268,7 +2204,9 @@ function importTxt(text) {
     return;
   }
   // sanitize / merge with defaults, regenerate ids to avoid collisions
-  const clean = imported.map(x => Object.assign(newReminder(), x, { id: uid() }));
+  const clean = imported
+    .filter(x => x && typeof x === 'object' && !Array.isArray(x))
+    .map(x => Object.assign(migrateReminder(x), { id: uid() }));
   reminders = clean.concat(reminders);
   save();
   render();
@@ -2317,6 +2255,7 @@ function syncSettingToggles() {
   document.getElementById('groupToggle').classList.toggle('on', settings.groupCompleted);
   document.getElementById('confirmDelToggle').classList.toggle('on', settings.confirmDelete);
   document.getElementById('spellcheckToggle').classList.toggle('on', settings.spellcheck);
+  document.querySelectorAll('.toggle[role=switch]').forEach(t => t.setAttribute('aria-checked', t.classList.contains('on')));
 }
 
 /* =========================================================
@@ -2324,159 +2263,6 @@ function syncSettingToggles() {
    ========================================================= */
 function showOverlay(id) { document.getElementById(id).classList.add('show'); }
 function hideOverlay(id) { document.getElementById(id).classList.remove('show'); }
-
-/* =========================================================
-   Notifications: status pill + device-aware tutorial
-   ========================================================= */
-let deviceInfo = { name: 'your browser', os: 'your device', mobile: false };
-
-// Detect OS + browser (Brave/Opera GX/Opera/Edge/DuckDuckGo/Samsung/Vivaldi/
-// Firefox/Chrome/Safari…). Some checks (Brave) are async.
-async function detectDevice() {
-  const ua = navigator.userAgent || '';
-  const brands = ((navigator.userAgentData && navigator.userAgentData.brands) || []).map(b => b.brand).join(' | ');
-  let os = 'your device';
-  if (/windows/i.test(ua)) os = 'Windows';
-  else if (/android/i.test(ua)) os = 'Android';
-  else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
-  else if (/cros/i.test(ua)) os = 'ChromeOS';
-  else if (/mac os x|macintosh/i.test(ua)) os = 'macOS';
-  else if (/linux/i.test(ua)) os = 'Linux';
-  const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua) || !!(navigator.userAgentData && navigator.userAgentData.mobile);
-
-  let name = 'your browser';
-  let brave = false;
-  try { if (navigator.brave && navigator.brave.isBrave) brave = await navigator.brave.isBrave(); } catch (e) {}
-  if (brave) name = 'Brave';
-  else if (/OPGX|OPX\//i.test(ua)) name = 'Opera GX';
-  else if (/OPR\//i.test(ua) || /\bopera\b/i.test(brands)) name = (/GX/i.test(ua) || /GX/i.test(brands)) ? 'Opera GX' : 'Opera';
-  else if (/edg(a|ios)?\//i.test(ua) || /\bedge\b/i.test(brands)) name = 'Edge';
-  else if (/duckduckgo|ddg/i.test(ua)) name = 'DuckDuckGo';
-  else if (/samsungbrowser/i.test(ua)) name = 'Samsung Internet';
-  else if (/vivaldi/i.test(ua)) name = 'Vivaldi';
-  else if (/yabrowser/i.test(ua)) name = 'Yandex';
-  else if (/firefox|fxios/i.test(ua)) name = 'Firefox';
-  else if (/chrome|crios|chromium/i.test(ua) || /chrom/i.test(brands)) name = 'Chrome';
-  else if (/safari/i.test(ua)) name = 'Safari';
-  deviceInfo = { name, os, mobile };
-  if (document.getElementById('notifOverlay').classList.contains('show')) refreshNotifModal();
-}
-
-// How to un-block, tailored per browser / device.
-function browserHelp() {
-  const { name, mobile } = deviceInfo;
-  if (mobile) {
-    return `Open your device <strong>Settings &rsaquo; Apps &rsaquo; ${escapeHtml(name)} &rsaquo; Notifications</strong> (or the site permissions via the browser menu &rsaquo; <strong>Site settings &rsaquo; Notifications</strong>), allow them, then reload.`;
-  }
-  switch (name) {
-    case 'Firefox':
-      return `Click the <i class="fa-solid fa-lock"></i> padlock at the left of the address bar, find <strong>Send Notifications</strong> and clear the <strong>Blocked</strong> state, then reload.`;
-    case 'Safari':
-      return `Open <strong>Safari &rsaquo; Settings &rsaquo; Websites &rsaquo; Notifications</strong>, find this site and set it to <strong>Allow</strong>.`;
-    case 'Brave':
-      return `Brave is strict by default. Click the <i class="fa-solid fa-lock"></i> padlock &rsaquo; <strong>Site settings</strong> &rsaquo; <strong>Notifications</strong> &rsaquo; <strong>Allow</strong>, then reload. If needed, check the Brave <i class="fa-solid fa-shield-halved"></i> shield too.`;
-    case 'Opera':
-    case 'Opera GX':
-      return `Click the <i class="fa-solid fa-lock"></i> padlock at the left of the address bar &rsaquo; <strong>Site settings</strong> &rsaquo; <strong>Notifications</strong> &rsaquo; <strong>Allow</strong>, then reload.`;
-    default: // Chrome, Edge, DuckDuckGo, Vivaldi, Yandex, Chromium…
-      return `Click the <i class="fa-solid fa-lock"></i> (or <i class="fa-solid fa-sliders"></i>) icon at the left of the address bar &rsaquo; <strong>Site settings</strong> &rsaquo; <strong>Notifications</strong> &rsaquo; <strong>Allow</strong>, then reload.`;
-  }
-}
-
-function humanizeElapsed(ts) {
-  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  const units = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60]];
-  for (const [u, secs] of units) { const v = Math.floor(s / secs); if (v >= 1) return `${v} ${u}${v !== 1 ? 's' : ''}`; }
-  return 'less than a minute';
-}
-
-function notifPermission() {
-  return ('Notification' in window) ? Notification.permission : 'unsupported';
-}
-// Record (or clear) when we first observed permission being granted, so we can
-// report how long notifications have been on.
-function syncNotifGrant() {
-  if (notifPermission() === 'granted') {
-    if (!settings.notifGrantedAt) { settings.notifGrantedAt = Date.now(); saveSettings(); }
-  } else if (settings.notifGrantedAt) {
-    settings.notifGrantedAt = null; saveSettings();
-  }
-}
-function updateNotifStatus() {
-  syncNotifGrant();
-  const el = document.getElementById('notifStatus');
-  if (!el) return;
-  const icon = el.querySelector('i');
-  const title = el.querySelector('.notif-title');
-  const sub = el.querySelector('.notif-sub');
-  if (notifPermission() === 'granted') {
-    el.classList.add('on');
-    icon.className = 'fa-solid fa-bell';
-    title.textContent = 'Notifications on';
-    sub.textContent = settings.notifGrantedAt ? `On for ${humanizeElapsed(settings.notifGrantedAt)}` : "You'll be reminded";
-  } else {
-    el.classList.remove('on');
-    icon.className = 'fa-solid fa-bell-slash';
-    title.textContent = 'No notifications on';
-    sub.textContent = 'Click to change this';
-  }
-}
-function refreshNotifModal() {
-  syncNotifGrant();
-  const perm = notifPermission();
-  const state = document.getElementById('notifState');
-  const intro = document.getElementById('notifIntro');
-  const tip = document.getElementById('notifTip');
-  const blocked = document.getElementById('notifBlocked');
-  const blockedText = document.getElementById('notifBlockedText');
-  const note = document.getElementById('notifNote');
-  const enableBtn = document.getElementById('notifEnable');
-
-  intro.innerHTML = `You're on <strong>${escapeHtml(deviceInfo.name)}</strong> &middot; <strong>${escapeHtml(deviceInfo.os)}</strong>. Turn on notifications so reminders can alert you when they're due — even when this tab is in the background.`;
-  blockedText.innerHTML = `<strong>Notifications are blocked in ${escapeHtml(deviceInfo.name)}.</strong> ` + browserHelp();
-
-  if (perm === 'granted') {
-    const since = settings.notifGrantedAt ? ` <span class="ns-sub">&middot; on for ${humanizeElapsed(settings.notifGrantedAt)}</span>` : '';
-    state.innerHTML = `<span class="ns-dot on"></span> Notifications are on${since}`;
-    blocked.classList.remove('show');
-    tip.classList.add('hide');
-    note.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#4ade80"></i> You’re all set.';
-    enableBtn.disabled = true;
-  } else if (perm === 'denied') {
-    state.innerHTML = `<span class="ns-dot off"></span> Notifications are off <span class="ns-sub">&middot; blocked by the browser</span>`;
-    blocked.classList.add('show');
-    tip.classList.add('hide');
-    note.textContent = '';
-    enableBtn.disabled = true;
-  } else if (perm === 'unsupported') {
-    state.innerHTML = `<span class="ns-dot off"></span> Notifications aren’t supported here`;
-    blocked.classList.remove('show');
-    tip.classList.add('hide');
-    note.textContent = 'This browser does not support web notifications.';
-    enableBtn.disabled = true;
-  } else { // default — not decided yet
-    state.innerHTML = `<span class="ns-dot off"></span> Notifications are off <span class="ns-sub">&middot; not enabled yet</span>`;
-    blocked.classList.remove('show');
-    tip.classList.remove('hide');
-    note.textContent = location.protocol === 'file:'
-      ? 'Note: some browsers restrict notifications on files opened directly (file://). Serving over http/https is most reliable.'
-      : '';
-    enableBtn.disabled = false;
-  }
-}
-async function enableNotifications() {
-  if (!('Notification' in window)) return;
-  try {
-    const perm = await Notification.requestPermission();
-    updateNotifStatus();
-    refreshNotifModal();
-    if (perm === 'granted') {
-      try { new Notification('Reminders', { body: 'Notifications are now enabled.' }); } catch (e) {}
-      toast('Notifications enabled');
-      if (selectedId) renderDetail(); // clears the "notifications off" warning
-    }
-  } catch (e) {}
-}
 
 let toastTimer = null;
 function toast(msg) {
@@ -2538,6 +2324,11 @@ function init() {
     saveSettings(); syncSettingToggles(); renderDetail();
   });
 
+  // Settings switches are focusable: Space / Enter flips them like a click
+  document.querySelectorAll('.toggle[role=switch]').forEach(t => t.addEventListener('keydown', e => {
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); t.click(); }
+  }));
+
   // Wipe
   const openWipe = () => showOverlay('wipeOverlay');
   document.getElementById('wipeBtn').addEventListener('click', openWipe);
@@ -2548,6 +2339,10 @@ function init() {
   });
 
   // Delete one
+  document.getElementById('cacheHelpBtn').addEventListener('click', () => {
+    const box = document.getElementById('cacheHelp'), b = document.getElementById('cacheHelpBtn'); box.hidden = !box.hidden; b.setAttribute('aria-expanded', String(!box.hidden));
+  });
+  document.getElementById('saveNoteOk').addEventListener('click', () => { hideOverlay('saveNoteOverlay'); document.getElementById('d-title')?.focus(); });
   document.getElementById('delCancel').addEventListener('click', () => { pendingDeleteId = null; hideOverlay('delOverlay'); });
   document.getElementById('delConfirm').addEventListener('click', () => {
     if (pendingDeleteId) doDelete(pendingDeleteId);
@@ -2582,13 +2377,6 @@ function init() {
     } else if (selectedId) { showDetailPane(); } else { showListPane(); }
   });
 
-  // Notifications
-  detectDevice();
-  updateNotifStatus();
-  document.getElementById('notifStatus').addEventListener('click', () => { refreshNotifModal(); showOverlay('notifOverlay'); });
-  document.getElementById('notifClose').addEventListener('click', () => hideOverlay('notifOverlay'));
-  document.getElementById('notifDismiss').addEventListener('click', () => hideOverlay('notifOverlay'));
-  document.getElementById('notifEnable').addEventListener('click', enableNotifications);
 
   // Close overlays on backdrop click
   document.querySelectorAll('.overlay').forEach(ov => {
@@ -2612,7 +2400,7 @@ function init() {
     get reminders() { return reminders; }, set reminders(v) { reminders = v; },
     get settings() { return settings; }, set settings(v) { settings = v; },
     get selectedId() { return selectedId; }, set selectedId(v) { selectedId = v; },
-    STORE_KEY, SETTINGS_KEY, THEMES, URGENCIES, REPEATS, DUE_PRESETS, END_PRESETS, SNOOZE, ICONS, HELP,
+    STORE_KEY, SETTINGS_KEY, SAVE_NOTE_KEY, THEMES, URGENCIES, REPEATS, DUE_PRESETS, END_PRESETS, SNOOZE, ICONS, HELP,
     save, saveSettings, load, render, renderList, renderDetail, renderThemeGrid, applySettings, syncSettingToggles,
     addReminder, selectReminder, toggleComplete, doDelete, performReorder, importTxt, exportTxt,
     parseNaturalLanguage, parseDuration, detectDatetime, detectRepeat, detectEnd, detectSnooze,
@@ -2638,544 +2426,8 @@ function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
-<script>
-/* =========================================================
-   DEV TOOL (open with ?dev): a UI tester for the whole app.
-   Runs against the real functions and DOM, never touches saved data
-   (writes to localStorage are blocked while it runs, and state is restored after).
-   Expected values are built here from plain date arithmetic, not by calling the app's own parser.
-   ========================================================= */
-if (/[?&]dev(&|$)/.test(location.search)) document.addEventListener('DOMContentLoaded', () => {
-  const RD = Date;                       // the real Date
-  const css = `
-    #devFab{position:fixed;left:14px;bottom:14px;z-index:90;background:var(--bg-elev-2);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font:600 12px var(--font);cursor:pointer}
-    #devFab:hover{color:var(--text);border-color:var(--accent)}
-    #devPanel{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px}
-    #devPanel.show{display:flex}
-    #devBox{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:14px;width:min(1100px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;font:13px/1.45 var(--font)}
-    #devBox header{display:flex;gap:10px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)}
-    #devBox header h3{margin:0;font-size:15px;flex:1}
-    #devBox button{background:var(--bg-elev-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font:600 12px var(--font);cursor:pointer}
-    #devBox button.go{background:var(--accent);color:#fff;border-color:var(--accent)}
-    #devBody{padding:14px 18px;overflow:auto}
-    #devBody table{width:100%;border-collapse:collapse;margin-bottom:14px}
-    #devBody th,#devBody td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--border);word-break:break-word;vertical-align:top}
-    .dv-pass{color:#4ade80}.dv-fail{color:#ff7b86}.dv-warn{color:#ffc266}
-    #devBody label{margin-right:16px;color:var(--text-dim)}
-    #devBody details{margin:6px 0}`;
-  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
-  const fab = document.createElement('button'); fab.id = 'devFab'; fab.textContent = 'Dev'; document.body.appendChild(fab);
-  const panel = document.createElement('div'); panel.id = 'devPanel';
-  panel.innerHTML = `<div id="devBox"><header><h3>Dev: UI tester</h3>
-    <button id="devRun" class="go">Run all checks</button><button id="devClose">Close</button></header>
-    <div id="devBody"><p style="color:var(--text-dim)">Tests the parser, presets, tutorial examples, every reminder variant in the list and detail views, all settings and themes, every control, import/export, reordering and the layout at many screen widths. Your own reminders are not touched.</p>
-    <label><input type="checkbox" id="devLayout" checked> Layout sweep (iframes at 11 widths × 5 themes × 2 densities)</label>
-    <label><input type="checkbox" id="devWide" checked> Wide date sweep (every month × day)</label>
-    <div id="devOut"></div></div></div>`;
-  document.body.appendChild(panel);
-  fab.onclick = () => panel.classList.add('show');
-  document.getElementById('devClose').onclick = () => panel.classList.remove('show');
-
-  const P2 = n => String(n).padStart(2, '0');
-  const LI = (y, mo, d, h, mi) => { const x = new RD(y, mo, d, h, mi); return `${x.getFullYear()}-${P2(x.getMonth()+1)}-${P2(x.getDate())}T${P2(x.getHours())}:${P2(x.getMinutes())}`; };
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const suffix = n => (n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({1:'st',2:'nd',3:'rd'}[n % 10] || 'th');
-  const MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-  const DOW = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const dim = (y, m) => new RD(y, m + 1, 0).getDate();
-
-  function fakeDate(y, mo, d, h, mi) {
-    const base = new RD(y, mo, d, h, mi, 0).getTime();
-    const T0 = RD.now();
-    function FD(...a) { return a.length ? new RD(...a) : new RD(base + (RD.now() - T0)); }
-    FD.prototype = RD.prototype; FD.now = () => base + (RD.now() - T0); FD.parse = RD.parse; FD.UTC = RD.UTC;
-    return FD;
-  }
-
-  async function runAll() {
-    const out = document.getElementById('devOut'), btn = document.getElementById('devRun');
-    btn.disabled = true; out.innerHTML = 'Running…';
-    const groups = {}, issues = [];
-    let cur = '';
-    const g = name => { cur = name; groups[name] = groups[name] || { pass: 0, fail: 0, warn: 0 }; };
-    const rec = (input, field, expected, actual, level) => {
-      groups[cur][level]++; if (level !== 'pass') issues.push({ group: cur, input, field, expected, actual, level });
-    };
-    const eq = (input, field, expected, actual, level = 'fail') => {
-      const ok = JSON.stringify(expected) === JSON.stringify(actual); rec(input, field, ok ? '' : JSON.stringify(expected), ok ? '' : JSON.stringify(actual), ok ? 'pass' : level);
-    };
-    const truthy = (input, field, cond, note, level = 'fail') => rec(input, field, cond ? '' : note, cond ? '' : 'not so', cond ? 'pass' : level);
-    const tick = () => sleep(0);
-
-    // ---- keep the user's data safe ----
-    const snap = { reminders: JSON.parse(JSON.stringify(reminders)), settings: JSON.parse(JSON.stringify(settings)), selectedId, pendingDeleteId };
-    const origSet = Storage.prototype.setItem;
-    Storage.prototype.setItem = function (k, v) { if (k === STORE_KEY || k === SETTINGS_KEY) return; return origSet.call(this, k, v); };
-    const origCreate = URL.createObjectURL, origClick = HTMLAnchorElement.prototype.click;
-    try {
-      // =============== 1. NATURAL-LANGUAGE PARSER (under three fixed clocks) ===============
-      const CLOCKS = [[2026, 2, 11, 10, 0, 'Wed 11 Mar 2026 10:00'], [2026, 0, 31, 23, 30, 'Sat 31 Jan 2026 23:30 (month end)'], [2028, 1, 29, 0, 15, 'Tue 29 Feb 2028 00:15 (leap day)']];
-      const parseWith = (clock, text) => { window.Date = fakeDate(...clock); try { return parseNaturalLanguage('call mom ' + text); } finally { window.Date = RD; } };
-      const wide = document.getElementById('devWide').checked;
-      for (const clock of CLOCKS) {
-        const [cy, cm, cd, ch, cmi, cname] = clock, now = new RD(cy, cm, cd, ch, cmi);
-        const rollDay = (y, m, d) => { const t = new RD(y, m, d); return t; };
-        const todayMid = new RD(cy, cm, cd);
-        g('Dates · ' + cname);
-        const T = (text, due, extra = {}) => { const p = parseWith(clock, text); eq(text, 'due', due, p.due); eq(text, 'title', 'call mom', p.cleanTitle); for (const k in extra) eq(text, k, extra[k], p[k]); };
-        T('today', LI(cy, cm, cd, 9, 0));
-        T('tomorrow', LI(cy, cm, cd + 1, 9, 0)); T('tmrw', LI(cy, cm, cd + 1, 9, 0)); T('tmr', LI(cy, cm, cd + 1, 9, 0));
-        T('tonight', LI(cy, cm, cd, 19, 0));
-        DOW.forEach((w, i) => { let diff = (i - now.getDay() + 7) % 7 || 7; for (const pre of ['', 'next ', 'this ']) T(pre + w, LI(cy, cm, cd + diff, 9, 0)); });
-        for (const n of [1, 2, 3, 5, 7, 10, 14, 30, 60, 100]) { T(`in ${n} days`, LI(cy, cm, cd + n, 9, 0)); T(`in ${n} day`, LI(cy, cm, cd + n, 9, 0)); T(`in ${n} weeks`, LI(cy, cm, cd + 7 * n, 9, 0)); }
-        for (const n of [1, 2, 3, 6, 11, 12, 18]) {
-          const em = new RD(cy, cm + n, 1); const clampM = LI(em.getFullYear(), em.getMonth(), Math.min(cd, dim(em.getFullYear(), em.getMonth())), 9, 0);
-          const pm = parseWith(clock, `in ${n} months`); eq(`in ${n} months`, 'due (clamped to the end of the month)', clampM, pm.due);
-          const ey = cy + n, clampY = LI(ey, cm, Math.min(cd, dim(ey, cm)), 9, 0);
-          const py = parseWith(clock, `in ${n} years`); eq(`in ${n} years`, 'due (clamped, e.g. 29 Feb)', clampY, py.due);
-        }
-        for (const n of [1, 5, 10, 15, 30, 45, 59, 60, 90, 120, 180, 600]) {
-          for (const [u, ms] of [['minutes', 60000], ['mins', 60000], ['min', 60000], ['hours', 3600000], ['hrs', 3600000], ['hour', 3600000], ['hr', 3600000]]) {
-            const e = new RD(now.getTime() + n * ms); T(`in ${n} ${u}`, LI(e.getFullYear(), e.getMonth(), e.getDate(), e.getHours(), e.getMinutes()));
-          }
-        }
-        // month names x days (full and short names, ordinal suffixes), year rolls forward when the date has passed
-        for (let m = 0; m < 12; m++) {
-          const days = wide ? Array.from({ length: dim(2027, m) }, (_, i) => i + 1) : [1, 15, dim(2027, m)];
-          for (const d of days) {
-            const cand = new RD(cy, m, d); const yy = cand < todayMid ? cy + 1 : cy;
-            const valid = d <= dim(yy, m);
-            for (const nm of [MONTHS[m], MONTHS[m].slice(0, 3)]) for (const suf of ['', suffix(d)]) {
-              const text = `${nm} ${d}${suf}`;
-              if (!valid) continue;
-              T(text, LI(yy, m, d, 9, 0));
-            }
-          }
-        }
-        // on the Nth
-        for (let d = 1; d <= 31; d++) {
-          const text = `on the ${d}${suffix(d)}`;
-          let y = cy, mo = cm; if (d < cd) mo++;
-          let when = new RD(y, mo, 1); while (d > dim(when.getFullYear(), when.getMonth())) when = new RD(when.getFullYear(), when.getMonth() + 1, 1);   // next month that has that day
-          const p = parseWith(clock, text);
-          eq(text, 'due', LI(when.getFullYear(), when.getMonth(), d, 9, 0), p.due);
-        }
-        // M/D and M/D/Y
-        for (let m = 1; m <= 12; m++) for (const d of (wide ? [1, 2, 5, 9, 10, 12, 15, 20, 28, 29, 30, 31] : [1, 15, 28])) {
-          if (d > dim(2027, m - 1)) continue;
-          const t1 = `${m}/${d}`, p1 = parseWith(clock, t1);
-          const past = new RD(cy, m - 1, d) < todayMid;
-          eq(t1, 'due', LI(cy, m - 1, d, 9, 0), p1.due);
-          if (past) rec(t1, 'date already passed this year (not rolled to next year, unlike "mar 5")', 'next year', 'this year (past)', 'warn');
-          for (const yr of ['27', '2027', '2030']) { const t2 = `${m}/${d}/${yr}`, y4 = yr.length === 2 ? 2000 + +yr : +yr; eq(t2, 'due', LI(y4, m - 1, d, 9, 0), parseWith(clock, t2).due); }
-        }
-        // times
-        g('Times · ' + cname);
-        const tm = (h24, mi) => { let dt = new RD(cy, cm, cd, h24, mi); if (dt < now) dt = new RD(cy, cm, cd + 1, h24, mi); return LI(dt.getFullYear(), dt.getMonth(), dt.getDate(), dt.getHours(), dt.getMinutes()); };
-        for (let h = 1; h <= 12; h++) for (const ap of ['am', 'pm', 'AM', 'PM']) for (const mi of [null, 0, 5, 15, 30, 45, 59]) for (const sp of ['', ' ']) for (const at of ['', 'at ']) {
-          if (!wide && (mi === 5 || mi === 59 || sp === ' ' || at === '') && h % 4) continue;
-          const h24 = (h % 12) + (ap.toLowerCase() === 'pm' ? 12 : 0), text = `${at}${h}${mi === null ? '' : ':' + P2(mi)}${sp}${ap}`;
-          T(text, tm(h24, mi || 0));
-        }
-        for (let h = 0; h <= 23; h++) for (const mi of [0, 1, 15, 30, 45, 59]) T(`at ${h}:${P2(mi)}`, tm(h, mi));
-        for (const [w, h] of [['noon', 12], ['midday', 12], ['midnight', 0], ['morning', 9], ['afternoon', 15], ['evening', 19]]) T(w, tm(h, 0));
-        for (const [w, h] of [['morning', 9], ['evening', 19], ['noon', 12]]) for (let i = 0; i < 7; i++) T(`${DOW[i]} ${w}`, (() => { const diff = (i - now.getDay() + 7) % 7 || 7; return LI(cy, cm, cd + diff, h, 0); })());
-        // invalid input must not be accepted
-        g('Invalid input is rejected · ' + cname);
-        for (const text of ['at 25:00', 'at 24:00', 'at 12:60', 'at 99:99', '13pm', '0pm', '14am', '13:00pm', 'feb 30', 'feb 31', 'april 31', 'june 31', 'sept 31', 'nov 31', 'jan 0', 'jan 32', '13/5', '2/30', '0/10', '12/0', '4/31', 'on the 0th', 'on the 32nd', 'on the 45th', 'on the 99th'])
-          { const p = parseWith(clock, text); const bad = p.due && !/^$/.test(p.due); truthy(text, 'should not produce a date', !p.due, 'no date (invalid input)', 'fail'); }
-        await tick();
-        // repeats
-        g('Repeat phrases · ' + cname);
-        const RN = { minute: 'minute', min: 'minute', mins: 'minute', minutes: 'minute', hour: 'hour', hr: 'hour', hrs: 'hour', hours: 'hour', day: 'day', days: 'day', week: 'week', weeks: 'week', month: 'month', months: 'month', year: 'year', years: 'year' };
-        const named = { minute: 'Every minute', hour: 'Hourly', day: 'Every day', week: 'Every week', month: 'Every month', year: 'Every year' };
-        for (const [word, unit] of Object.entries(RN)) {
-          for (const n of [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 45, 60, 90, 100]) { const t = `every ${n} ${word}`; eq(t, 'repeat', n === 1 ? named[unit] : `Every ${n} ${unit}s`, parseWith(clock, t).repeat); }
-          eq(`every other ${word}`, 'repeat', `Every 2 ${unit}s`, parseWith(clock, `every other ${word}`).repeat);
-          if (['hour', 'day', 'week', 'month', 'year'].includes(word)) eq(`every ${word}`, 'repeat', named[unit], parseWith(clock, `every ${word}`).repeat);
-        }
-        for (const [t, e] of [['hourly', 'Hourly'], ['daily', 'Every day'], ['weekly', 'Every week'], ['monthly', 'Every month'], ['yearly', 'Every year'], ['annually', 'Every year'], ['biweekly', 'Every 2 weeks'], ['bi-weekly', 'Every 2 weeks'], ['every weekday', 'Every weekday'], ['every weekdays', 'Every weekday'], ['repeat daily', 'Every day'], ['remind me every 10 mins', 'Every 10 minutes'], ['repeating weekly', 'Every week']])
-          eq(t, 'repeat', e, parseWith(clock, t).repeat);
-        // urgency
-        g('Urgency phrases · ' + cname);
-        const UM = { critical: 'critical', urgent: 'critical', high: 'high', medium: 'medium', moderate: 'medium', normal: 'medium', low: 'low', no: 'none' };
-        for (const [w, e] of Object.entries(UM)) for (const f of ['%s priority', '%s urgency']) { const t = f.replace('%s', w); eq(t, 'urgency', e, parseWith(clock, t).urgency); }
-        for (const [w, e] of Object.entries({ critical: 'critical', urgent: 'critical', high: 'high', medium: 'medium', moderate: 'medium', normal: 'medium', low: 'low', none: 'none' })) for (const f of ['priority %s', 'priority: %s', 'priority=%s', 'urgency %s', 'urgency: %s']) { const t = f.replace('%s', w); eq(t, 'urgency', e, parseWith(clock, t).urgency); }
-        eq('urgent', 'urgency', 'critical', parseWith(clock, 'urgent').urgency); eq('asap', 'urgency', 'critical', parseWith(clock, 'asap').urgency);
-        // checklist
-        g('Checklist phrases · ' + cname);
-        const LISTS = [['milk'], ['bread', 'eggs'], ['bread', 'eggs', 'milk'], ['a', 'b', 'c', 'd'], ['call bank', 'pay rent', 'book flights', 'email Sam', 'water plants']];
-        const leads = ['make a list of', 'make a list containing', 'make me a checklist of', 'create a shopping list with', 'add a list containing', 'start a to-do list of', 'build a checklist:', 'checklist:', 'checklist of', 'todo list:', 'checklist -'];
-        for (const L of LISTS) for (const lead of leads) for (const sep of [', ', ' and ', '; ']) {
-          if (L.length === 1 && sep !== ', ') continue;
-          const body = sep === ' and ' ? (L.length > 1 ? L.slice(0, -1).join(', ') + ' and ' + L[L.length - 1] : L[0]) : L.join(sep);
-          // without a comma, "and" stays inside one item on purpose ("mac and cheese")
-          const expItems = (sep === ' and ' && L.length === 2) ? [body] : L;
-          const t = `${lead} ${body}`; eq(t, 'checklist items', expItems, parseWith(clock, t).checklist);
-        }
-        await tick();
-      }
-
-      // =============== 2. COMBINATIONS (date × time × repeat × urgency) ===============
-      g('Combined phrases (tokens must not interfere)');
-      {
-        const clock = CLOCKS[0], [cy, cm, cd] = clock, now = new RD(cy, cm, cd, 10, 0);
-        const dates = [['tomorrow', LI(cy, cm, cd + 1, 9, 0), 'd+1'], ['next friday', null, 'fri'], ['dec 25', null, 'dec25'], ['in 3 days', null, 'in3d'], ['4/20', null, '420'], ['today', null, 'today'], ['tonight', null, 'tn']];
-        const dueOf = (kind, h, mi) => {
-          const base = { 'd+1': [cy, cm, cd + 1], fri: [cy, cm, cd + ((5 - now.getDay() + 7) % 7 || 7)], dec25: [cy, 11, 25], in3d: [cy, cm, cd + 3], 420: [cy, 3, 20], today: [cy, cm, cd], tn: [cy, cm, cd] }[kind];
-          return LI(base[0], base[1], base[2], h, mi);
-        };
-        const times = [['', null], ['at 9am', [9, 0]], ['at 3:30pm', [15, 30]], ['at 14:05', [14, 5]], ['noon', [12, 0]]];
-        const reps = [['', null], ['every day', 'Every day'], ['every 3 days', 'Every 3 days'], ['weekly', 'Every week'], ['every other month', 'Every 2 months']];
-        const urgs = [['', null], ['high priority', 'high'], ['urgent', 'critical']];
-        for (const [dt, , kind] of dates) for (const [tt, tv] of times) for (const [rt, rv] of reps) for (const [ut, uv] of urgs) {
-          const text = [dt, tt, rt, ut].filter(Boolean).join(' ');
-          const p = parseWith(clock, text);
-          const dflt = kind === 'tn' ? [19, 0] : [9, 0];
-          const hm = tv || dflt;
-          let expected = dueOf(kind, hm[0], hm[1]);
-          if (kind === 'today' && tv && new RD(cy, cm, cd, hm[0], hm[1]) < now) expected = dueOf(kind, hm[0], hm[1]); // an explicit date is never rolled
-          eq(text, 'due', expected, p.due); eq(text, 'repeat', rv, p.repeat); eq(text, 'urgency', uv, p.urgency); eq(text, 'title', 'call mom', p.cleanTitle);
-        }
-      }
-      await tick();
-
-      // =============== 3. DURATIONS ===============
-      g('Duration parser');
-      {
-        const U = { minute: ['m', 'min', 'mins', 'minute', 'minutes'], hour: ['h', 'hr', 'hrs', 'hour', 'hours'], day: ['d', 'day', 'days'], week: ['w', 'wk', 'wks', 'week', 'weeks'], month: ['mo', 'mos', 'month', 'months'], year: ['y', 'yr', 'yrs', 'year', 'years'] };
-        const PM = { minute: 1, hour: 60, day: 1440, week: 10080, month: 43200, year: 525600 };
-        for (const [unit, toks] of Object.entries(U)) for (const tok of toks) for (const n of [1, 2, 13, 45, 90, 120]) for (const sp of ['', ' ']) {
-          const t = `${n}${sp}${tok}`, p = parseDuration(t);
-          eq(t, 'minutes', n * PM[unit], p && p.minutes); eq(t, 'label', `${n} ${unit}${n !== 1 ? 's' : ''}`, p && p.label);
-        }
-        for (const [t, mins, lab] of [['2 hrs 3 mins', 123, '2 hours 3 minutes'], ['1 hour and 30 min', 90, '1 hour 30 minutes'], ['1d 6h', 1800, '1 day 6 hours'], ['1 hour, 30 minutes', 90, '1 hour 30 minutes'], ['90m', 90, '90 minutes'], ['1 week 2 days', 12960, '1 week 2 days'], ['1y 2mo 3w 4d 5h 6m', 525600 + 86400 + 30240 + 5760 + 300 + 6, '1 year 2 months 3 weeks 4 days 5 hours 6 minutes']]) {
-          const p = parseDuration(t); eq(t, 'minutes', mins, p && p.minutes); eq(t, 'label', lab, p && p.label);
-        }
-        for (const t of ['', 'abc', '5', 'mins', '5 foo', '10 mins later', 'in 10 mins', 'every 5 mins', '1.5 hours', '-5 mins']) eq(t || '(empty)', 'should not be a duration', null, parseDuration(t));
-      }
-      await tick();
-
-      // =============== 4. PRESETS + TUTORIAL EXAMPLES ===============
-      g('Dropdown presets are understood by their own detector');
-      {
-        window.Date = fakeDate(2026, 2, 11, 10, 0);
-        try {
-          for (const v of DUE_PRESETS) { const d = detectDatetime(v), p = parseNaturalLanguage(v); truthy(v, 'date preset detected', d.ok && !!p.due, 'a date'); }
-          for (const v of REPEATS) { const d = detectRepeat(v); truthy(v, 'repeat preset detected', d.ok, 'recognised'); if (v !== 'Never') eq(v, 'preset round-trips through the parser', v, parseNaturalLanguage(v).repeat); }
-          for (const v of END_PRESETS) truthy(v, 'end preset detected', detectEnd(v).ok, 'recognised');
-          for (const v of SNOOZE) truthy(v, 'snooze preset detected', detectSnooze(v).ok, 'recognised');
-          for (const v of ['asdf', 'blah blah', '???', 'next', 'at']) { truthy(v, 'junk is flagged "Not recognized" (date)', detectDatetime(v).ok === false, 'not ok'); truthy(v, 'junk flagged (repeat)', detectRepeat(v).ok === false, 'not ok'); truthy(v, 'junk flagged (snooze)', detectSnooze(v).ok === false, 'not ok'); truthy(v, 'junk flagged (end)', detectEnd(v).ok === false, 'not ok'); }
-          for (const v of ['never', 'none', 'no', 'off', 'no repeat', 'NEVER', '']) truthy(v || '(empty)', 'means "no repeat"', detectRepeat(v).label === 'No repeat', 'No repeat');
-          for (const n of [1, 2, 3, 10, 99]) eq(`${n}`, 'end count label', `After ${n} time${n !== 1 ? 's' : ''}`, detectEnd(String(n)).label);
-        } finally { window.Date = RD; }
-        g('Tutorial examples all work as advertised');
-        window.Date = fakeDate(2026, 2, 11, 10, 0);
-        try {
-          for (const cat of HELP) for (const ex of cat.ex) {
-            const t = cat.title;
-            if (/^Dates|^Times|Date \+ time/.test(t)) truthy(ex, t, !!parseNaturalLanguage(ex).due, 'a date/time');
-            else if (/^Repeat/.test(t)) truthy(ex, t, !!parseNaturalLanguage(ex).repeat, 'a repeat');
-            else if (/^Durations/.test(t)) truthy(ex, t, !!parseDuration(ex), 'a duration');
-            else if (/^End repeat/.test(t)) truthy(ex, t, detectEnd(ex).ok, 'recognised');
-            else if (/^Checklists/.test(t)) truthy(ex, t, !!(parseNaturalLanguage(ex).checklist || []).length, 'checklist items');
-            else rec(ex, t, 'a rule for this help card', 'none', 'warn');
-          }
-        } finally { window.Date = RD; }
-        g('Tutorial overlay shows every example');
-        renderHelpGrid(); const shown = [...document.querySelectorAll('#helpGrid .help-ex')].map(e => e.textContent);
-        eq('help grid', 'example count', HELP.reduce((a, c) => a + c.ex.length, 0), shown.length);
-        HELP.forEach(c => c.ex.forEach(e => truthy(e, 'shown in the tutorial', shown.includes(e), 'present')));
-      }
-      await tick();
-
-      // =============== 5. DATA MIGRATION, IMPORT/EXPORT ===============
-      g('Migration of old saved data');
-      for (const [k, v] of Object.entries(LEGACY_REPEAT)) eq('repeat ' + k, 'migrated', v, migrateReminder({ id: 'x', repeat: k }).repeat);
-      for (const [k, v] of Object.entries(LEGACY_SNOOZE)) eq('snooze ' + k, 'migrated', v, migrateReminder({ id: 'x', snooze: k }).snooze);
-      eq('custom repeat', 'migrated', 'Every 3 weeks', migrateReminder({ id: 'x', repeat: 'custom', customInterval: 3, customUnit: 'weeks' }).repeat);
-      eq('custom repeat default', 'migrated', 'Every 1 days', migrateReminder({ id: 'x', repeat: 'custom' }).repeat);
-      eq('flagged', 'icon', 'fa-flag', migrateReminder({ id: 'x', flagged: true }).icon);
-      eq('afterCount', 'endText', 'After 4 times', migrateReminder({ id: 'x', endRepeat: 'afterCount', endCount: 4 }).endText);
-      eq('afterCount no count', 'endText', 'After 1 times', migrateReminder({ id: 'x', endRepeat: 'afterCount' }).endText, 'warn');
-      eq('empty object', 'id created', true, !!migrateReminder({}).id);
-      eq('bad checklist', 'cleaned', [], migrateReminder({ id: 'x', checklist: 'nope' }).checklist);
-      eq('bad checklist item', 'cleaned', [{ text: '7', done: true }], migrateReminder({ id: 'x', checklist: [null, 5, { text: 7, done: 1 }] }).checklist.map(i => ({ text: i.text, done: i.done })));
-      eq('bad icon', 'cleaned', '', migrateReminder({ id: 'x', icon: 5 }).icon);
-
-      // =============== 6. UI: SETTINGS × THEMES ===============
-      g('Settings × themes');
-      const lum = c => { const [r, gg, b] = c.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * gg + .0722 * b; };
-      const rgb = s => { const m = s.match(/[\d.]+/g).map(Number); return m.slice(0, 3); };
-      const ratio = (a, b) => { const x = lum(rgb(a)), y = lum(rgb(b)); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
-      const colorOf = (el, prop) => getComputedStyle(el)[prop];
-      reminders = [Object.assign(newReminder(), { title: 'Sample', due: LI(2026, 2, 12, 9, 0), repeat: 'Every day', urgency: 'high', icon: 'fa-star', checklist: [{ id: 'a', text: 'one', done: true }, { id: 'b', text: 'two', done: false }] }),
-                   Object.assign(newReminder(), { title: 'Done one', completed: true })];
-      selectedId = reminders[0].id;
-      const themeHexOk = c => /^#/.test(c);
-      for (const th of THEMES) for (const den of ['cozy', 'compact']) for (const grp of [true, false]) for (const conf of [false, true]) for (const spell of [true, false]) {
-        const key = `${th.id}/${den}/group=${grp}/confirm=${conf}/spell=${spell}`;
-        settings = Object.assign({}, settings, { theme: th.id, density: den, groupCompleted: grp, confirmDelete: conf, spellcheck: spell, completedCollapsed: false });
-        applySettings(); syncSettingToggles(); renderThemeGrid(); render();
-        eq(key, 'body theme', th.id, document.body.dataset.theme); eq(key, 'body density', den, document.body.dataset.density);
-        eq(key, 'compact toggle', den === 'compact', document.getElementById('densityToggle').classList.contains('on'));
-        eq(key, 'group toggle', grp, document.getElementById('groupToggle').classList.contains('on'));
-        eq(key, 'confirm toggle', conf, document.getElementById('confirmDelToggle').classList.contains('on'));
-        eq(key, 'spellcheck toggle', spell, document.getElementById('spellcheckToggle').classList.contains('on'));
-        eq(key, 'selected swatch', [th.id], [...document.querySelectorAll('#themeGrid .sel')].map(e => e.dataset.themeId));
-        eq(key, 'completed header present', grp, !!document.querySelector('#listScroll .completed-header'));
-        eq(key, 'spellcheck attr on title', String(spell), document.getElementById('d-title').getAttribute('spellcheck'));
-        eq(key, 'swatch matches theme bg', th.bg.toLowerCase(), getComputedStyle(document.body).getPropertyValue('--bg-elev').trim().toLowerCase(), 'warn');
-      }
-      g('Theme contrast (WCAG)');
-      for (const th of THEMES) {
-        settings.theme = th.id; applySettings(); render();
-        const cs = getComputedStyle(document.body), v = n => { const t = document.createElement('i'); t.style.color = cs.getPropertyValue(n).trim(); document.body.appendChild(t); const c = getComputedStyle(t).color; t.remove(); return c; };
-        const bg = v('--bg'), el = v('--bg-elev'), txt = v('--text'), dimc = v('--text-dim'), faint = v('--text-faint'), acc = v('--accent'), dng = v('--danger');
-        const chk = (name, fg, bgc, min, lvl) => { const r = ratio(fg, bgc); rec(th.id + ' · ' + name, 'contrast ' + r.toFixed(2) + ':1 (needs ' + min + ')', '', '', r >= min ? 'pass' : lvl); };
-        chk('text on bg', txt, bg, 7, 'fail'); chk('text on panel', txt, el, 7, 'fail'); chk('dim text on panel', dimc, el, 4.5, 'fail'); chk('faint text on panel', faint, el, 3, 'warn');
-        chk('accent on bg', acc, bg, 3, 'fail'); chk('danger on bg', dng, bg, 3, 'fail');
-        const ab = document.getElementById('addBtn'); if (ab) chk('Add button label on accent', colorOf(ab, 'color'), colorOf(ab, 'backgroundColor'), 4.5, 'fail');
-      }
-      await tick();
-
-      // =============== 7. EVERY REMINDER VARIANT: LIST + DETAIL ===============
-      g('List rows: urgency × icon × completed × repeat');
-      settings = Object.assign({}, settings, { theme: 'midnight', density: 'cozy', groupCompleted: false }); applySettings();
-      const REP_CASES = [...REPEATS, 'Every 3 days', 'every other Friday', ''];
-      const ICON_CASES = ['', ...ICONS];
-      let n = 0;
-      for (const urg of URGENCIES.map(u => u.id)) for (const ic of ICON_CASES) for (const done of [false, true]) for (const rep of REP_CASES) {
-        const r = Object.assign(newReminder(), { title: 'T ' + n++, urgency: urg, icon: ic, completed: done, repeat: rep || 'Never' });
-        const el = itemEl(r), key = `${urg}|${ic || 'no icon'}|${done ? 'done' : 'open'}|${rep || '(empty)'}`;
-        eq(key, 'completed class', done, el.classList.contains('completed')); eq(key, 'urgency dot', true, !!el.querySelector('.urg-dot.u-' + urg));
-        eq(key, 'icon', ic ? 1 : 0, el.querySelectorAll('.ri-title i.' + (ic || 'x')).length + (ic ? 0 : el.querySelectorAll('.ri-title i').length));
-        eq(key, 'repeat shown only when repeating', isRepeating(r.repeat), !!el.querySelector('.fa-repeat'));
-        eq(key, 'check button', done, el.querySelector('.ri-check').classList.contains('done'));
-      }
-      g('List rows: awkward titles');
-      for (const t of ['', '   ', '<img src=x onerror=alert(1)>', '"quotes" & \'apos\' <b>bold</b>', 'x'.repeat(400), '😀 emoji 日本語 العربية', 'line1\nline2', '&amp;', '${1+1}', '`tick`']) {
-        const r = Object.assign(newReminder(), { title: t }), el = itemEl(r), ti = el.querySelector('.ri-title');
-        truthy(JSON.stringify(t), 'no injected elements', !ti.querySelector('img,b,script'), 'text only');
-        if (t.trim()) eq(JSON.stringify(t).slice(0, 40), 'shown as typed', t.replace(/\s+/g, ' ').trim(), ti.textContent.replace(/\s+/g, ' ').trim()); else truthy(JSON.stringify(t), 'shows Untitled', /Untitled/.test(ti.textContent), 'Untitled');
-        const sc = ti.scrollWidth <= ti.clientWidth + 1 || getComputedStyle(ti).textOverflow === 'ellipsis' || getComputedStyle(ti).overflow !== 'visible'; truthy(JSON.stringify(t).slice(0, 30), 'long title is clipped, not overflowing', sc, 'ellipsis/clip', 'warn');
-        // detail round trip
-        reminders = [Object.assign(r, { notes: t })]; selectedId = r.id; renderDetail();
-        eq(JSON.stringify(t).slice(0, 30), 'title input keeps exact text (a one-line box drops line breaks)', t.replace(/[\r\n]/g, ''), document.getElementById('d-title').value);
-        eq(JSON.stringify(t).slice(0, 30), 'notes keep exact text', t, document.getElementById('d-notes').value);
-      }
-      await tick();
-
-      g('Detail view: every control state');
-      {
-        const text = id => document.getElementById(id);
-        let i = 0;
-        const sn = [...SNOOZE, '45 minutes', ''], en = [...END_PRESETS, 'Dec 25', 'weird'];
-        for (const urg of URGENCIES.map(u => u.id)) for (const ic of ICON_CASES) for (const done of [false, true]) {
-          const rep = REP_CASES[i % REP_CASES.length] || 'Never', snz = sn[i % sn.length] || 'Off', end = en[i % en.length]; i++;
-          const r = Object.assign(newReminder(), { title: 'D', urgency: urg, icon: ic, completed: done, repeat: rep, snooze: snz, endText: end, due: i % 3 ? LI(2026, 5, 1 + (i % 28), 13, 5) : '' });
-          reminders = [r]; selectedId = r.id; renderDetail();
-          const key = `${urg}|${ic || 'no icon'}|${done}|${rep}|${snz}|${end}`;
-          eq(key, 'selected urgency pill', [urg], [...document.querySelectorAll('#d-urgency .urg-pill.sel')].map(e => e.dataset.urg));
-          const selIcons = [...document.querySelectorAll('#d-icon .icon-choice.sel')].map(e => e.dataset.icon);
-          truthy(key, 'icon picker marks the icon', ic === '' ? selIcons.includes('') && selIcons.length === 1 : selIcons.includes(ic) && !selIcons.includes(''), 'selected ' + ic);
-          eq(key, 'complete button', done, text('d-check').classList.contains('done'));
-          eq(key, 'repeat input', rep, text('d-repeat').value); eq(key, 'repeat preset', isPresetRepeat(rep) ? rep : '__custom', text('d-repeat-preset').value);
-          eq(key, 'end row visible only when repeating', isRepeating(rep), text('row-endrepeat').classList.contains('show'));
-          eq(key, 'end preset', isPresetEnd(end) ? end : '__custom', text('d-end-preset').value);
-          eq(key, 'snooze preset', isPresetSnooze(snz) ? snz : '__custom', text('d-snooze-preset').value);
-          eq(key, 'repeat badge', detectRepeat(rep).ok ? 'ok' : 'bad', text('detect-repeat').classList.contains('ok') ? 'ok' : 'bad');
-          eq(key, 'end badge', detectEnd(end).ok ? 'ok' : 'bad', text('detect-end').classList.contains('ok') ? 'ok' : 'bad');
-          eq(key, 'snooze badge', snz === '' ? 'empty' : detectSnooze(snz).ok ? 'ok' : 'bad', text('detect-snooze').classList.contains('empty') ? 'empty' : text('detect-snooze').classList.contains('ok') ? 'ok' : 'bad');
-          eq(key, 'date picker value', r.due, text('d-due').value);
-          eq(key, 'date text', r.due ? fmtDate(r.due) : '', text('d-due-text').value);
-          eq(key, 'notification warning iff scheduled and notifications are not granted', (!!r.due || isRepeating(rep)) && notifPermission() !== 'granted', text('notif-warning').classList.contains('show'));
-          eq(key, 'created date shown', true, /Created/.test(document.querySelector('.created-note').textContent));
-        }
-        g('Detail view: checklists of every size');
-        for (let count = 0; count <= 14; count++) for (const pat of ['none', 'all', 'alt']) {
-          const cl = Array.from({ length: count }, (_, k) => ({ id: 'c' + k, text: 'item ' + k, done: pat === 'all' || (pat === 'alt' && k % 2 === 0) }));
-          const r = Object.assign(newReminder(), { title: 'L', checklist: cl }); reminders = [r]; selectedId = r.id; renderDetail();
-          const done = cl.filter(c => c.done).length, key = `${count} items, ${pat}`;
-          eq(key, 'progress text', count ? `${done} of ${count}` : '', text('cl-progress').textContent);
-          eq(key, 'rows', count, document.querySelectorAll('#cl-items .cl-item').length);
-          eq(key, 'done rows', done, document.querySelectorAll('#cl-items .cl-item.done').length);
-          eq(key, 'list row counter', count ? `${done}/${count}` : null, (itemEl(r).querySelector('.fa-list-check') || { parentElement: { textContent: '' } }).parentElement.textContent.trim() || null);
-        }
-      }
-      await tick();
-
-      // =============== 8. EVERY CONTROL, DRIVEN LIKE A USER ===============
-      g('Controls: clicks and typing');
-      {
-        const $ = id => document.getElementById(id);
-        const fresh = (o = {}) => { const r = Object.assign(newReminder(), { title: 'Ctl' }, o); reminders = [r]; selectedId = r.id; render(); return r; };
-        const fire = (el, type, init) => el.dispatchEvent(new (type === 'keydown' ? KeyboardEvent : Event)(type, Object.assign({ bubbles: true }, init)));
-        let r = fresh();
-        for (const u of URGENCIES) { document.querySelector(`#d-urgency [data-urg="${u.id}"]`).click(); eq(u.id, 'click urgency pill', u.id, r.urgency); eq(u.id, 'list dot follows', true, !!document.querySelector('#listScroll .urg-dot.u-' + u.id)); }
-        for (const ic of ICON_CASES) { let btn = document.querySelector(`#d-icon [data-icon="${ic}"]`); if (!btn) { document.querySelector('#d-icon [data-more]').click(); btn = document.querySelector(`#d-icon [data-icon="${ic}"]`); } btn.click(); eq(ic || 'none', 'click icon', ic, r.icon); eq(ic || 'none', 'list icon', ic ? 1 : 0, document.querySelectorAll('#listScroll .ri-title i').length); }
-        document.querySelector('#d-icon [data-more]').click(); truthy('more icons', 'grid opens', !$('d-icon').querySelector('.icon-grid').hasAttribute('hidden'), 'open'); document.querySelector('#d-icon [data-more]').click(); truthy('more icons', 'grid closes', $('d-icon').querySelector('.icon-grid').hasAttribute('hidden'), 'closed');
-        for (const v of REPEATS) { r = fresh(); const s = $('d-repeat-preset'); s.value = v; fire(s, 'change'); eq(v, 'repeat preset sets value', v, r.repeat); eq(v, 'input mirrors', v, $('d-repeat').value); eq(v, 'end row follows', isRepeating(v), $('row-endrepeat').classList.contains('show')); }
-        for (const v of END_PRESETS) { r = fresh({ repeat: 'Every day' }); const s = $('d-end-preset'); s.value = v; fire(s, 'change'); eq(v, 'end preset', v, r.endText); eq(v, 'input mirrors', v, $('d-end').value); }
-        for (const v of SNOOZE) { r = fresh(); const s = $('d-snooze-preset'); s.value = v; fire(s, 'change'); eq(v, 'snooze preset', v, r.snooze); eq(v, 'input mirrors', v, $('d-snooze').value); }
-        window.Date = fakeDate(2026, 2, 11, 10, 0);
-        try {
-          for (const v of DUE_PRESETS) { r = fresh(); const s = $('d-due-preset'); s.value = v; fire(s, 'change'); truthy(v, 'date preset sets a date', !!r.due, 'a due date'); eq(v, 'picker mirrors', r.due, $('d-due').value); eq(v, 'text mirrors', v, $('d-due-text').value); }
-          for (const [txt, exp] of [['tomorrow 3pm', LI(2026, 2, 12, 15, 0)], ['dec 25 at 8:15am', LI(2026, 11, 25, 8, 15)], ['in 2 hours', LI(2026, 2, 11, 12, 0)]]) { r = fresh(); const i = $('d-due-text'); i.value = txt; fire(i, 'input'); eq(txt, 'live badge', true, $('detect-datetime').classList.contains('ok')); fire(i, 'change'); eq(txt, 'typed date committed', exp, r.due); eq(txt, 'picker mirrors', exp, $('d-due').value); }
-          r = fresh(); { const i = $('d-due-text'); i.value = 'blah'; fire(i, 'input'); eq('blah', 'bad badge', true, $('detect-datetime').classList.contains('bad')); }
-        } finally { window.Date = RD; }
-        r = fresh({ due: LI(2026, 5, 1, 9, 0) }); { const p = $('d-due'); p.value = '2026-07-04T08:30'; fire(p, 'change'); eq('picker', 'due', '2026-07-04T08:30', r.due); eq('picker', 'text', fmtDate('2026-07-04T08:30'), $('d-due-text').value); }
-        for (const [which, key, dflt, mk] of [['due', 'due', '', { due: LI(2026, 5, 1, 9, 0) }], ['repeat', 'repeat', 'Never', { repeat: 'Every day' }], ['end', 'endText', 'Never', { repeat: 'Every day', endText: 'After 5 times' }], ['snooze', 'snooze', 'Off', { snooze: '1 hour' }], ['urgency', 'urgency', 'none', { urgency: 'high' }], ['icon', 'icon', '', { icon: 'fa-star' }]]) {
-          r = fresh(mk); document.querySelector(`#detail [data-clear="${which}"]`).click(); eq(which, 'clear resets', dflt, r[key]);
-        }
-        // title: Enter applies detections, text is cleaned
-        window.Date = fakeDate(2026, 2, 11, 10, 0);
-        try {
-          r = fresh(); const t = $('d-title'); t.value = 'dentist tomorrow at 2pm every week urgent'; fire(t, 'input'); truthy('title typing', 'detection summary appears', $('nlp-hint').classList.contains('show'), 'shown');
-          eq('title typing', 'summary rows', 3, document.querySelectorAll('#nlp-hint .ds-row').length);
-          document.getElementById('d-title').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
-          eq('Enter', 'title cleaned', 'dentist', r.title); eq('Enter', 'due', LI(2026, 2, 12, 14, 0), r.due); eq('Enter', 'repeat', 'Every week', r.repeat); eq('Enter', 'urgency', 'critical', r.urgency);
-          r = fresh(); const nt = $('d-notes'); nt.value = 'buy things\nchecklist: a, b, c'; fire(nt, 'input');
-          nt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
-          eq('notes ctrl+enter', 'checklist added', ['a', 'b', 'c'], r.checklist.map(c => c.text)); eq('notes ctrl+enter', 'notes keep first line', 'buy things', r.notes);
-          r = fresh(); const nt2 = $('d-notes'); nt2.value = 'plain note\nsecond line'; fire(nt2, 'input'); nt2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
-          eq('notes plain Enter', 'unchanged', 'plain note\nsecond line', r.notes);
-        } finally { window.Date = RD; }
-        // checklist
-        r = fresh(); { const a = $('cl-add'); for (const t of ['one', 'two', '  ', 'three']) { a.value = t; a.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); }
-          eq('checklist add', 'items (blank ignored)', ['one', 'two', 'three'], r.checklist.map(c => c.text));
-          document.querySelector('#cl-items .cl-check').click(); eq('toggle', 'first done', true, r.checklist[0].done); eq('toggle', 'progress', '1 of 3', $('cl-progress').textContent);
-          document.querySelectorAll('#cl-items .cl-del')[1].click(); eq('delete', 'items', ['one', 'three'], r.checklist.map(c => c.text));
-          const inp = document.querySelector('#cl-items .cl-text'); inp.value = 'edited'; fire(inp, 'input'); eq('edit', 'text', 'edited', r.checklist[0].text);
-          inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); eq('Enter in item', 'new row inserted after', 3, r.checklist.length); }
-        // complete + delete (with and without confirm)
-        for (const conf of [false, true]) {
-          settings.confirmDelete = conf; r = fresh({ title: 'Del me' });
-          $('d-check').click(); eq('complete', 'done', true, r.completed); document.querySelector('#listScroll .ri-check').click(); eq('list check', 'toggled back', false, reminders[0].completed);
-          $('d-delete').click();
-          if (conf) { truthy('delete', 'confirm dialog shows', $('delOverlay').classList.contains('show'), 'shown'); truthy('delete', 'dialog names the reminder', /Del me/.test($('delText').textContent), 'name'); $('delCancel').click(); eq('cancel', 'still there', 1, reminders.length); $('d-delete').click(); $('delConfirm').click(); }
-          eq('delete', 'removed (confirm=' + conf + ')', 0, reminders.length); eq('delete', 'detail closed', true, $('detail').classList.contains('hidden'));
-          hideOverlay('delOverlay');
-        }
-        settings.confirmDelete = false;
-        // search
-        reminders = ['Alpha one', 'beta two', 'Gamma Alpha'].map((t, i) => Object.assign(newReminder(), { title: t, notes: i === 1 ? 'hidden gem' : '' })); selectedId = null; render();
-        for (const [q, c] of [['', 3], ['alpha', 2], ['ALPHA', 2], ['gem', 1], ['zzz', 0], ['  alpha ', 2]]) { $('search').value = q; renderList(); eq('search "' + q + '"', 'rows', c, document.querySelectorAll('#listScroll .reminder-item').length); if (!c) truthy(q, 'empty message', /No matches/.test($('listScroll').textContent), 'No matches'); }
-        $('search').value = ''; renderList();
-        // reorder every pair
-        const ids = ['a', 'b', 'c', 'd', 'e'];
-        for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
-          settings.groupCompleted = false;
-          reminders = ids.map(id => Object.assign(newReminder(), { id, title: id })); render();
-          performReorder(ids[i], j === 4 ? null : ids[j] === ids[i] ? null : ids[j]);
-          const exp = ids.filter(x => x !== ids[i]); if (j === 4 || ids[j] === ids[i]) exp.push(ids[i]); else exp.splice(exp.indexOf(ids[j]), 0, ids[i]);
-          eq(`move ${ids[i]} before ${ids[j] === ids[i] ? 'end' : ids[j]}`, 'order', exp, reminders.map(x => x.id));
-          eq('', 'list matches data', exp, [...document.querySelectorAll('#listScroll .reminder-item')].map(e => e.dataset.id));
-        }
-        settings.groupCompleted = true;
-        reminders = ['a', 'b', 'c'].map((id, k) => Object.assign(newReminder(), { id, title: id, completed: k === 2 })); render(); performReorder('a', null);
-        eq('grouped: move active to end of its group', 'order', ['b', 'a', 'c'], reminders.map(x => x.id));
-        // settings dialog controls
-        for (const th of THEMES) { renderThemeGrid(); document.querySelector(`#themeGrid [data-theme-id="${th.id}"]`).click(); eq(th.id, 'theme swatch click applies', th.id, document.body.dataset.theme); }
-        syncSettingToggles();
-        for (const id of ['densityToggle', 'groupToggle', 'confirmDelToggle', 'spellcheckToggle']) { const before = $(id).classList.contains('on'); $(id).click(); eq(id, 'toggle flips', !before, $(id).classList.contains('on')); $(id).click(); eq(id, 'toggle flips back', before, $(id).classList.contains('on')); }
-        // overlays open and close
-        for (const [openBtn, ov, closers] of [['settingsBtn', 'settingsOverlay', ['settingsClose']], ['helpBtn', 'helpOverlay', ['helpClose', 'helpDone']], ['notifStatus', 'notifOverlay', ['notifClose', 'notifDismiss']], ['wipeBtn', 'wipeOverlay', ['wipeCancel']]]) {
-          for (const c of closers) { $(openBtn).click(); eq(openBtn, 'opens ' + ov, true, $(ov).classList.contains('show')); $(c).click(); eq(c, 'closes ' + ov, false, $(ov).classList.contains('show')); }
-          $(openBtn).click(); $(ov).dispatchEvent(new MouseEvent('click', { bubbles: true })); eq(ov, 'backdrop click closes', false, $(ov).classList.contains('show'));
-          $(openBtn).click(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); eq(ov, 'Esc closes', false, $(ov).classList.contains('show'));
-        }
-        // new reminder + wipe
-        reminders = []; render(); $('addBtn').click(); eq('New Reminder', 'adds one', 1, reminders.length); eq('New Reminder', 'selected', reminders[0].id, selectedId); truthy('New Reminder', 'empty title row says Untitled', /Untitled/.test($('listScroll').textContent), 'Untitled');
-        $('wipeBtn').click(); $('wipeConfirm').click(); eq('wipe', 'cleared', 0, reminders.length); truthy('wipe', 'empty state text', /No reminders yet/.test($('listScroll').textContent), 'empty state'); hideOverlay('wipeOverlay');
-        // completed section
-        settings.groupCompleted = true; settings.completedCollapsed = false;
-        reminders = [Object.assign(newReminder(), { title: 'x', completed: true })]; render(); truthy('all done', 'message', /All done/.test($('listScroll').textContent), 'All done');
-        document.querySelector('.completed-header').click(); eq('completed header', 'collapses', true, settings.completedCollapsed); eq('completed header', 'hides rows', 0, document.querySelectorAll('.completed-group .reminder-item').length);
-        settings.completedCollapsed = false;
-      }
-      await tick();
-
-      g('Export and import');
-      {
-        const sample = [
-          Object.assign(newReminder(), { id: 'e1', title: 'Quote "x" & <y>', notes: 'line1\nline2', due: LI(2026, 7, 9, 8, 5), repeat: 'Every 3 days', endText: 'After 5 times', snooze: '45 minutes', urgency: 'critical', icon: 'fa-key', completed: true, checklist: [{ id: 'c1', text: 'a', done: true }, { id: 'c2', text: 'b "q"', done: false }] }),
-          Object.assign(newReminder(), { id: 'e2', title: '😀 日本語' })];
-        reminders = sample.map(x => JSON.parse(JSON.stringify(x))); selectedId = null;
-        let captured = null; URL.createObjectURL = b => { captured = b; return 'blob:dev'; }; HTMLAnchorElement.prototype.click = function () {};
-        exportTxt(); URL.createObjectURL = origCreate; HTMLAnchorElement.prototype.click = origClick;
-        const txt = captured ? await captured.text() : '';
-        truthy('export', 'a file was produced', !!captured, 'blob'); let data = {}; try { data = JSON.parse(txt); } catch (e) {}
-        eq('export', 'format', ['reminders', 1, 2], [data.app, data.version, (data.reminders || []).length]);
-        reminders = []; importTxt(txt); const strip = x => { const c = Object.assign({}, x); delete c.id; return c; };
-        eq('import', 'round trip keeps every field (ids are regenerated)', sample.map(strip), reminders.map(strip));
-        truthy('import', 'new ids are unique', new Set(reminders.map(x => x.id)).size === reminders.length, 'unique');
-        const before = reminders.length; importTxt(txt); eq('import twice', 'adds again', before * 2, reminders.length);
-        reminders = []; importTxt(JSON.stringify(sample.map(x => x))); eq('plain array form', 'accepted', 2, reminders.length);
-        reminders = []; importTxt(JSON.stringify([{ title: 'only a title' }])); eq('minimal item', 'filled with defaults', ['only a title', 'Never', 'Off', 'none'], [reminders[0].title, reminders[0].repeat, reminders[0].snooze, reminders[0].urgency]);
-        for (const bad of ['', 'garbage', '{}', '{"reminders":5}', 'null', '42']) { reminders = []; importTxt(bad); eq(JSON.stringify(bad), 'rejected without changing anything', 0, reminders.length); }
-        reminders = []; importTxt(JSON.stringify([null, 5, 'x'])); eq('junk items', 'should not crash or create broken rows', 0, reminders.length, 'warn');
-      }
-      await tick();
-
-      // =============== 9. LAYOUT SWEEP (iframes) ===============
-      if (document.getElementById('devLayout').checked) {
-        g('Layout at every width, theme and density');
-        reminders = []; render();
-        const WIDTHS = [320, 360, 375, 414, 600, 720, 721, 768, 1024, 1280, 1920];
-        const demo = [
-          Object.assign(newReminder(), { id: 'L1', title: 'A very long reminder title that should be clipped nicely rather than push the layout sideways ' + 'x'.repeat(120), notes: 'notes '.repeat(60), due: LI(2026, 11, 25, 14, 30), repeat: 'Every 2 weeks on a custom long schedule label', endText: 'After 10 times', snooze: '45 minutes', urgency: 'critical', icon: 'fa-star', checklist: Array.from({ length: 8 }, (_, i) => ({ id: 'c' + i, text: 'checklist item number ' + i + ' ' + 'long '.repeat(12), done: i % 2 === 0 })) }),
-          Object.assign(newReminder(), { id: 'L2', title: 'Short', completed: true }), Object.assign(newReminder(), { id: 'L3', title: '' })];
-        for (const w of WIDTHS) for (const th of THEMES) for (const den of ['cozy', 'compact']) {
-          const f = document.createElement('iframe'); f.style.cssText = `position:fixed;left:-9999px;top:0;width:${w}px;height:800px;border:0`; f.src = location.pathname;
-          document.body.appendChild(f);
-          await new Promise(res => { f.onload = res; setTimeout(res, 4000); });
-          const key = `${w}px · ${th.id} · ${den}`;
-          try {
-            const W = f.contentWindow, D = f.contentDocument;
-            W.Storage.prototype.setItem = function () {};
-            W.eval(`reminders = ${JSON.stringify(demo)}; settings.theme='${th.id}'; settings.density='${den}'; settings.groupCompleted=true; selectedId='L1'; applySettings(); render();`);
-            for (const view of ['detail', 'list']) {
-              if (w <= 720) W.eval(view === 'detail' ? 'showDetailPane()' : 'showListPane()');
-              else if (view === 'list') continue;
-              await sleep(30);
-              const root = D.documentElement, vw = root.clientWidth, off = [];
-              D.querySelectorAll('body *').forEach(el => { const cs = W.getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('.overlay:not(.show)') || el.closest('[hidden]') || el.closest('.toast')) return; const r = el.getBoundingClientRect(); if (r.width && (r.right > vw + 1 || r.left < -1) && !el.closest('.list-scroll,.detail,.main,.sidebar') ) off.push(el); else if (r.width && r.right > vw + 1 && !(el.closest('.drop-indicator'))) off.push(el); });
-              eq(key + ' · ' + view, 'no horizontal page scroll', true, root.scrollWidth <= vw + 1);
-              truthy(key + ' · ' + view, 'nothing sticks out past the right edge', off.length === 0, 'nothing off-screen: ' + off.slice(0, 3).map(e => e.tagName.toLowerCase() + '.' + String(e.className).split(' ')[0]).join(', '));
-              if (w <= 720) {
-                const small = [...D.querySelectorAll('button, select, input, .urg-pill, .icon-choice')].filter(el => { const r = el.getBoundingClientRect(); return r.width && r.height && (r.height < 28 || r.width < 28) && !el.closest('.overlay:not(.show)') && !el.closest('[hidden]') && el.type !== 'checkbox' && el.type !== 'file' && getComputedStyle(el).display !== 'none'; });
-                rec(key + ' · ' + view, 'touch targets under 28px', '', small.slice(0, 3).map(e => e.id || e.className).join(', '), small.length ? 'warn' : 'pass');
-              }
-            }
-            if (w <= 720) { eq(key, 'only one pane visible on phones', 1, ['sidebar', 'main'].filter(id => W.getComputedStyle(D.getElementById(id)).display !== 'none').length); }
-          } catch (e) { rec(key, 'iframe could not be inspected (needs http/https, not file://)', '', String(e.message || e), 'warn'); }
-          f.remove();
-        }
-      }
-    } catch (e) {
-      g('Dev tool crashed'); rec('', 'exception', '', (e && e.stack) || String(e), 'fail');
-    } finally {
-      window.Date = RD; URL.createObjectURL = origCreate; HTMLAnchorElement.prototype.click = origClick; Storage.prototype.setItem = origSet;
-      reminders = snap.reminders; settings = snap.settings; selectedId = snap.selectedId; pendingDeleteId = snap.pendingDeleteId;
-      document.querySelectorAll('.overlay.show').forEach(o => { if (o.id !== 'devPanel') o.classList.remove('show'); });
-      applySettings(); syncSettingToggles(); renderThemeGrid(); render();
-    }
-
-    const esc = t => String(t == null ? '' : t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-    let tp = 0, tf = 0, tw = 0;
-    const rows = Object.entries(groups).map(([k, v]) => { tp += v.pass; tf += v.fail; tw += v.warn; return `<tr><td>${esc(k)}</td><td class="dv-pass">${v.pass}</td><td class="${v.fail ? 'dv-fail' : ''}">${v.fail}</td><td class="${v.warn ? 'dv-warn' : ''}">${v.warn}</td></tr>`; }).join('');
-    issues.sort((a, b) => (a.level === 'fail' ? 0 : 1) - (b.level === 'fail' ? 0 : 1));
-    const show = issues.slice(0, 300);
-    out.innerHTML = `<p class="${tf ? 'dv-fail' : 'dv-pass'}"><b>${tf ? tf + ' failures' : 'Everything matches'}</b> · ${tp} passed · ${tw} warnings</p>
-      <table><tr><th>Check</th><th>Pass</th><th>Fail</th><th>Warn</th></tr>${rows}</table>
-      ${issues.length ? `<table><tr><th></th><th>Check</th><th>Input</th><th>What</th><th>Expected</th><th>Got</th></tr>${show.map(i => `<tr><td class="${i.level === 'fail' ? 'dv-fail' : 'dv-warn'}">${i.level}</td><td>${esc(i.group)}</td><td>${esc(i.input)}</td><td>${esc(i.field)}</td><td>${esc(i.expected)}</td><td>${esc(i.actual)}</td></tr>`).join('')}</table>${issues.length > show.length ? `<p>…and ${issues.length - show.length} more (window.__devIssues)</p>` : ''}` : ''}`;
-    window.__devIssues = issues; console.log('Reminders dev tool', { passed: tp, failed: tf, warnings: tw }, issues);
-    btn.disabled = false;
-  }
-  document.getElementById('devRun').onclick = runAll;
-});
-</script>
-<footer class="foot"><span>Reminders is released under GitHub’s <a href="https://github.com/github/choosealicense.com/blob/gh-pages/_licenses/cc0-1.0.txt" target="_blank" rel="license noopener noreferrer">Creative Commons Zero v1.0 Universal</a> license. All rights reserved.</span></footer>
+<script src="reminders-version.js?v=1"></script>
+<script src="reminders-changelog.js?v=1"></script>
+<script src="reminders-guide.js?v=1"></script>
 </body>
 </html>
