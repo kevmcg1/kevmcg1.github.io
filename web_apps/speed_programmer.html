@@ -33,35 +33,30 @@
   }
   html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); overflow: hidden; }
   #app { display: flex; flex-direction: column; height: 100vh; }
-  #topbar {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    flex-shrink: 0; user-select: none;
-    display: flex; flex-direction: column;
-    padding: 6px 14px;
-    gap: 6px;
+  #workspace { flex: 1; display: flex; min-height: 0; }
+  /* left sidebar: every control that used to sit in the top bar */
+  #left-sidebar {
+    width: 208px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 14px; padding: 14px 12px; overflow-y: auto; user-select: none;
   }
-  .top-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .logo { font-size: 12px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); text-transform: uppercase; font-style: italic; }
-  .sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }
-  #units-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 1px; transition: all 0.3s; text-transform: uppercase; font-style: italic; }
+  .side-group { display: flex; flex-direction: column; gap: 6px; }
+  .side-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-style: italic; color: var(--text-dim); border-bottom: 1px solid var(--border); padding-bottom: 3px; margin-bottom: 2px; }
+  #left-sidebar button { width: 100%; text-align: center; }
+  .logo { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); text-transform: uppercase; font-style: italic; }
+  #units-badge { text-align: center; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 1px; transition: all 0.3s; text-transform: uppercase; font-style: italic; }
   #units-badge.inch { border-color: #e5c07b; color: #e5c07b; }
   #units-badge.metric { border-color: #56b6c2; color: #56b6c2; }
   /* Mill / Lathe: exactly one is always on (a radio group) */
-  #machine-toggle { display: inline-flex; border: 1px solid var(--accent); border-radius: 4px; overflow: hidden; }
-  #machine-toggle button { border: 0; border-radius: 0; background: transparent; padding: 4px 14px; font-weight: 700; letter-spacing: 1.5px; }
+  #machine-toggle { display: flex; border: 1px solid var(--accent); border-radius: 4px; overflow: hidden; }
+  #machine-toggle button { flex: 1; border: 0; border-radius: 0; background: transparent; padding: 5px 8px; font-weight: 700; letter-spacing: 1.5px; }
   #machine-toggle button + button { border-left: 1px solid var(--accent); }
   #machine-toggle button[aria-checked="true"] { background: var(--accent); color: var(--bg); }
   #machine-toggle button[aria-checked="false"]:hover { background: var(--accent-dim); color: var(--text); }
-  #multiaxis-wrap { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; font-style: italic; color: var(--text-dim); cursor: pointer; }
+  #multiaxis-wrap { display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; font-style: italic; color: var(--text-dim); cursor: pointer; }
   #multiaxis-wrap[hidden] { display: none; }
   #multiaxis-wrap input { accent-color: var(--accent); margin: 0; cursor: pointer; }
   #multiaxis-wrap:has(input:checked) { color: var(--accent); }
-  #status-pill { margin-left: auto; font-size: 11px; padding: 2px 10px; border-radius: 20px; background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
+  #status-pill { margin-top: auto; text-align: center; font-size: 11px; padding: 2px 10px; border-radius: 20px; background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
   #status-pill.show { opacity: 1; }
   button {
     background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent);
@@ -73,16 +68,7 @@
   .auto-btn-active {
     background: var(--accent); color: var(--bg); border-color: var(--accent);
   }
-  .hint-row {
-    text-align: center;
-    font-size: 11px;
-    color: var(--text-dim);
-    font-style: italic;
-    letter-spacing: 0.3px;
-    border-top: 1px solid var(--border);
-    padding-top: 5px;
-    margin-top: 2px;
-  }
+  .hint-row { font-size: 11px; color: var(--text-dim); font-style: italic; letter-spacing: 0.3px; line-height: 1.4; }
   #editor-wrap { flex: 1; display: flex; overflow: hidden; position: relative; }
   #line-numbers { width: 52px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 10px 12px 0; font-family: var(--font-mono); font-size: 13px; line-height: 22px; color: var(--text-dim); text-align: right; overflow: hidden; user-select: none; font-style: italic; }
   /* only the lines on screen (plus a margin) are drawn in the margin and the colour layer; a script moves them to line up with the text */
@@ -121,46 +107,48 @@
   #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-size: 12px; font-family: var(--font-mono); padding: 7px 16px; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.2s; white-space: nowrap; z-index: 200; font-style: italic; text-transform: uppercase; }
   #toast.show { opacity: 1; }
 
+  /* right sidebar: every cheat code and its translation, with a search bar */
   #cheat-sheet-modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000; visibility: hidden; opacity: 0; transition: 0.2s;
+    width: 320px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border);
+    display: none; flex-direction: column; min-height: 0;
   }
-  #cheat-sheet-modal.visible { visibility: visible; opacity: 1; }
-  .cheat-sheet-panel {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    width: 85%; max-width: 1000px; height: 80%; display: flex; flex-direction: column;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-  }
+  #cheat-sheet-modal.visible { display: flex; }
+  .cheat-sheet-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .cheat-sheet-header {
-    padding: 12px 20px; border-bottom: 1px solid var(--border);
-    display: flex; justify-content: space-between; align-items: center;
-    font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 2px;
+    padding: 10px 14px 0; display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-style: italic; color: var(--accent);
   }
-  .cheat-sheet-header button {
-    background: none; border: none; color: var(--accent); font-size: 24px;
-    cursor: pointer; line-height: 1; padding: 0 8px;
+  .cheat-sheet-header button { background: none; border: none; color: var(--accent); font-size: 18px; cursor: pointer; line-height: 1; padding: 0 4px; }
+  .cheat-search-wrap { padding: 8px 14px 6px; border-bottom: 1px solid var(--border); }
+  #cheat-search {
+    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; font-size: 12px; font-family: var(--font-ui); outline: none;
   }
-  .cheat-sheet-content {
-    flex: 1; overflow-y: auto; padding: 16px 20px;
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 12px;
-  }
+  #cheat-search:focus { border-color: var(--accent); }
+  #cheat-count { font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 4px; }
+  .cheat-sheet-content { flex: 1; overflow-y: auto; padding: 8px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
   .cheat-category {
-    grid-column: 1 / -1; font-size: 14px; font-weight: bold; margin-top: 12px;
-    padding: 6px 12px; background: var(--accent-dim); border-radius: 4px;
-    color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
+    font-size: 11px; font-weight: bold; margin-top: 8px; padding: 5px 10px; background: var(--accent-dim);
+    border-radius: 4px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
   }
   .cheat-item {
-    background: var(--bg); border-radius: 6px; padding: 8px 12px;
-    border-left: 3px solid var(--accent); display: flex;
-    justify-content: space-between; align-items: baseline; gap: 12px;
-    font-family: var(--font-mono); font-size: 12px;
+    background: var(--bg); border-radius: 6px; padding: 6px 10px; border-left: 3px solid var(--accent);
+    display: flex; flex-direction: column; gap: 2px; font-family: var(--font-mono); font-size: 12px;
   }
   .cheat-item.quick-setup { border-left-color: #e5c07b; background: #1e232c; }
-  .cheat-code { color: var(--syn-gcode); font-weight: 600; min-width: 140px; }
-  .cheat-desc { color: var(--text-dim); text-align: right; font-style: italic; }
+  .cheat-code { color: var(--syn-gcode); font-weight: 600; word-break: break-word; }
+  .cheat-desc { color: var(--text-dim); font-style: italic; word-break: break-word; }
+  .cheat-empty { color: var(--text-dim); font-style: italic; font-size: 12px; padding: 10px 2px; }
+  @media (max-width: 860px) {
+    #workspace { flex-direction: column; }
+    #left-sidebar { width: auto; flex-direction: row; flex-wrap: wrap; align-items: flex-end; border-right: 0; border-bottom: 1px solid var(--border); padding: 8px 10px; gap: 8px 12px; max-height: 40%; }
+    .side-group { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .side-label { display: none; }
+    #left-sidebar button { width: auto; }
+    #status-pill { margin-top: 0; }
+    #editor-wrap { min-height: 140px; }
+    #cheat-sheet-modal { width: auto; border-left: 0; border-top: 1px solid var(--border); max-height: 45%; }
+  }
 
   /* Debug modal */
   #debug-modal {
@@ -223,49 +211,59 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
 <body>
 <header class="site-head" role="banner"><a href="https://kevmcg1.github.io/portfolio" target="_top" aria-label="Back to the portfolio at kevmcg1.github.io">KEVMCG1.GITHUB.IO</a></header>
 <div id="app">
-  <div id="topbar">
-    <div class="top-row">
+  <div id="workspace">
+    <aside id="left-sidebar" aria-label="Controls">
       <span class="logo">SPEED CODER</span>
-      <div class="sep"></div>
-      <div id="machine-toggle" role="radiogroup" aria-label="Machine type">
-        <button type="button" id="machine-mill" role="radio" aria-checked="true" data-machine="mill">Mill</button>
-        <button type="button" id="machine-lathe" role="radio" aria-checked="false" data-machine="lathe">Lathe</button>
+      <div class="side-group">
+        <div class="side-label">Machine</div>
+        <div id="machine-toggle" role="radiogroup" aria-label="Machine type">
+          <button type="button" id="machine-mill" role="radio" aria-checked="true" data-machine="mill">Mill</button>
+          <button type="button" id="machine-lathe" role="radio" aria-checked="false" data-machine="lathe">Lathe</button>
+        </div>
+        <label id="multiaxis-wrap" title="Turn on A / B / C axis words and the 5-axis phrases (mill only)"><input type="checkbox" id="multiaxis-chk"> Multiaxis</label>
       </div>
-      <label id="multiaxis-wrap" title="Turn on A / B / C axis words and the 5-axis phrases (mill only)"><input type="checkbox" id="multiaxis-chk"> Multiaxis</label>
-      <div class="sep"></div>
-      <span id="units-badge">UNITS ?</span>
-      <div class="sep"></div>
-      <button id="cheat-sheet-btn">Cheat Sheet</button>
-      <button id="auto-semicolon-btn">Auto ; OFF</button>
-      <button id="add-semicolons-btn">Add ;</button>
-      <button id="remove-semicolons-btn">Remove ;</button>
-      <button id="debug-btn">Debug</button>
+      <div class="side-group">
+        <div class="side-label">Units</div>
+        <span id="units-badge">UNITS ?</span>
+      </div>
+      <div class="side-group">
+        <div class="side-label">Semicolons</div>
+        <button id="auto-semicolon-btn">Auto ; OFF</button>
+        <button id="add-semicolons-btn">Add ;</button>
+        <button id="remove-semicolons-btn">Remove ;</button>
+      </div>
+      <div class="side-group">
+        <div class="side-label">Tools</div>
+        <button id="cheat-sheet-btn" aria-controls="cheat-sheet-modal" aria-expanded="true">Cheat Sheet</button>
+        <button id="debug-btn">Debug</button>
+      </div>
+      <div class="hint-row">Type anything and press Enter to convert to G-code</div>
       <span id="status-pill">Converted</span>
+    </aside>
+    <div id="editor-wrap">
+      <div id="line-numbers"><div></div></div>
+      <div id="editor-inner">
+        <div id="highlight" aria-hidden="true"><div></div></div>
+        <textarea id="editor" aria-label="G-code editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+        <div id="autocomplete"></div>
+      </div>
     </div>
-    <div class="hint-row">
-      Type anything and press Enter to convert to G-code
-    </div>
-  </div>
-  <div id="editor-wrap">
-    <div id="line-numbers"><div></div></div>
-    <div id="editor-inner">
-      <div id="highlight" aria-hidden="true"><div></div></div>
-      <textarea id="editor" aria-label="G-code editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
-      <div id="autocomplete"></div>
-    </div>
+    <aside id="cheat-sheet-modal" class="visible" aria-label="Cheat sheet">
+      <div class="cheat-sheet-panel">
+        <div class="cheat-sheet-header">
+          <span>Cheat Sheet</span>
+          <button id="close-cheat-sheet" aria-label="Hide the cheat sheet" title="Hide">&times;</button>
+        </div>
+        <div class="cheat-search-wrap">
+          <input type="search" id="cheat-search" placeholder="Search codes and translations" aria-label="Search the cheat sheet" autocomplete="off" spellcheck="false">
+          <div id="cheat-count" aria-live="polite"></div>
+        </div>
+        <div class="cheat-sheet-content" id="cheat-sheet-content"></div>
+      </div>
+    </aside>
   </div>
 </div>
 <div id="toast"></div>
-<div id="cheat-sheet-modal">
-  <div class="cheat-sheet-panel">
-    <div class="cheat-sheet-header">
-      <span>Conversion Cheat Sheet</span>
-      <button id="close-cheat-sheet">X</button>
-    </div>
-    <div class="cheat-sheet-content" id="cheat-sheet-content"></div>
-  </div>
-</div>
-
 <div id="debug-modal">
   <div class="debug-panel">
     <div class="debug-header">
@@ -662,13 +660,23 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
   const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
   const closeCheatSheetBtn = document.getElementById('close-cheat-sheet');
 
+  const cheatSearch = document.getElementById('cheat-search');
+  const cheatCount = document.getElementById('cheat-count');
+
+  // draws the whole cheat sheet, narrowed to what the search bar matches (code, translation or category)
   function renderCheatSheet() {
     const items = GcodeConverter.getCheatSheetItems();
+    const terms = cheatSearch.value.toLowerCase().split(/\s+/).filter(Boolean);
     let html = '';
     let lastCategory = '';
+    let shown = 0;
     for (const item of items) {
+      if (terms.length) {
+        const hay = (item.code + ' ' + item.desc + ' ' + item.category).toLowerCase();
+        if (!terms.every(t => hay.includes(t))) continue;
+      }
       if (item.category !== lastCategory) {
-        html += `<div class="cheat-category">${item.category}</div>`;
+        html += `<div class="cheat-category">${escapeHtml(item.category)}</div>`;
         lastCategory = item.category;
       }
       const quickClass = item.isQuickSetup ? 'quick-setup' : '';
@@ -676,8 +684,11 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
         <span class="cheat-code">${escapeHtml(item.code)}</span>
         <span class="cheat-desc">${escapeHtml(item.desc)}</span>
       </div>`;
+      shown++;
     }
+    if (!shown) html = '<div class="cheat-empty">No codes match your search.</div>';
     cheatSheetContent.innerHTML = html;
+    cheatCount.textContent = terms.length ? shown + ' of ' + items.length + ' shown' : items.length + ' codes';
   }
 
   function escapeHtml(str) {
@@ -689,23 +700,25 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     });
   }
 
-  cheatSheetBtn.addEventListener('click', () => {
-    renderCheatSheet();
-    cheatSheetModal.classList.add('visible');
+  // the Cheat Sheet button and the X show or hide the right sidebar
+  function setCheatSheet(on) {
+    cheatSheetModal.classList.toggle('visible', on);
+    cheatSheetBtn.setAttribute('aria-expanded', String(on));
+    if (on) renderCheatSheet();
+  }
+  cheatSheetBtn.addEventListener('click', () => setCheatSheet(!cheatSheetModal.classList.contains('visible')));
+  closeCheatSheetBtn.addEventListener('click', () => setCheatSheet(false));
+  cheatSearch.addEventListener('input', renderCheatSheet);
+  cheatSearch.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && cheatSearch.value) { cheatSearch.value = ''; renderCheatSheet(); e.stopPropagation(); }
   });
-  // Escape closes whichever popup is open
+  // Escape closes the Debug popup
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      cheatSheetModal.classList.remove('visible');
-      debugModal.classList.remove('visible');
-    }
+    if (e.key === 'Escape') debugModal.classList.remove('visible');
   });
-  closeCheatSheetBtn.addEventListener('click', () => {
-    cheatSheetModal.classList.remove('visible');
-  });
-  cheatSheetModal.addEventListener('click', (e) => {
-    if (e.target === cheatSheetModal) cheatSheetModal.classList.remove('visible');
-  });
+  // on a narrow screen the sidebar starts hidden so the editor gets the room
+  if (window.matchMedia && window.matchMedia('(max-width: 860px)').matches) setCheatSheet(false);
+  else renderCheatSheet();
 
   // Debug modal
   const debugModal = document.getElementById('debug-modal');
