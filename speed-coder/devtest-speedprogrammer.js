@@ -1,5 +1,5 @@
 /* =====================================================================
-   Dev-tool adapter for "Speed Coder / Speed Programmer" (speed_programmer.html + gcode-rules.js). Loaded together with devtest.js the first
+   Dev-tool adapter for "Speed Coder / Speed Programmer" (speed-coder/index.html + gcode-rules.js). Loaded together with devtest.js the first
    time the backtick key is pressed (or when the page is opened with ?dev=quick|standard|thorough|problems).
    The page turns plain-English lines ("change tool to T3", "feed to X1 Y2 at 30") into G-code when Enter is pressed. This adapter:
      - builds real-looking and awful lines from the page's own cheat sheet (every shortcut and phrase, with in-range and awful numbers:
