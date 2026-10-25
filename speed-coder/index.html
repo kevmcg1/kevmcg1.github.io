@@ -256,6 +256,45 @@
   .gd-card .gd-replay[hidden] { display: none; }
   @media (prefers-reduced-motion: reduce) { .gd-hole, .gd-card, .guide-btn { transition: none; } .gd-ring.on { animation: none; opacity: .8; } }
 
+  /* ===== lathe profile check: a warning bar over the editor and a before / after fix window ===== */
+  #center { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  #lint-bar { --s-gold: #e8c547; flex: none; display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: color-mix(in srgb, #e8c547 9%, #08090a); border-bottom: 1px solid color-mix(in srgb, #e8c547 38%, #222428); font-family: 'Inter', system-ui, sans-serif; font-size: 12.5px; line-height: 1.4; color: #ececee; }
+  #lint-bar[hidden] { display: none; }
+  #lint-bar .lint-ico { flex: none; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid #e8c547; color: #e8c547; font-weight: 800; font-size: 12px; }
+  #lint-text { flex: 1; min-width: 0; }
+  #lint-text b { color: #fff; font-weight: 600; }
+  #lint-text span { color: #8a8f97; }
+  #lint-bar button { flex: none; height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid #3d4147; background: transparent; color: #cfd3d9; font: 600 12.5px 'Inter', system-ui, sans-serif; text-transform: none; font-style: normal; letter-spacing: normal; cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+  #lint-bar button:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  #lint-bar #lint-fix { color: #1c1604; border-color: #e8c547; background: linear-gradient(180deg, #f1d768, #e8c547); }
+  #lint-bar #lint-fix:hover { color: #1c1604; filter: brightness(1.08); background: linear-gradient(180deg, #f1d768, #e8c547); }
+  #fix-modal { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(4,5,7,.78); font-family: 'Inter', system-ui, sans-serif; }
+  #fix-modal[hidden] { display: none; }
+  .fix-card { width: min(920px, 100%); max-height: min(86vh, 760px); display: flex; flex-direction: column; border-radius: 14px; background: #16181b; border: 1px solid #2b2e33; box-shadow: 0 20px 50px rgba(0,0,0,.6); color: #ececee; }
+  .fix-head { padding: 16px 20px 6px; }
+  .fix-head h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+  .fix-head p { margin: 0; font-size: 12.5px; line-height: 1.5; color: #8a8f97; }
+  .fix-body { flex: 1; overflow-y: auto; padding: 8px 20px 12px; display: flex; flex-direction: column; gap: 16px; }
+  .fix-prof h4 { margin: 8px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8a8f97; }
+  .fix-why { margin: 0 0 8px; padding: 0; list-style: none; font-size: 12.5px; line-height: 1.5; color: #cfd3d9; }
+  .fix-why li { padding-left: 14px; position: relative; } .fix-why li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: #e8c547; }
+  .fix-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fix-col { min-width: 0; border-radius: 10px; border: 1px solid #222428; background: #0d0e10; overflow: hidden; }
+  .fix-col .fix-tag { display: block; padding: 6px 12px; font-size: 10.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; border-bottom: 1px solid #222428; }
+  .fix-col.before .fix-tag { color: #f3a6a3; } .fix-col.after .fix-tag { color: #8fe0b0; }
+  .fix-lines { padding: 6px 0; font: 500 12px/1.75 ui-monospace, 'DM Mono', Consolas, monospace; overflow-x: auto; }
+  .fix-line { display: flex; gap: 10px; padding: 0 12px; white-space: pre; }
+  .fix-line i { flex: none; width: 30px; text-align: right; font-style: normal; color: #5a5f67; user-select: none; }
+  .fix-line.chg { background: rgba(240,74,69,.14); } .after .fix-line.chg { background: rgba(95,207,138,.14); }
+  .fix-line mark { background: transparent; font-weight: 700; color: #f3a6a3; } .after .fix-line mark { color: #8fe0b0; }
+  .fix-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid #222428; }
+  .fix-foot button { height: 34px; padding: 0 16px; border-radius: 9px; border: 1px solid #3d4147; background: transparent; color: #cfd3d9; font: 600 13px 'Inter', system-ui, sans-serif; text-transform: none; font-style: normal; letter-spacing: normal; cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+  .fix-foot button:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  .fix-foot #fix-apply { color: #07111f; border-color: color-mix(in srgb, #5b93ea 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, #5b93ea 80%, #fff), #5b93ea); }
+  .fix-foot #fix-apply:hover { color: #07111f; filter: brightness(1.08); background: linear-gradient(180deg, color-mix(in srgb, #5b93ea 80%, #fff), #5b93ea); }
+  .fix-foot #fix-apply:disabled { opacity: .4; cursor: default; filter: none; }
+  @media (max-width: 700px) { .fix-cols { grid-template-columns: 1fr; } #lint-bar { flex-wrap: wrap; } }
+
   /* Debug modal */
   #debug-modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -368,6 +407,13 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
       <div class="hint-row">Type anything and press Enter to convert to G-code</div>
       <span id="status-pill">Converted</span>
     </aside>
+    <div id="center">
+    <div id="lint-bar" role="alert" hidden>
+      <span class="lint-ico" aria-hidden="true">!</span>
+      <div id="lint-text"></div>
+      <button type="button" id="lint-go">Go to line</button>
+      <button type="button" id="lint-fix">Show fix</button>
+    </div>
     <div id="editor-wrap">
       <div id="line-numbers"><div></div></div>
       <div id="editor-inner">
@@ -375,6 +421,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
         <textarea id="editor" aria-label="G-code editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
         <div id="autocomplete"></div>
       </div>
+    </div>
     </div>
     <aside id="cheat-sheet-modal" class="visible" aria-label="Cheat sheet">
       <div class="cheat-sheet-panel">
@@ -407,6 +454,13 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     <div id="gd-text"></div>
     <button type="button" class="gd-nav gd-replay" id="gd-replay" hidden>&#8635; Watch again</button>
     <div class="gd-foot"><span class="gd-count" id="gd-count"></span><button type="button" class="gd-nav" id="gd-back">Back</button><button type="button" class="gd-nav gd-next" id="gd-next">Next</button></div>
+  </div>
+</div>
+<div id="fix-modal" hidden>
+  <div class="fix-card" role="dialog" aria-modal="true" aria-labelledby="fix-title">
+    <div class="fix-head"><h3 id="fix-title">Fix the profile</h3><p>The roughing cycle can only cut a profile whose X and Z keep going one way. The lines below show what changes: a value that turns back is kept at the last good value, which closes up the groove or undercut.</p></div>
+    <div class="fix-body" id="fix-body"></div>
+    <div class="fix-foot"><button type="button" id="fix-cancel">Cancel</button><button type="button" id="fix-apply">Apply fix</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -1710,6 +1764,171 @@ G42 turn to X1.2 Z-1. at .005`
   document.addEventListener('pointerdown', () => { clearTimeout(histTimer); histCheck(); }, true);
   setInterval(histCheck, 600);   // anything else that rewrites the text (a button, a sample) is caught here
   window.__history = { get length() { return hist.length; }, get at() { return histAt; }, undo: doUndo, redo: doRedo };
+
+  // ============================================================
+  // LATHE PROFILE CHECK (lathe only, roughing G71 and finishing G70): the profile between the P and Q blocks must keep going the same way in X
+  // and in Z (monotonic). Where it turns back on itself, a bar warns and a window shows the lines before and after the fix.
+  // ============================================================
+  const lintBar = document.getElementById('lint-bar'), lintText = document.getElementById('lint-text');
+  const fixModal = document.getElementById('fix-modal'), fixBody = document.getElementById('fix-body'), fixApply = document.getElementById('fix-apply');
+  let lintIssues = [], lintSeen = null;
+
+  // the letter-number words on a line, with where they sit (comments are blanked so their text is never read as a word)
+  function lintWords(line) {
+    const code = line.replace(/\([^)]*\)/g, m => ' '.repeat(m.length)).replace(/;.*$/, m => ' '.repeat(m.length));
+    const out = []; const re = /([A-Za-z])\s*(-?(?:\d+\.?\d*|\.\d+))/g; let m;
+    while ((m = re.exec(code)) !== null) out.push({ L: m[1].toUpperCase(), tok: m[2], val: parseFloat(m[2]), at: m.index + m[0].length - m[2].length, len: m[2].length });
+    return out;
+  }
+  // every roughing / finishing cycle line that names a profile (P..Q), once per profile
+  function lintProfiles(lines) {
+    const seen = new Set(), out = [];
+    lines.forEach((ln) => {
+      const w = lintWords(ln);
+      const g = w.filter(x => x.L === 'G').map(x => x.val);
+      if (!g.includes(71) && !g.includes(70)) return;
+      const P = w.find(x => x.L === 'P'), Q = w.find(x => x.L === 'Q');
+      if (!P || !Q) return;
+      const key = P.val + '-' + Q.val;
+      if (seen.has(key)) return; seen.add(key);
+      out.push({ p: P.val, q: Q.val });
+    });
+    return out;
+  }
+  const lintFindN = (lines, n, from) => {
+    for (let i = from; i < lines.length; i++) { const w = lintWords(lines[i]).find(x => x.L === 'N'); if (w && w.val === n) return i; }
+    return -1;
+  };
+  function lintCheck(text) {
+    const lines = text.split('\n');
+    const profiles = lintProfiles(lines);
+    const issues = [];
+    for (const pf of profiles) {
+      const s = lintFindN(lines, pf.p, 0); if (s < 0) continue;
+      let e = lintFindN(lines, pf.q, s); if (e < 0) e = s;
+      // where the tool is when the profile starts
+      let x = NaN, z = NaN;
+      for (let i = 0; i < s; i++) for (const w of lintWords(lines[i])) {
+        if (w.L === 'X') x = w.val; else if (w.L === 'Z') z = w.val; else if (w.L === 'U') x += w.val; else if (w.L === 'W') z += w.val;
+      }
+      let dirX = 0, dirZ = 0, accX = x, accZ = z, first = true;
+      const viol = [], newLines = lines.slice(s, e + 1);
+      for (let i = s; i <= e; i++) {
+        const words = lintWords(lines[i]);
+        const gs = words.filter(w => w.L === 'G').map(w => w.val);
+        const hasArc = gs.includes(2) || gs.includes(3) || words.some(w => w.L === 'I' || w.L === 'K' || w.L === 'R');
+        const hasInc = words.some(w => w.L === 'U' || w.L === 'W');
+        const edits = [];
+        for (const w of words) {
+          if (w.L === 'U') { accX += w.val; continue; }
+          if (w.L === 'W') { accZ += w.val; continue; }
+          if (w.L !== 'X' && w.L !== 'Z') continue;
+          const isX = w.L === 'X', cur = isX ? accX : accZ, dir = isX ? dirX : dirZ;
+          const d = isNaN(cur) ? 0 : w.val - cur;
+          if (first || Math.abs(d) < 1e-9 || isNaN(cur)) { if (isX) accX = w.val; else accZ = w.val; continue; }
+          const sign = d > 0 ? 1 : -1;
+          if (dir === 0) { if (isX) dirX = sign; else dirZ = sign; if (isX) accX = w.val; else accZ = w.val; continue; }
+          if (sign === dir) { if (isX) accX = w.val; else accZ = w.val; continue; }
+          // it turns back: keep the last good value instead
+          const keepTok = isX ? lintLastTok.X : lintLastTok.Z;
+          viol.push({ line: i, axis: w.L, from: cur, to: w.val, tok: w.tok, dir, keep: keepTok, fixable: !hasArc && !hasInc && !!keepTok });
+          if (!hasArc && !hasInc && keepTok) edits.push({ w, keepTok });
+        }
+        // remember the token text of every accepted X / Z so a fix can copy it exactly
+        for (const w of words) if ((w.L === 'X' || w.L === 'Z') && !edits.some(ed => ed.w === w)) lintLastTok[w.L] = w.tok;
+        if (edits.length) {
+          let t = lines[i];
+          for (const ed of edits.sort((a, b) => b.w.at - a.w.at)) t = t.slice(0, ed.w.at) + ed.keepTok + t.slice(ed.w.at + ed.w.len);
+          newLines[i - s] = t;
+        }
+        first = false;
+      }
+      if (viol.length) issues.push({ p: pf.p, q: pf.q, start: s, end: e, viol, fixable: viol.every(v => v.fixable), before: lines.slice(s, e + 1), after: newLines });
+    }
+    return issues;
+  }
+  let lintLastTok = { X: null, Z: null };
+  const lintRun = (text) => { lintLastTok = { X: null, Z: null }; return lintCheck(text); };
+
+  const lintWhy = (v) => {
+    const n = v.line + 1;
+    if (v.axis === 'X') return `Line ${n}: X goes ${v.dir > 0 ? 'back down' : 'back up'} to X${v.tok} after growing ${v.dir > 0 ? 'bigger' : 'smaller'}.`;
+    return `Line ${n}: Z goes back toward the ${v.dir < 0 ? 'face' : 'chuck'} to Z${v.tok}.`;
+  };
+  function lintRender() {
+    if (GcodeConverter.getMachine().type !== 'lathe') { lintIssues = []; lintBar.hidden = true; return; }
+    lintIssues = lintRun(editor.value);
+    if (!lintIssues.length) { lintBar.hidden = true; return; }
+    const first = lintIssues[0], v = first.viol[0], count = lintIssues.reduce((a, i) => a + i.viol.length, 0);
+    lintText.innerHTML = `<b>The profile N${first.p} to N${first.q} turns back on itself.</b> <span>${escapeHtml(lintWhy(v))}${count > 1 ? ' (+' + (count - 1) + ' more)' : ''} The roughing (G71) and finishing (G70) cycles need X and Z to keep going one way.</span>`;
+    lintBar.hidden = false;
+    document.getElementById('lint-fix').textContent = lintIssues.every(i => i.fixable) ? 'Show fix' : 'Show details';
+  }
+  // re-check whenever the text or the machine changes
+  setInterval(() => {
+    const key = GcodeConverter.getMachine().type + '\u0000' + editor.value;
+    if (key !== lintSeen) { lintSeen = key; lintRender(); }
+  }, 300);
+
+  function fixDiff(before, after, startLine, isAfter) {
+    const lines = isAfter ? after : before;
+    return lines.map((t, k) => {
+      const chg = before[k] !== after[k];
+      let html = escapeHtml(t);
+      if (chg) {
+        // mark the words that differ
+        const a = lintWords(before[k]), b = lintWords(after[k]);
+        const src = isAfter ? b : a, other = isAfter ? a : b;
+        const marks = src.filter((w, j) => !other[j] || other[j].tok !== w.tok).sort((p, q) => q.at - p.at);
+        let raw = t; let out = '';
+        let end = raw.length;
+        for (const w of marks) { out = '<mark>' + escapeHtml(raw.slice(w.at, w.at + w.len)) + '</mark>' + escapeHtml(raw.slice(w.at + w.len, end)) + out; end = w.at; }
+        html = escapeHtml(raw.slice(0, end)) + out;
+      }
+      return `<div class="fix-line${chg ? ' chg' : ''}"><i>${startLine + k + 1}</i><span>${html || ' '}</span></div>`;
+    }).join('');
+  }
+  function fixOpen() {
+    if (!lintIssues.length) return;
+    let h = '';
+    for (const is of lintIssues) {
+      h += `<section class="fix-prof"><h4>Profile N${is.p} to N${is.q}</h4><ul class="fix-why">${is.viol.map(v => `<li>${escapeHtml(lintWhy(v))}${v.fixable ? ` Corrected to <b>${v.axis}${escapeHtml(v.keep)}</b> (the last good value).` : ' This line has an arc or an incremental move (U / W), so it needs a manual fix.'}</li>`).join('')}</ul>`;
+      h += `<div class="fix-cols"><div class="fix-col before"><span class="fix-tag">Before</span><div class="fix-lines">${fixDiff(is.before, is.after, is.start, false)}</div></div><div class="fix-col after"><span class="fix-tag">${is.fixable ? 'After' : 'After (needs manual fix)'}</span><div class="fix-lines">${fixDiff(is.before, is.after, is.start, true)}</div></div></div></section>`;
+    }
+    fixBody.innerHTML = h;
+    fixApply.disabled = !lintIssues.some(i => i.fixable);
+    fixModal.hidden = false;
+    fixApply.focus({ preventScroll: true });
+  }
+  const fixClose = () => { fixModal.hidden = true; };
+  function fixDo() {
+    const lines = editor.value.split('\n');
+    const now = lintRun(editor.value);
+    let n = 0;
+    for (const is of now) { if (!is.fixable) continue; for (let k = 0; k < is.after.length; k++) lines[is.start + k] = is.after[k]; n += is.viol.length; }
+    if (!n) { fixClose(); return; }
+    const top = editor.scrollTop;
+    editor.value = lines.join('\n');
+    editor.scrollTop = top;
+    updateLineNumbers(); updateUnitsBadge();
+    if (typeof histCheck === 'function') histCheck();
+    fixClose();
+    lintSeen = null;
+    showStatus('Fixed ' + n + ' turn-back' + (n === 1 ? '' : 's') + ' (Ctrl+Z undoes it)');
+  }
+  document.getElementById('lint-fix').addEventListener('click', fixOpen);
+  document.getElementById('lint-go').addEventListener('click', () => {
+    const v = lintIssues[0] && lintIssues[0].viol[0]; if (!v) return;
+    const ls = editor.value.split('\n'); let pos = 0; for (let i = 0; i < v.line; i++) pos += ls[i].length + 1;
+    editor.focus(); editor.setSelectionRange(pos, pos + ls[v.line].length);
+    editor.scrollTop = Math.max(0, v.line * 22 - editor.clientHeight / 3);
+    updateLineNumbers();
+  });
+  fixApply.addEventListener('click', fixDo);
+  document.getElementById('fix-cancel').addEventListener('click', fixClose);
+  fixModal.addEventListener('click', (e) => { if (e.target === fixModal) fixClose(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !fixModal.hidden) { e.preventDefault(); e.stopPropagation(); fixClose(); } }, true);
+  window.__lint = { check: lintRun };
 
   // Initial content
   { const saved = loadMachine(); applyMachine(saved.type, saved.multi, { silent: true }); }
