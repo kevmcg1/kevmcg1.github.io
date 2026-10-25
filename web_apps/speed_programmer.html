@@ -182,6 +182,77 @@
   #toast.show { opacity: 1; }
 
 
+  /* ===== step shaft panel (lathe only) ===== */
+  body:not([data-machine="lathe"]) #shaft-panel { display: none; }
+  #shaft-svg { width: 100%; height: auto; display: block; border-radius: 9px; background: var(--s-bg); border: 1px solid var(--s-line); }
+  #shaft-svg text { font: 600 8px 'Inter', system-ui, sans-serif; fill: var(--s-muted); }
+  #shaft-svg .sh-prof { fill: color-mix(in srgb, var(--s-accent) 16%, transparent); stroke: var(--s-accent); stroke-width: 1.6; stroke-linejoin: round; }
+  #shaft-svg .sh-stock { fill: none; stroke: #5a5f67; stroke-width: 1; stroke-dasharray: 3 3; }
+  #shaft-svg .sh-chuck { fill: #1b1d20; stroke: #3a3e45; stroke-width: 1; }
+  #shaft-svg .sh-cl { stroke: #5a5f67; stroke-width: 1; stroke-dasharray: 8 2 2 2; }
+  #shaft-svg .sh-tick { stroke: #5a5f67; stroke-width: 1; }
+  #shaft-svg .sh-badge { fill: var(--s-accent); }
+  #shaft-svg .sh-bnum { fill: var(--s-accent-ink); font-weight: 800; font-size: 8px; text-anchor: middle; }
+  #shaft-svg .sh-z { text-anchor: middle; fill: #aab3c0; }
+  .shaft-units { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 9px; background: var(--s-bg); border: 1px solid var(--s-line); }
+  .shaft-units button { height: 26px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--s-muted); font-size: 12px; font-weight: 600; cursor: pointer; transition: color .2s ease, background-color .2s ease; }
+  .shaft-units button:hover { color: var(--s-ink); background: rgba(255,255,255,.05); }
+  .shaft-units button[aria-pressed="true"] { color: #fff; background: color-mix(in srgb, var(--s-accent) 20%, transparent); border-color: color-mix(in srgb, var(--s-accent) 42%, transparent); }
+  .shaft-row { display: grid; grid-template-columns: 18px 1fr 1fr 22px; gap: 5px; align-items: center; }
+  .shaft-row.head { font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--s-muted); }
+  .shaft-row.head span:first-child { grid-column: 1 / 2; }
+  .shaft-num { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--s-accent); color: var(--s-accent-ink); font-size: 10px; font-weight: 800; }
+  #shaft-panel input[type=text] { width: 100%; min-width: 0; height: 30px; padding: 0 7px; border-radius: 7px; border: 1px solid var(--s-line); background: var(--s-bg); color: var(--s-ink); font: 600 12.5px ui-monospace, 'DM Mono', Consolas, monospace; outline: none; user-select: text; -webkit-user-select: text; transition: border-color .2s ease, box-shadow .2s ease; }
+  #shaft-panel input[type=text]:focus { border-color: var(--s-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--s-accent) 22%, transparent); }
+  #shaft-panel input.bad { border-color: #f04a45; }
+  .shaft-x { width: 22px; height: 22px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--s-muted); font-size: 14px; cursor: pointer; }
+  .shaft-x:hover { color: #fff; background: rgba(255,255,255,.08); }
+  .shaft-x:disabled { opacity: .3; cursor: default; }
+  .shaft-pts { display: block; padding: 8px 10px; border-radius: 9px; background: var(--s-raise); border: 1px solid var(--s-line); font: 500 11px/1.5 ui-monospace, 'DM Mono', Consolas, monospace; color: #9ec0f7; white-space: pre; overflow-x: auto; }
+  .shaft-pts b { color: var(--s-muted); font-weight: 600; }
+  .shaft-msg { min-height: 0; font-size: 11.5px; line-height: 1.4; color: #f3a6a3; }
+  .shaft-msg:empty { display: none; }
+  .chip.primary { color: var(--s-accent-ink); font-weight: 700; background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 80%, #fff), var(--s-accent)); border-color: color-mix(in srgb, var(--s-accent) 70%, #fff); }
+  .chip.primary:hover { color: var(--s-accent-ink); filter: brightness(1.08); background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 80%, #fff), var(--s-accent)); }
+  .chip.primary:disabled { opacity: .4; cursor: default; filter: none; }
+  @media (max-width: 860px) { #shaft-panel { flex: 1 1 100%; } #shaft-svg { max-width: 360px; } }
+
+  /* ===== "How do I use it?" button and walkthrough ===== */
+  .guide-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--s-accent) 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 80%, #fff), var(--s-accent)); color: #07111f; font: 700 13.5px/1.2 'Inter', system-ui, sans-serif; letter-spacing: .01em; cursor: pointer; box-shadow: 0 6px 18px color-mix(in srgb, var(--s-accent) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.4); transition: transform .15s ease, filter .15s ease, box-shadow .15s ease; margin-top: -6px; }
+  .guide-btn:hover { transform: translateY(-1px); filter: brightness(1.08); color: #07111f; background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 80%, #fff), var(--s-accent)); }
+  .guide-btn:active { transform: none; filter: brightness(.97); }
+  .guide-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  .guide-btn .gd-q { display: inline-grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(7,17,31,.2); font-size: 14px; font-weight: 800; }
+  .gd { --gd-accent: #5b93ea; position: fixed; inset: 0; z-index: 1500; pointer-events: none; font-family: 'Inter', system-ui, sans-serif; }
+  .gd[hidden] { display: none; }
+  .gd-dim { position: fixed; inset: 0; pointer-events: auto; background: transparent; }
+  .gd-hole { position: fixed; left: 0; top: 0; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(4,5,7,.76), 0 0 0 2px var(--gd-accent), 0 0 18px 2px color-mix(in srgb, var(--gd-accent) 55%, transparent); pointer-events: none; transition: transform .38s cubic-bezier(.22,.8,.25,1), width .38s cubic-bezier(.22,.8,.25,1), height .38s cubic-bezier(.22,.8,.25,1); }
+  .gd-hole.none { box-shadow: 0 0 0 9999px rgba(4,5,7,.76); }
+  .gd-ring { position: fixed; left: 0; top: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 3px solid var(--gd-accent); pointer-events: none; opacity: 0; }
+  .gd-ring.on { animation: gd-pulse 1.3s ease-out infinite; }
+  @keyframes gd-pulse { 0% { transform: scale(.4); opacity: .95; } 100% { transform: scale(1.7); opacity: 0; } }
+  .gd-svg { position: fixed; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .gd-svg path { fill: none; stroke: var(--gd-accent); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(0,0,0,.6)); }
+  .gd-svg polygon { fill: var(--gd-accent); }
+  .gd-card { position: fixed; left: 0; top: 0; width: min(330px, calc(100vw - 24px)); pointer-events: auto; background: #16181b; color: #ececee; border: 1px solid color-mix(in srgb, var(--gd-accent) 55%, transparent); border-radius: 12px; padding: 14px 16px 12px; box-shadow: 0 14px 40px rgba(0,0,0,.55); font-size: 13.5px; line-height: 20px; transition: transform .38s cubic-bezier(.22,.8,.25,1), opacity .2s ease; }
+  .gd-card h4 { margin: 0 26px 6px 0; font-size: 15px; font-weight: 600; }
+  .gd-card p { margin: 0 0 6px; color: #8a8f97; }
+  .gd-card p b { color: #ececee; font-weight: 600; }
+  .gd-card code { font: 600 12px ui-monospace, 'DM Mono', Consolas, monospace; color: #9ec0f7; }
+  .gd-card .gd-x { position: absolute; right: 10px; top: 10px; width: 26px; height: 26px; padding: 0; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3d4147; background: transparent; color: #8a8f97; font-size: 15px; line-height: 1; cursor: pointer; }
+  .gd-card .gd-x:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  .gd-card button { text-transform: none; font-style: normal; letter-spacing: normal; }
+  .gd-foot { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+  .gd-count { flex: 1; font-size: 11.5px; color: #8a8f97; font-variant-numeric: tabular-nums; }
+  .gd-card .gd-nav { padding: 5px 12px; border-radius: 7px; border: 1px solid #3d4147; background: transparent; color: #cfd3d9; font: 600 12.5px 'Inter', system-ui, sans-serif; cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+  .gd-card .gd-nav:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  .gd-card .gd-nav:disabled { opacity: .35; cursor: default; }
+  .gd-card .gd-next { color: #07111f; border-color: color-mix(in srgb, var(--gd-accent) 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, var(--gd-accent) 80%, #fff), var(--gd-accent)); }
+  .gd-card .gd-next:hover { color: #07111f; filter: brightness(1.08); }
+  .gd-card .gd-replay { margin-top: 8px; padding: 4px 10px; font-size: 12px; }
+  .gd-card .gd-replay[hidden] { display: none; }
+  @media (prefers-reduced-motion: reduce) { .gd-hole, .gd-card, .guide-btn { transition: none; } .gd-ring.on { animation: none; opacity: .8; } }
+
   /* Debug modal */
   #debug-modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -246,6 +317,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
   <div id="workspace">
     <aside id="left-sidebar" aria-label="Controls">
       <div class="brand" aria-label="Speed Coder"><i aria-hidden="true">[</i> SPEED CODER <i aria-hidden="true">]</i></div>
+      <button type="button" class="guide-btn" id="guideBtn" aria-label="How do I use it? A guided tour of Speed Coder"><span class="gd-q" aria-hidden="true">?</span><span>How do I use it?</span></button>
       <div class="side-group">
         <div class="side-label">Machine</div>
         <div id="machine-toggle" role="radiogroup" aria-label="Machine type">
@@ -253,6 +325,20 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
           <button type="button" id="machine-lathe" role="radio" aria-checked="false" data-machine="lathe">Lathe</button>
         </div>
         <label id="multiaxis-wrap" title="Turn on A / B / C axis words and the 5-axis phrases (mill only)"><input type="checkbox" id="multiaxis-chk"> Multiaxis</label>
+      </div>
+      <div class="side-group" id="shaft-panel">
+        <div class="side-label">Step shaft</div>
+        <svg id="shaft-svg" viewBox="0 0 196 132" role="img" aria-label="Side view of the stepped shaft with its steps numbered"></svg>
+        <div class="shaft-units" role="group" aria-label="Units">
+          <button type="button" id="shaft-in" aria-pressed="true">Inch</button>
+          <button type="button" id="shaft-mm" aria-pressed="false">Metric</button>
+        </div>
+        <div class="shaft-row"><span class="shaft-num" style="background:#5a5f67;color:#0d0e10" aria-hidden="true">&Oslash;</span><input type="text" id="shaft-stock" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Stock diameter" value="2"><span style="grid-column:3 / 5;font-size:11.5px;color:#8a8f97">stock dia</span></div>
+        <div id="shaft-steps"></div>
+        <button class="chip" type="button" id="shaft-add"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add step</button>
+        <div class="shaft-pts" id="shaft-pts" aria-label="Coordinates of each step"></div>
+        <div class="shaft-msg" id="shaft-msg" role="status"></div>
+        <button class="chip primary" type="button" id="shaft-go"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>Auto program</button>
       </div>
       <div class="side-group">
         <div class="side-label">Units</div>
@@ -298,6 +384,19 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
         <div class="cheat-sheet-content" id="cheat-sheet-content"></div>
       </div>
     </aside>
+  </div>
+</div>
+<div class="gd" id="gd" hidden>
+  <div class="gd-dim" id="gd-dim"></div>
+  <div class="gd-hole none" id="gd-hole"></div>
+  <div class="gd-ring" id="gd-ring"></div>
+  <svg class="gd-svg" aria-hidden="true"><path id="gd-arrow" d=""/><polygon id="gd-head" points=""/></svg>
+  <div class="gd-card" id="gd-card" role="dialog" aria-modal="true" aria-labelledby="gd-title">
+    <button type="button" class="gd-x" id="gd-x" aria-label="Exit the tour" title="Exit (Esc)">&times;</button>
+    <h4 id="gd-title"></h4>
+    <div id="gd-text"></div>
+    <button type="button" class="gd-nav gd-replay" id="gd-replay" hidden>&#8635; Watch again</button>
+    <div class="gd-foot"><span class="gd-count" id="gd-count"></span><button type="button" class="gd-nav" id="gd-back">Back</button><button type="button" class="gd-nav gd-next" id="gd-next">Next</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -1150,6 +1249,394 @@ G42 turn to X1.2 Z-1. at .005`
     ]);
   window.__documentedCases = () => (GcodeConverter.getMachine().type === 'lathe' ? DOC_LATHE : DOC_MILL);
   window.__samplePrograms = SAMPLE;
+
+  // ============================================================
+  // STEP SHAFT (lathe only): a picture and coordinates for a stepped shaft, and an Auto program button that writes the whole program
+  // ============================================================
+  const shaftSvg = document.getElementById('shaft-svg');
+  const shaftStepsEl = document.getElementById('shaft-steps');
+  const shaftStockEl = document.getElementById('shaft-stock');
+  const shaftPtsEl = document.getElementById('shaft-pts');
+  const shaftMsgEl = document.getElementById('shaft-msg');
+  const shaftGoBtn = document.getElementById('shaft-go');
+  const shaftAddBtn = document.getElementById('shaft-add');
+  const shaftUnitBtns = { inch: document.getElementById('shaft-in'), metric: document.getElementById('shaft-mm') };
+  const SHAFT_DEFAULT = {
+    inch:   { stock: '2',  steps: [['1', '1.5'], ['1.5', '1'], ['1.75', '.5']] },
+    metric: { stock: '50', steps: [['25', '38'], ['38', '25'], ['44', '12']] }
+  };
+  const SHAFT_MAX_STEPS = 6;
+  const shaft = { units: 'inch', stock: SHAFT_DEFAULT.inch.stock, steps: SHAFT_DEFAULT.inch.steps.map(r => ({ d: r[0], l: r[1] })) };
+
+  // a number the way G-code writes it: no leading zero, a trailing point on whole numbers (.5, -.06, 2.)
+  function gnum(v, units) {
+    const dp = units === 'metric' ? 3 : 4, k = Math.pow(10, dp), r = Math.round(v * k) / k;
+    if (r === 0) return '0.';
+    let t = r.toFixed(dp).replace(/0+$/, '');
+    if (t.startsWith('0.')) t = t.slice(1); else if (t.startsWith('-0.')) t = '-' + t.slice(2);
+    return t;
+  }
+  function shaftParse() {
+    const num = (s) => { const t = String(s).trim().replace(/^\./, '0.'); return /^\d*\.?\d+$/.test(t) || /^\d+\.$/.test(t) ? parseFloat(t) : NaN; };
+    const stock = num(shaft.stock);
+    const steps = shaft.steps.map(r => ({ d: num(r.d), l: num(r.l) }));
+    const bad = { stock: !(stock > 0), d: steps.map(r => !(r.d > 0)), l: steps.map(r => !(r.l > 0)) };
+    let msg = '';
+    if (bad.stock || bad.d.some(Boolean) || bad.l.some(Boolean)) msg = 'Every diameter and length needs a number above zero.';
+    else {
+      for (let i = 0; i < steps.length && !msg; i++) {
+        if (steps[i].d > stock + 1e-9) { bad.d[i] = true; msg = 'Step ' + (i + 1) + ' is bigger than the stock.'; }
+        else if (i > 0 && steps[i].d < steps[i - 1].d - 1e-9) { bad.d[i] = true; msg = 'Each step must be the same size or bigger than the one before it (the roughing cycle needs a profile that keeps growing).'; }
+      }
+    }
+    return { stock, steps, bad, msg, ok: !msg };
+  }
+  function shaftPoints(P) {
+    let z = 0; const out = [];
+    P.steps.forEach((r, i) => { out.push({ n: i + 1, x: r.d, z0: -z, z1: -(z + r.l) }); z += r.l; });
+    return { pts: out, total: z };
+  }
+
+  function renderShaftPicture(P, T) {
+    const W = 196, H = 132, x0 = 14, x1 = 156, yc = 94, hmax = 54;
+    let h = '';
+    if (!P.ok) {
+      shaftSvg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" style="fill:#f3a6a3;font-size:9px">Fix the numbers to see the shaft</text>`;
+      return;
+    }
+    const sx = (x1 - x0) / T.total, sy = hmax / (P.stock / 2);
+    h += `<rect class="sh-chuck" x="${x1}" y="${yc - hmax - 6}" width="30" height="${hmax + 6}" rx="3"/>`;
+    h += `<text x="${x1 + 15}" y="${yc - hmax / 2}" text-anchor="middle" style="font-size:7px;letter-spacing:.08em">CHUCK</text>`;
+    h += `<rect class="sh-stock" x="${x0}" y="${yc - hmax}" width="${x1 - x0}" height="${hmax}"/>`;
+    let d = `M${x0},${yc}`; let xa = x0;
+    T.pts.forEach((p, i) => {
+      const xb = x0 + (-p.z1) * sx, y = yc - (p.x / 2) * sy;
+      d += ` L${xa.toFixed(1)},${y.toFixed(1)} L${xb.toFixed(1)},${y.toFixed(1)}`; xa = xb;
+    });
+    d += ` L${xa.toFixed(1)},${yc} Z`;
+    h += `<path class="sh-prof" d="${d}"/>`;
+    h += `<line class="sh-cl" x1="${x0 - 8}" y1="${yc}" x2="${x1 + 30}" y2="${yc}"/>`;
+    let prev = x0;
+    T.pts.forEach((p, i) => {
+      const xb = x0 + (-p.z1) * sx, y = yc - (p.x / 2) * sy, mid = (prev + xb) / 2;
+      h += `<circle class="sh-badge" cx="${mid.toFixed(1)}" cy="${(y - 9).toFixed(1)}" r="6.2"/><text class="sh-bnum" x="${mid.toFixed(1)}" y="${(y - 6.2).toFixed(1)}">${p.n}</text>`;
+      prev = xb;
+    });
+    // Z marks under the centerline: the face (Z0) and the end of every step
+    const marks = [{ x: x0, z: 0 }].concat(T.pts.map(p => ({ x: x0 + (-p.z1) * sx, z: p.z1 })));
+    marks.forEach((m, i) => {
+      const ty = yc + 4, ly = yc + 14 + (i % 2) * 10;
+      h += `<line class="sh-tick" x1="${m.x.toFixed(1)}" y1="${yc}" x2="${m.x.toFixed(1)}" y2="${ty + (i % 2) * 8}"/>`;
+      h += `<text class="sh-z" x="${Math.min(Math.max(m.x, 16), W - 22).toFixed(1)}" y="${ly}">Z${gnum(m.z, shaft.units)}</text>`;
+    });
+    h += `<text x="${x0}" y="12" style="font-size:8px">Z0 = finished face</text>`;
+    shaftSvg.innerHTML = h;
+  }
+
+  function renderShaft() {
+    const P = shaftParse();
+    // inputs (rebuilt only when the number of rows changes, so typing keeps its place)
+    if (shaftStepsEl.children.length !== shaft.steps.length + 1) {
+      let rows = '<div class="shaft-row head"><span></span><span>Dia (X)</span><span>Length</span><span></span></div>';
+      shaft.steps.forEach((r, i) => {
+        rows += `<div class="shaft-row" data-i="${i}"><span class="shaft-num">${i + 1}</span>
+          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-f="d" aria-label="Step ${i + 1} diameter" value="${r.d}">
+          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-f="l" aria-label="Step ${i + 1} length" value="${r.l}">
+          <button type="button" class="shaft-x" data-del="${i}" aria-label="Remove step ${i + 1}" title="Remove step" ${shaft.steps.length <= 1 ? 'disabled' : ''}>&times;</button></div>`;
+      });
+      shaftStepsEl.innerHTML = rows;
+    } else {
+      shaftStepsEl.querySelectorAll('.shaft-row[data-i]').forEach(row => {
+        const i = +row.dataset.i;
+        for (const f of ['d', 'l']) { const inp = row.querySelector(`[data-f="${f}"]`); if (document.activeElement !== inp) inp.value = shaft.steps[i][f]; }
+      });
+    }
+    shaftStepsEl.querySelectorAll('.shaft-row[data-i]').forEach(row => {
+      const i = +row.dataset.i;
+      row.querySelector('[data-f="d"]').classList.toggle('bad', !!P.bad.d[i]);
+      row.querySelector('[data-f="l"]').classList.toggle('bad', !!P.bad.l[i]);
+    });
+    if (document.activeElement !== shaftStockEl) shaftStockEl.value = shaft.stock;
+    shaftStockEl.classList.toggle('bad', !!P.bad.stock);
+    for (const u of ['inch', 'metric']) shaftUnitBtns[u].setAttribute('aria-pressed', String(shaft.units === u));
+    shaftAddBtn.disabled = shaft.steps.length >= SHAFT_MAX_STEPS;
+    shaftMsgEl.textContent = P.msg;
+    shaftGoBtn.disabled = !P.ok;
+    if (!P.ok) { shaftPtsEl.textContent = ''; renderShaftPicture(P, null); return; }
+    const T = shaftPoints(P);
+    renderShaftPicture(P, T);
+    const u = shaft.units;
+    let t = `<b>Stock</b>  X${gnum(P.stock, u)}\n`;
+    T.pts.forEach(p => { t += `<b>${p.n}</b>  X${gnum(p.x, u)}  Z${gnum(p.z0, u)} to Z${gnum(p.z1, u)}\n`; });
+    shaftPtsEl.innerHTML = t.trimEnd();
+  }
+
+  // the whole program for the shaft as it is drawn, in the same G-code the converter writes for the matching phrases
+  function shaftProgram() {
+    const P = shaftParse(), T = shaftPoints(P), u = shaft.units, m = u === 'metric';
+    const f = (v) => gnum(v, u);
+    const clr = m ? 2 : .1, app = m ? 2.5 : .1, over = m ? -1.5 : -.06;
+    const css = m ? 180 : 600, cssMax = 3000, fin = m ? 220 : 800, finMax = 3500;
+    const feedR = m ? .25 : .01, feedF = m ? .12 : .005, feedFace = m ? .2 : .008;
+    const doc = m ? 2.5 : .1, ret = m ? .5 : .02, allowU = m ? .5 : .02, allowW = m ? .1 : .005;
+    const xs = P.stock + clr;
+    const L = [];
+    L.push('%', 'O0001 (STEP SHAFT)', '(DATE: ' + new Date().toLocaleDateString() + ')', '(STOCK DIA ' + f(P.stock) + ' - ' + (m ? 'MM' : 'INCH') + ')', '(MACHINE: ST-20)', '');
+    L.push('(SETUP)', m ? 'G00 G18 G21 G40 G80 G99' : 'G00 G18 G20 G40 G80 G99', 'G28 U0.', 'G28 W0.', '');
+    L.push('(OP 1 - FACE AND ROUGH TURN)', 'T0101', 'G54', 'G96 S' + css + ' M03', 'G50 S' + cssMax, 'M08');
+    L.push('G00 X' + f(xs) + ' Z' + f(app), 'G01 Z0. F' + f(feedFace), 'G01 X' + f(over) + ' F' + f(feedFace), 'G00 Z' + f(app), 'G00 X' + f(xs));
+    L.push('G71 U' + f(doc) + ' R' + f(ret), 'G71 P100 Q200 U' + f(allowU) + ' W' + f(allowW) + ' F' + f(feedR));
+    L.push('N100 G00 X' + f(T.pts[0].x));
+    T.pts.forEach((p, i) => {
+      if (i > 0) L.push('X' + f(p.x));
+      L.push('G01 Z' + f(p.z1) + (i === 0 ? ' F' + f(feedF) : ''));
+    });
+    L.push('N200 X' + f(xs), '');
+    L.push('(OP 2 - FINISH)', 'T0202', 'G96 S' + fin + ' M03', 'G50 S' + finMax);
+    L.push('G00 X' + f(xs) + ' Z' + f(app), 'G70 P100 Q200 F' + f(feedF), '');
+    L.push('M05', 'M09', 'G28 U0.', 'G28 W0.', 'M30', '%');
+    return L.join('\n');
+  }
+
+  function shaftWrite() {
+    const P = shaftParse(); if (!P.ok) return;
+    const text = shaftProgram();
+    editor.focus();
+    editor.select();
+    let done = false;
+    try { done = document.execCommand('insertText', false, text); } catch (e) { done = false; }
+    if (!done || editor.value !== text) editor.value = text;
+    editor.setSelectionRange(0, 0);
+    editor.scrollTop = 0;
+    updateLineNumbers();
+    updateUnitsBadge();
+    showStatus('Step shaft programmed (Ctrl+Z undoes it)');
+  }
+
+  function shaftUnits(u) {
+    if (u === shaft.units) return;
+    const cur = JSON.stringify({ stock: shaft.stock, steps: shaft.steps.map(r => [r.d, r.l]) });
+    const def = SHAFT_DEFAULT[shaft.units];
+    if (cur === JSON.stringify({ stock: def.stock, steps: def.steps })) {
+      const n = SHAFT_DEFAULT[u]; shaft.stock = n.stock; shaft.steps = n.steps.map(r => ({ d: r[0], l: r[1] }));
+    } else {
+      const k = u === 'metric' ? 25.4 : 1 / 25.4, dp = u === 'metric' ? 100 : 10000;
+      const conv = (s) => { const v = parseFloat(String(s).replace(/^\./, '0.')); return isNaN(v) ? s : String(Math.round(v * k * dp) / dp); };
+      shaft.stock = conv(shaft.stock); shaft.steps = shaft.steps.map(r => ({ d: conv(r.d), l: conv(r.l) }));
+    }
+    shaft.units = u;
+    shaftStepsEl.innerHTML = '';
+    renderShaft();
+  }
+
+  shaftStepsEl.addEventListener('input', (e) => {
+    const inp = e.target.closest('input[data-f]'); if (!inp) return;
+    shaft.steps[+inp.closest('.shaft-row').dataset.i][inp.dataset.f] = inp.value; renderShaft();
+  });
+  shaftStepsEl.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-del]'); if (!b || shaft.steps.length <= 1) return;
+    shaft.steps.splice(+b.dataset.del, 1); shaftStepsEl.innerHTML = ''; renderShaft();
+  });
+  shaftStockEl.addEventListener('input', () => { shaft.stock = shaftStockEl.value; renderShaft(); });
+  shaftAddBtn.addEventListener('click', () => {
+    if (shaft.steps.length >= SHAFT_MAX_STEPS) return;
+    const last = shaft.steps[shaft.steps.length - 1];
+    const bump = (v, add) => { const n = parseFloat(String(v).replace(/^\./, '0.')); return isNaN(n) ? v : String(Math.round((n + add) * 10000) / 10000); };
+    const stk = parseFloat(String(shaft.stock).replace(/^\./, '0.'));
+    let d = bump(last.d, shaft.units === 'metric' ? 3 : .125); if (!isNaN(stk) && parseFloat(d) > stk) d = String(stk);
+    shaft.steps.push({ d, l: last.l }); shaftStepsEl.innerHTML = ''; renderShaft();
+  });
+  shaftUnitBtns.inch.addEventListener('click', () => shaftUnits('inch'));
+  shaftUnitBtns.metric.addEventListener('click', () => shaftUnits('metric'));
+  shaftGoBtn.addEventListener('click', shaftWrite);
+  renderShaft();
+  window.__shaft = { shaft, shaftProgram, shaftParse };
+
+  // ============================================================
+  // "HOW DO I USE IT?": a guided walkthrough, in the spirit of Shop Tool Sim's. Everything but one spot is dimmed, a card says what to do
+  // with an arrow pointing at the spot, and where it helps a live demo types into the editor. Exit / Esc puts everything back as it was.
+  // ============================================================
+  const guideBtn = document.getElementById('guideBtn');
+  const gd = document.getElementById('gd'), gdHole = document.getElementById('gd-hole'), gdRing = document.getElementById('gd-ring');
+  const gdCard = document.getElementById('gd-card'), gdArrow = document.getElementById('gd-arrow'), gdHead = document.getElementById('gd-head');
+  const gdTitle = document.getElementById('gd-title'), gdText = document.getElementById('gd-text'), gdCount = document.getElementById('gd-count');
+  const gdBack = document.getElementById('gd-back'), gdNext = document.getElementById('gd-next'), gdReplay = document.getElementById('gd-replay');
+  let gdOn = false, gdStep = 0, gdRun = 0, gdSaved = null;
+  const gdSleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const isLathe = () => GcodeConverter.getMachine().type === 'lathe';
+
+  // typing like a person: one letter at a time into the real editor, then Enter, so the real converter does the work
+  async function gdType(text, run, pace) {
+    editor.focus();
+    for (const ch of text) {
+      if (run !== gdRun) return false;
+      const v = editor.value, pos = editor.selectionStart;
+      editor.value = v.slice(0, pos) + ch + v.slice(pos);
+      editor.setSelectionRange(pos + 1, pos + 1);
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+      await gdSleep(pace || 55);
+    }
+    return run === gdRun;
+  }
+  async function gdEnter(run) {
+    if (run !== gdRun) return false;
+    editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await gdSleep(700);
+    return run === gdRun;
+  }
+  function gdEditorToEnd() { editor.value = editor.value.replace(/\s+$/, '') + (editor.value.trim() ? '\n' : ''); editor.setSelectionRange(editor.value.length, editor.value.length); updateLineNumbers(); editor.scrollTop = editor.scrollHeight; }
+  function gdSelf() { return gdOn; }
+
+  const GD_STEPS = [
+    { title: 'Welcome to Speed Coder', spot: null,
+      text: () => '<p>You type what you mean in plain English, press <b>Enter</b>, and the line turns into G-code.</p><p>This quick tour takes about a minute. You can leave it any time, and everything goes back as it was.</p>' },
+    { title: 'Pick your machine', spot: () => document.getElementById('machine-toggle').parentElement,
+      text: () => '<p><b>Mill</b> and <b>Lathe</b> each know their own phrases and G-codes. Switch any time.</p><p>On a mill, <b>Multiaxis</b> adds A, B and C moves. On a lathe, a <b>Step shaft</b> builder appears below.</p>' },
+    { title: 'Type a phrase, press Enter', spot: () => document.getElementById('editor-wrap'), where: 'below', demo: true,
+      text: () => '<p>Watch: it types <code>safety line inch</code> and presses <b>Enter</b>. The phrase becomes the real G-code line.</p><p>Then a move: <code>' + (isLathe() ? 'rapid to x2.2 z.1' : 'rapid to x1 y1 z.1') + '</code>.</p><p>Press <b>Tab</b> while you type to see suggestions.</p>' },
+    { title: 'Units are picked up for you', spot: () => document.getElementById('units-badge'),
+      text: () => '<p>This badge reads the program. <b>G20</b> shows inch, <b>G21</b> shows metric, and numbers are written to match.</p>' },
+    { title: 'Semicolons', spot: () => document.getElementById('auto-semicolon-btn').parentElement,
+      text: () => '<p><b>Auto ;</b> adds a semicolon to the end of every line you convert.</p><p><b>Add ;</b> and <b>Remove ;</b> fix the whole program at once.</p>' },
+    { title: 'The cheat sheet', spot: () => document.getElementById('cheat-sheet-modal'), where: 'left', demo: true,
+      text: () => '<p>Every phrase and code, with what it turns into. Watch it search for <code>coolant</code>.</p><p>The chips filter by type, and the <b>Cheat Sheet</b> button hides or shows this panel.</p>' },
+    { title: 'Step shaft', spot: () => document.getElementById('shaft-panel'), only: 'lathe', where: 'right',
+      text: () => '<p>Set the <b>diameter</b> and <b>length</b> of each step. The picture and the <b>X / Z coordinates</b> update as you type.</p><p>Press <b>Auto program</b> and the whole program is written for you.</p>' },
+    { title: 'There is your program', spot: () => document.getElementById('editor-wrap'), only: 'lathe', where: 'below', demo: true,
+      text: () => '<p>Watch the step shaft program being written: facing, rough turn, finish pass and the end block. <b>Ctrl+Z</b> undoes it.</p>' },
+    { title: 'You are ready', spot: null,
+      text: () => '<p>Type a phrase, press <b>Enter</b>, and keep the cheat sheet beside you. Open this tour again from <b>How do I use it?</b> any time.</p>' }
+  ];
+  const gdSteps = () => GD_STEPS.filter(s => !s.only || s.only === GcodeConverter.getMachine().type);
+
+  function gdPlace(spotEl, where) {
+    const vw = innerWidth, vh = innerHeight, M = 12;
+    const cw = gdCard.offsetWidth, ch = gdCard.offsetHeight;
+    let cx, cy, tr = null;
+    if (spotEl) {
+      const r = spotEl.getBoundingClientRect();
+      const pad = 6;
+      tr = { x: Math.max(4, r.left - pad), y: Math.max(4, r.top - pad), w: Math.min(vw - 8, r.width + pad * 2), h: Math.min(vh - 8, r.height + pad * 2) };
+      gdHole.classList.remove('none');
+      gdHole.style.width = tr.w + 'px'; gdHole.style.height = tr.h + 'px'; gdHole.style.transform = `translate(${tr.x}px,${tr.y}px)`;
+      const opts = { right: [tr.x + tr.w + 18, tr.y], left: [tr.x - cw - 18, tr.y], below: [tr.x + tr.w / 2 - cw / 2, tr.y + tr.h + 18], above: [tr.x + tr.w / 2 - cw / 2, tr.y - ch - 18] };
+      const order = [where, 'right', 'left', 'below', 'above'].filter(Boolean);
+      let pick = null;
+      for (const k of order) { const [x, y] = opts[k]; if (x >= M && y >= M && x + cw <= vw - M && y + ch <= vh - M) { pick = [x, y]; break; } }
+      if (!pick) {
+        // nothing fits beside it: sit in the largest free band, clamped on screen
+        const x = Math.min(Math.max(M, vw / 2 - cw / 2), vw - cw - M);
+        const y = (tr.y + tr.h / 2 < vh / 2) ? Math.min(vh - ch - M, tr.y + tr.h + 14) : Math.max(M, tr.y - ch - 14);
+        pick = [x, y];
+      }
+      [cx, cy] = pick;
+    } else {
+      gdHole.classList.add('none'); gdHole.style.width = '0px'; gdHole.style.height = '0px'; gdHole.style.transform = `translate(${vw / 2}px,${vh / 2}px)`;
+      cx = vw / 2 - cw / 2; cy = vh / 2 - ch / 2;
+    }
+    gdCard.style.transform = `translate(${Math.round(cx)}px,${Math.round(cy)}px)`;
+    // a curly arrow from the card to the spot
+    if (tr) {
+      const ccx = cx + cw / 2, ccy = cy + ch / 2, tcx = tr.x + tr.w / 2, tcy = tr.y + tr.h / 2;
+      const clampTo = (rx, ry, rw, rh, px, py, ox, oy) => { // point on a rect's edge facing (ox,oy)
+        const dx = ox - px, dy = oy - py; const sx = dx ? (rw / 2) / Math.abs(dx) : Infinity, sy = dy ? (rh / 2) / Math.abs(dy) : Infinity; const k = Math.min(sx, sy); return [px + dx * k, py + dy * k];
+      };
+      const a = clampTo(cx, cy, cw, ch, ccx, ccy, tcx, tcy), b0 = clampTo(tr.x, tr.y, tr.w, tr.h, tcx, tcy, ccx, ccy);
+      const dx = b0[0] - a[0], dy = b0[1] - a[1], len = Math.hypot(dx, dy) || 1;
+      if (len < 28) { gdArrow.setAttribute('d', ''); gdHead.setAttribute('points', ''); return; }
+      const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+      const bx = b0[0] + ux * 8, by = b0[1] + uy * 8;   // stop just short of the glow
+      const L2 = Math.hypot(bx - a[0], by - a[1]), curl = Math.min(46, L2 * .35);
+      const c1 = [a[0] + (bx - a[0]) * .3 + nx * curl, a[1] + (by - a[1]) * .3 + ny * curl];
+      const c2 = [a[0] + (bx - a[0]) * .72 - nx * curl * .8, a[1] + (by - a[1]) * .72 - ny * curl * .8];
+      gdArrow.setAttribute('d', `M${a[0].toFixed(1)},${a[1].toFixed(1)} C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${bx.toFixed(1)},${by.toFixed(1)}`);
+      const ex = bx - c2[0], ey = by - c2[1], el = Math.hypot(ex, ey) || 1, tx = ex / el, ty = ey / el, px = -ty, py = tx;
+      const tip = [bx + tx * 4, by + ty * 4], l = [bx - tx * 11 + px * 7, by - ty * 11 + py * 7], r = [bx - tx * 11 - px * 7, by - ty * 11 - py * 7];
+      gdHead.setAttribute('points', `${tip[0].toFixed(1)},${tip[1].toFixed(1)} ${l[0].toFixed(1)},${l[1].toFixed(1)} ${r[0].toFixed(1)},${r[1].toFixed(1)}`);
+    } else { gdArrow.setAttribute('d', ''); gdHead.setAttribute('points', ''); }
+  }
+
+  async function gdShow(i) {
+    const steps = gdSteps();
+    gdStep = Math.max(0, Math.min(steps.length - 1, i));
+    const st = steps[gdStep];
+    const run = ++gdRun;
+    gdRing.classList.remove('on');
+    gdTitle.textContent = st.title;
+    gdText.innerHTML = st.text();
+    gdCount.textContent = (gdStep + 1) + ' of ' + steps.length;
+    gdBack.disabled = gdStep === 0;
+    gdNext.textContent = gdStep === steps.length - 1 ? 'Done' : 'Next';
+    gdReplay.hidden = !st.demo;
+    // the cheat sheet has to be showing for its step
+    if (st.title === 'The cheat sheet' && !cheatSheetModal.classList.contains('visible')) setCheatSheet(true);
+    const spotEl = st.spot ? st.spot() : null;
+    if (spotEl && spotEl.scrollIntoView) spotEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    gdPlace(spotEl, st.where);
+    gdNext.focus({ preventScroll: true });
+    if (st.demo) { await gdSleep(450); if (run === gdRun) gdDemo(st, run); }
+  }
+
+  async function gdDemo(st, run) {
+    if (st.title === 'Type a phrase, press Enter') {
+      editor.value = ''; updateLineNumbers(); updateUnitsBadge();
+      if (!await gdType('safety line inch', run)) return; if (!await gdEnter(run)) return;
+      if (!await gdType(isLathe() ? 'rapid to x2.2 z.1' : 'rapid to x1 y1 z.1', run)) return; await gdEnter(run);
+    } else if (st.title === 'The cheat sheet') {
+      cheatSearch.value = ''; cheatCat = ''; renderCheatSheet();
+      for (const ch of 'coolant') { if (run !== gdRun) return; cheatSearch.value += ch; renderCheatSheet(); await gdSleep(150); }
+      await gdSleep(1300); if (run !== gdRun) return;
+      cheatSearch.value = ''; renderCheatSheet();
+    } else if (st.title === 'There is your program') {
+      editor.value = ''; updateLineNumbers();
+      gdRing.classList.remove('on');
+      // show the click on Auto program, then write it
+      const b = shaftGoBtn.getBoundingClientRect();
+      gdRing.style.left = (b.left + b.width / 2) + 'px'; gdRing.style.top = (b.top + b.height / 2) + 'px'; gdRing.classList.add('on');
+      await gdSleep(1100); if (run !== gdRun) return;
+      gdRing.classList.remove('on');
+      shaftWrite();
+      // let it scroll down through the program so each part can be seen
+      const max = editor.scrollHeight - editor.clientHeight;
+      for (let k = 1; k <= 30 && run === gdRun; k++) { editor.scrollTop = max * k / 30; updateLineNumbers(); await gdSleep(60); }
+    }
+  }
+
+  function gdOpen() {
+    if (gdOn) return;
+    gdOn = true;
+    gdSaved = { value: editor.value, a: editor.selectionStart, b: editor.selectionEnd, top: editor.scrollTop, cheat: cheatSheetModal.classList.contains('visible'), search: cheatSearch.value, cat: cheatCat, auto: autoSemicolon };
+    hideAutocomplete();
+    gd.hidden = false;
+    document.body.classList.add('gd-open');
+    gdShow(0);
+  }
+  function gdClose() {
+    if (!gdOn) return;
+    gdOn = false; gdRun++;
+    gd.hidden = true; gdRing.classList.remove('on');
+    document.body.classList.remove('gd-open');
+    const s = gdSaved; gdSaved = null;
+    editor.value = s.value; updateLineNumbers(); updateUnitsBadge();
+    editor.setSelectionRange(s.a, s.b); editor.scrollTop = s.top;
+    cheatSearch.value = s.search; cheatCat = s.cat; setCheatSheet(s.cheat);
+    if (!s.cheat) renderCheatSheet();
+    hideAutocomplete();
+    guideBtn.focus({ preventScroll: true });
+  }
+  guideBtn.addEventListener('click', gdOpen);
+  document.getElementById('gd-x').addEventListener('click', gdClose);
+  gdBack.addEventListener('click', () => gdShow(gdStep - 1));
+  gdNext.addEventListener('click', () => { if (gdStep >= gdSteps().length - 1) gdClose(); else gdShow(gdStep + 1); });
+  gdReplay.addEventListener('click', () => gdShow(gdStep));
+  document.getElementById('gd-dim').addEventListener('click', () => {});
+  addEventListener('keydown', (e) => {
+    if (!gdOn) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); gdClose(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); gdNext.click(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); gdBack.click(); }
+  }, true);
+  addEventListener('resize', () => { if (gdOn) { const st = gdSteps()[gdStep]; gdPlace(st.spot ? st.spot() : null, st.where); } });
 
   // Initial content
   { const saved = loadMachine(); applyMachine(saved.type, saved.multi, { silent: true }); }
