@@ -283,6 +283,57 @@
   .wz-foot .go:hover { color: #07111f; filter: brightness(1.08); background: linear-gradient(180deg, color-mix(in srgb, #5b93ea 80%, #fff), #5b93ea); }
   @media (max-width: 700px) { .wz-main { grid-template-columns: 1fr; } .wz-grid { grid-template-columns: 1fr; } }
 
+  /* ===== my shortcuts ===== */
+  #cs-modal { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(4,5,7,.78); font-family: 'Inter', system-ui, sans-serif; }
+  #cs-modal[hidden] { display: none; }
+  .cs-card { width: min(720px, 100%); max-height: min(90vh, 760px); display: flex; flex-direction: column; border-radius: 14px; background: #16181b; border: 1px solid #2b2e33; box-shadow: 0 20px 50px rgba(0,0,0,.6); color: #ececee; }
+  .cs-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 4px; }
+  .cs-head h3 { margin: 0; font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: .08em; }
+  .cs-head h3 i { font-style: normal; color: #e8c547; opacity: .85; }
+  .cs-head button { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3d4147; background: transparent; color: #8a8f97; font-size: 15px; line-height: 1; cursor: pointer; text-transform: none; font-style: normal; }
+  .cs-head button:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  .cs-intro { margin: 0; padding: 0 20px 10px; font-size: 12.5px; line-height: 1.5; color: #8a8f97; }
+  .cs-intro b, .cs-intro code { color: #ececee; font-weight: 600; }
+  .cs-intro code { font: 600 12px ui-monospace, 'DM Mono', Consolas, monospace; color: #9ec0f7; }
+  .cs-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 20px 8px; display: flex; flex-direction: column; gap: 14px; }
+  .cs-form { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; background: #0d0e10; border: 1px solid #222428; }
+  .cs-form label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8a8f97; }
+  .cs-form input[type=text], .cs-form textarea { padding: 9px 11px; border-radius: 9px; border: 1px solid #222428; background: #16181b; color: #ececee; font: 500 13.5px ui-monospace, 'DM Mono', Consolas, monospace; outline: none; text-transform: none; letter-spacing: normal; user-select: text; -webkit-user-select: text; transition: border-color .2s ease, box-shadow .2s ease; resize: vertical; }
+  .cs-form input[type=text] { height: 38px; padding: 0 11px; }
+  .cs-form textarea { min-height: 70px; line-height: 1.5; }
+  .cs-form input:focus, .cs-form textarea:focus { border-color: #5b93ea; box-shadow: 0 0 0 3px rgba(91,147,234,.22); }
+  .cs-form input.bad, .cs-form textarea.bad { border-color: #f04a45; }
+  .cs-hint { font-size: 11.5px; line-height: 1.4; color: #8a8f97; text-transform: none; letter-spacing: normal; font-weight: 400; }
+  .cs-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .cs-row .grow { flex: 1; min-width: 160px; }
+  .cs-seg { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: #16181b; border: 1px solid #222428; }
+  .cs-seg button { height: 30px; padding: 0 12px; border-radius: 7px; border: 1px solid transparent; background: transparent; color: #8a8f97; font: 600 12.5px 'Inter', system-ui, sans-serif; text-transform: none; font-style: normal; letter-spacing: normal; cursor: pointer; transition: color .2s ease, background-color .2s ease, border-color .2s ease; }
+  .cs-seg button:hover { color: #ececee; background: rgba(255,255,255,.05); }
+  .cs-seg button[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, rgba(91,147,234,.2), rgba(91,147,234,.08)); border-color: rgba(91,147,234,.42); }
+  #cs-msg { min-height: 18px; font-size: 12.5px; line-height: 1.4; color: #f3a6a3; }
+  #cs-msg.note { color: #e8c547; }
+  .cs-btn { height: 34px; padding: 0 16px; border-radius: 9px; border: 1px solid #3d4147; background: transparent; color: #cfd3d9; font: 600 13px 'Inter', system-ui, sans-serif; text-transform: none; font-style: normal; letter-spacing: normal; cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+  .cs-btn:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  .cs-btn.go { color: #07111f; border-color: color-mix(in srgb, #5b93ea 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, #5b93ea 80%, #fff), #5b93ea); }
+  .cs-btn.go:hover { color: #07111f; filter: brightness(1.08); background: linear-gradient(180deg, color-mix(in srgb, #5b93ea 80%, #fff), #5b93ea); }
+  .cs-btn[hidden] { display: none; }
+  .cs-list { display: flex; flex-direction: column; gap: 6px; }
+  .cs-list h4 { margin: 4px 0 2px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8a8f97; }
+  .cs-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 12px; border-radius: 10px; background: #1b1d20; border: 1px solid #222428; }
+  .cs-item.edit { border-color: #5b93ea; }
+  .cs-phrase { font: 600 13px ui-monospace, 'DM Mono', Consolas, monospace; color: #9ec0f7; word-break: break-word; }
+  .cs-phrase small { margin-left: 8px; padding: 1px 7px; border-radius: 999px; border: 1px solid #3d4147; color: #8a8f97; font: 700 9.5px 'Inter', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+  .cs-out { grid-column: 1 / 2; margin: 0; font: 500 12px/1.5 ui-monospace, 'DM Mono', Consolas, monospace; color: #cfd3d9; white-space: pre-wrap; word-break: break-word; }
+  .cs-act { grid-column: 2 / 3; grid-row: 1 / 3; display: flex; gap: 4px; align-items: flex-start; }
+  .cs-act button { height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid #3d4147; background: transparent; color: #cfd3d9; font: 600 12px 'Inter', system-ui, sans-serif; text-transform: none; font-style: normal; letter-spacing: normal; cursor: pointer; }
+  .cs-act button:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  .cs-act button.del.sure { color: #fff; border-color: #f04a45; background: rgba(240,74,69,.25); }
+  .cs-empty { padding: 14px; text-align: center; font-size: 12.5px; color: #8a8f97; border: 1px dashed #2b2e33; border-radius: 10px; }
+  .cs-foot { display: flex; gap: 8px; align-items: center; padding: 10px 20px 16px; border-top: 1px solid #222428; }
+  .cs-foot .sp { flex: 1; }
+  .cs-foot input[type=file] { display: none; }
+  @media (max-width: 700px) { .cs-item { grid-template-columns: 1fr; } .cs-act { grid-column: 1; grid-row: auto; } }
+
   /* ===== "How do I use it?" button and walkthrough ===== */
   .guide-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--s-accent) 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 80%, #fff), var(--s-accent)); color: #07111f; font: 700 13.5px/1.2 'Inter', system-ui, sans-serif; letter-spacing: .01em; cursor: pointer; box-shadow: 0 6px 18px color-mix(in srgb, var(--s-accent) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.4); transition: transform .15s ease, filter .15s ease, box-shadow .15s ease; margin-top: -6px; }
   .guide-btn:hover { transform: translateY(-1px); filter: brightness(1.08); color: #07111f; background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 80%, #fff), var(--s-accent)); }
@@ -466,6 +517,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
       <div class="side-group">
         <div class="side-label">Tools</div>
         <button class="chip" id="cheat-sheet-btn" aria-controls="cheat-sheet-modal" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg>Cheat Sheet</button>
+        <button class="chip" type="button" id="my-shortcuts-btn" title="Make your own phrases that write a line of G-code or any text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>My shortcuts</button>
         <button class="chip" id="debug-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h6v6a3 3 0 0 1-6 0zM9 7a3 3 0 0 1 6 0M5 12h4M15 12h4M6 6l3 3M18 6l-3 3M6 19l3-3M18 19l-3-3"/></svg>Debug</button>
       </div>
       <div class="hint-row">Type anything and press Enter to convert to G-code</div>
@@ -537,6 +589,23 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     </div>
     <div id="wz-msg" role="status"></div>
     <div class="wz-foot"><button type="button" id="wz-back">Back</button><span class="sp"></span><button type="button" id="wz-next" class="go">Next</button><button type="button" id="wz-save" hidden>Save steps</button><button type="button" id="wz-prog" class="go" hidden>Save and auto program</button></div>
+  </div>
+</div>
+<div id="cs-modal" hidden>
+  <div class="cs-card" role="dialog" aria-modal="true" aria-labelledby="cs-title">
+    <div class="cs-head"><h3 id="cs-title"><i aria-hidden="true">[</i> MY SHORTCUTS <i aria-hidden="true">]</i></h3><button type="button" id="cs-x" aria-label="Close" title="Close (Esc)">&times;</button></div>
+    <p class="cs-intro">Make up a phrase, say what it should write, and from then on typing the phrase and pressing <b>Enter</b> gives you exactly that: a G-code line, several lines, or any text. For example <code>my safe start</code> can write <code>G00 G18 G20 G40 G80 G99</code>.</p>
+    <div class="cs-body">
+      <div class="cs-form">
+        <label>When I type<input type="text" id="cs-phrase" autocomplete="off" spellcheck="false" maxlength="80" placeholder="my safe start"></label>
+        <label>Write this<textarea id="cs-out" spellcheck="false" maxlength="2000" placeholder="G00 G18 G20 G40 G80 G99"></textarea><span class="cs-hint">Anything goes. Press Enter for more lines, and Ctrl+Enter to save.</span></label>
+        <div class="cs-row"><div><div class="cs-hint" style="margin-bottom:5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase">Works on</div><div class="cs-seg" id="cs-mach" role="group" aria-label="Works on"><button type="button" data-m="both" aria-pressed="true">Both</button><button type="button" data-m="mill" aria-pressed="false">Mill</button><button type="button" data-m="lathe" aria-pressed="false">Lathe</button></div></div>
+        <span class="grow"></span><button type="button" class="cs-btn" id="cs-cancel" hidden>Cancel</button><button type="button" class="cs-btn go" id="cs-add">Add shortcut</button></div>
+        <div id="cs-msg" role="status"></div>
+      </div>
+      <div class="cs-list" id="cs-list"></div>
+    </div>
+    <div class="cs-foot"><button type="button" class="cs-btn" id="cs-export">Download my list</button><button type="button" class="cs-btn" id="cs-import">Load a list</button><input type="file" id="cs-file" accept=".json,application/json"><span class="sp"></span><button type="button" class="cs-btn" id="cs-done" onclick="document.getElementById('cs-x').click()">Done</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -670,8 +739,20 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     return GcodeConverter.applyUnitFormat(str, currentUnits);
   }
   function parseCoords(str) { return GcodeConverter.parseCoords(str); }
-  function tryConvertLine(rawLine, context) { return GcodeConverter.tryConvertLine(rawLine, context); }
-  function getAutocompleteSuggestions(prefix) { return GcodeConverter.getAutocompleteSuggestions(prefix); }
+  // (my own shortcuts are tried first; they are defined further down, with the rest of the shortcut code)
+  function tryConvertLine(rawLine, context) {
+    const mine = typeof customMatch === 'function' ? customMatch(rawLine) : null;
+    if (mine !== null) { customHit = true; return mine; }
+    return GcodeConverter.tryConvertLine(rawLine, context);
+  }
+  function getAutocompleteSuggestions(prefix) {
+    const base = GcodeConverter.getAutocompleteSuggestions(prefix);
+    if (!prefix || prefix.length < 2 || typeof customList === 'undefined') return base;
+    const p = prefix.toLowerCase();
+    const mine = customList.filter(c => csActive(c) && (c.phrase.toLowerCase().includes(p) || c.out.toLowerCase().includes(p)))
+      .map(c => ({ code: c.phrase, desc: c.out.replace(/\n/g, ' \u21b5 ').slice(0, 70), type: 'My shortcuts' }));
+    return mine.concat(base).slice(0, 16);
+  }
 
   function esc(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -863,6 +944,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
 
     if (e.key==='Enter') {
       e.preventDefault();
+      customHit = false;
       const pos=editor.selectionStart, val=editor.value;
       const lineStart=val.lastIndexOf('\n',pos-1)+1;
       const lineEnd=val.indexOf('\n',pos);
@@ -910,7 +992,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
         }
       }
 
-      newLine = applySemicolonsToConvertedString(newLine);
+      if (!customHit) newLine = applySemicolonsToConvertedString(newLine);   // (my own shortcuts are written exactly as saved)
 
       editor.value = val.slice(0, lineStart) + newLine + val.slice(end);
       const newPos = lineStart + newLine.length;
@@ -944,7 +1026,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
 
   // draws the whole cheat sheet, narrowed by the type chips and whatever the search bar matches (code, translation or type)
   function renderCheatSheet() {
-    const items = GcodeConverter.getCheatSheetItems();
+    const items = (typeof customItems === 'function' ? customItems() : []).concat(GcodeConverter.getCheatSheetItems());
     const terms = cheatSearch.value.toLowerCase().split(/\s+/).filter(Boolean);
     cheatClear.classList.toggle('on', cheatSearch.value !== '');
     const counts = new Map();
@@ -1841,7 +1923,7 @@ G42 turn to X1.2 Z-1. at .005`
     { title: 'Semicolons', spot: () => document.getElementById('auto-semicolon-btn').parentElement,
       text: () => '<p><b>Auto ;</b> adds a semicolon to the end of every line you convert.</p><p><b>Add ;</b> and <b>Remove ;</b> fix the whole program at once.</p>' },
     { title: 'The cheat sheet', spot: () => document.getElementById('cheat-sheet-modal'), where: 'left', demo: true,
-      text: () => '<p>Every phrase and code, with what it turns into. Watch it search for <code>coolant</code>.</p><p>The chips filter by type, and the <b>Cheat Sheet</b> button hides or shows this panel.</p>' },
+      text: () => '<p>Every phrase and code, with what it turns into. Watch it search for <code>coolant</code>.</p><p>The chips filter by type. Make your own phrases with <b>My shortcuts</b> and they appear here too.</p>' },
     { title: 'Step shaft', spot: () => document.getElementById('shaft-panel'), only: 'lathe', where: 'right',
       text: () => '<p>Set the <b>diameter</b> and <b>length</b> of each step. The picture and the <b>X / Z coordinates</b> update as you type.</p><p>The <b>Step wizard</b> walks you through each step, with a chamfer or radius if you want one. <b>Auto program</b> then writes the whole program.</p>' },
     { title: 'There is your program', spot: () => document.getElementById('editor-wrap'), only: 'lathe', where: 'below', demo: true,
@@ -2207,6 +2289,132 @@ G42 turn to X1.2 Z-1. at .005`
   fixModal.addEventListener('click', (e) => { if (e.target === fixModal) fixClose(); });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !fixModal.hidden) { e.preventDefault(); e.stopPropagation(); fixClose(); } }, true);
   window.__lint = { check: lintRun };
+
+  // ============================================================
+  // MY SHORTCUTS: phrases you make up. Type the phrase, press Enter, and it becomes exactly the text you saved (a G-code line, several lines, or any string).
+  // They are kept in this browser, sit in the cheat sheet under "My Shortcuts", and show up in the Tab suggestions.
+  // ============================================================
+  const CUSTOM_KEY = 'speedcoder.custom.v1', CUSTOM_MAX = 200;
+  var customList = [];   // (var and plain functions: the cheat sheet is drawn once before this part of the script has run)
+  var customHit = false;
+  function csNorm(s) { return String(s).toLowerCase().replace(/\s+/g, ' ').trim().replace(/\s*;$/, '').trim(); }
+  function csLoad() {
+    try {
+      const a = JSON.parse(localStorage.getItem(CUSTOM_KEY));
+      if (Array.isArray(a)) return a.filter(x => x && typeof x.phrase === 'string' && typeof x.out === 'string' && x.phrase.trim()).map(x => ({ phrase: x.phrase.trim(), out: x.out, m: x.m === 'mill' || x.m === 'lathe' ? x.m : 'both' })).slice(0, CUSTOM_MAX);
+    } catch (e) { /* none saved, or storage blocked */ }
+    return [];
+  }
+  function csSave() { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(customList)); } catch (e) { /* storage may be blocked: they last until the page closes */ } }
+  function csActive(c) { return c.m === 'both' || c.m === GcodeConverter.getMachine().type; }
+  // what a line becomes if it is one of my phrases (null if it is not)
+  function customMatch(raw) {
+    const k = csNorm(raw); if (!k) return null;
+    const hit = (customList || []).find(c => csActive(c) && csNorm(c.phrase) === k);
+    return hit ? hit.out : null;
+  }
+  function customItems() { return (customList || []).filter(csActive).map(c => ({ code: c.phrase, desc: c.out.replace(/\n/g, ' ↵ '), category: 'My Shortcuts', isQuickSetup: false, custom: true })); }
+  customList = csLoad();
+
+  const csModal = document.getElementById('cs-modal'), csPhrase = document.getElementById('cs-phrase'), csOut = document.getElementById('cs-out');
+  const csMsg = document.getElementById('cs-msg'), csListEl = document.getElementById('cs-list'), csAdd = document.getElementById('cs-add'), csCancel = document.getElementById('cs-cancel');
+  let csMach = 'both', csEdit = -1, csTried = false;   // (a box turns red only after Add has been tried)
+
+  function csRender() {
+    csMsg.className = '';
+    let h = `<h4>${customList.length ? 'Your shortcuts (' + customList.length + ')' : 'Your shortcuts'}</h4>`;
+    if (!customList.length) h += '<div class="cs-empty">Nothing yet. Add a phrase and what it should write.</div>';
+    customList.forEach((c, i) => {
+      h += `<div class="cs-item${i === csEdit ? ' edit' : ''}"><div class="cs-phrase">${escapeHtml(c.phrase)}${c.m !== 'both' ? `<small>${c.m}</small>` : ''}</div>
+        <div class="cs-act"><button type="button" data-edit="${i}">Edit</button><button type="button" class="del" data-del="${i}">Delete</button></div>
+        <pre class="cs-out">${escapeHtml(c.out)}</pre></div>`;
+    });
+    csListEl.innerHTML = h;
+    document.querySelectorAll('#cs-mach button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === csMach)));
+    csAdd.textContent = csEdit >= 0 ? 'Save changes' : 'Add shortcut';
+    csCancel.hidden = csEdit < 0;
+  }
+  function csCheck() {
+    // returns an error text, or '' (and may set a note about overriding a built-in)
+    const ph = csPhrase.value.trim(), out = csOut.value;
+    csPhrase.classList.remove('bad'); csOut.classList.remove('bad'); csMsg.className = ''; csMsg.textContent = '';
+    if (!ph) { csTried && csPhrase.classList.add('bad'); return 'Type the phrase you want to say.'; }
+    if (ph.length > 80) { csPhrase.classList.add('bad'); return 'Keep the phrase under 80 characters.'; }
+    let builtin = null; try { builtin = GcodeConverter.tryConvertLine(ph, {}); } catch (e) { builtin = null; }
+    if (builtin) { csMsg.className = 'note'; csMsg.textContent = 'This phrase is also a built-in shortcut. Yours will be used instead.'; }
+    if (!out.trim()) { csTried && csOut.classList.add('bad'); return 'Type what the phrase should write.'; }
+    if (out.length > 2000) { csOut.classList.add('bad'); return 'Keep the output under 2000 characters.'; }
+    const k = csNorm(ph);
+    const dup = customList.findIndex((c, i) => i !== csEdit && csNorm(c.phrase) === k && (c.m === csMach || c.m === 'both' || csMach === 'both'));
+    if (dup >= 0) { csPhrase.classList.add('bad'); return 'You already have a shortcut called "' + customList[dup].phrase + '" for this machine.'; }
+    if (csEdit < 0 && customList.length >= CUSTOM_MAX) return 'You can keep up to ' + CUSTOM_MAX + ' shortcuts.';
+    return '';
+  }
+  function csReset() { csTried = false; csEdit = -1; csPhrase.value = ''; csOut.value = ''; csMach = 'both'; csPhrase.classList.remove('bad'); csOut.classList.remove('bad'); csMsg.textContent = ''; csRender(); }
+  function csSubmit() {
+    csTried = true;
+    const err = csCheck();
+    if (err) { csMsg.className = ''; csMsg.textContent = err; return; }
+    const item = { phrase: csPhrase.value.trim().replace(/\s+/g, ' '), out: csOut.value.replace(/\s+$/, ''), m: csMach };
+    if (csEdit >= 0) customList[csEdit] = item; else customList.push(item);
+    csSave(); renderCheatSheet(); csReset();
+    showStatus('Shortcut saved');
+    csPhrase.focus();
+  }
+  function csOpen() { csModal.hidden = false; csReset(); csPhrase.focus({ preventScroll: true }); }
+  const csClose = () => { csModal.hidden = true; };
+  document.getElementById('my-shortcuts-btn').addEventListener('click', csOpen);
+  document.getElementById('cs-x').addEventListener('click', csClose);
+  csModal.addEventListener('click', (e) => { if (e.target === csModal) csClose(); });
+  csAdd.addEventListener('click', csSubmit);
+  csCancel.addEventListener('click', csReset);
+  csPhrase.addEventListener('input', csCheck);
+  csPhrase.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); csOut.focus(); } });
+  csOut.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); csSubmit(); } });
+  document.getElementById('cs-mach').addEventListener('click', (e) => { const b = e.target.closest('button[data-m]'); if (b) { csMach = b.dataset.m; csRender(); csCheck(); } });
+  let csSureTimer = 0;
+  csListEl.addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
+    if (ed) {
+      const i = +ed.dataset.edit, c = customList[i]; csEdit = i; csPhrase.value = c.phrase; csOut.value = c.out; csMach = c.m; csRender(); csCheck(); csPhrase.focus();
+    } else if (del) {
+      if (!del.classList.contains('sure')) { del.classList.add('sure'); del.textContent = 'Sure?'; clearTimeout(csSureTimer); csSureTimer = setTimeout(csRender, 3000); return; }
+      customList.splice(+del.dataset.del, 1); csSave(); renderCheatSheet(); if (csEdit >= 0) csReset(); else csRender();
+      showStatus('Shortcut deleted');
+    }
+  });
+  // keep a copy: download the list, or load one back
+  document.getElementById('cs-export').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ speedCoderShortcuts: 1, shortcuts: customList }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'speed-coder-shortcuts.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  const csFile = document.getElementById('cs-file');
+  document.getElementById('cs-import').addEventListener('click', () => csFile.click());
+  csFile.addEventListener('change', () => {
+    const f = csFile.files && csFile.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const data = JSON.parse(String(rd.result)), arr = Array.isArray(data) ? data : data.shortcuts;
+        if (!Array.isArray(arr)) throw new Error('shape');
+        let added = 0;
+        for (const x of arr) {
+          if (!x || typeof x.phrase !== 'string' || typeof x.out !== 'string' || !x.phrase.trim() || !x.out.trim()) continue;
+          const item = { phrase: x.phrase.trim().replace(/\s+/g, ' ').slice(0, 80), out: x.out.slice(0, 2000), m: x.m === 'mill' || x.m === 'lathe' ? x.m : 'both' };
+          const at = customList.findIndex(c => csNorm(c.phrase) === csNorm(item.phrase) && c.m === item.m);
+          if (at >= 0) customList[at] = item; else if (customList.length < CUSTOM_MAX) customList.push(item); else break;
+          added++;
+        }
+        csSave(); renderCheatSheet(); csReset();
+        csMsg.className = 'note'; csMsg.textContent = added ? 'Loaded ' + added + ' shortcut' + (added === 1 ? '' : 's') + '.' : 'That file had no shortcuts in it.';
+      } catch (err) { csMsg.className = ''; csMsg.textContent = 'That file could not be read as a shortcuts list.'; }
+      csFile.value = '';
+    };
+    rd.readAsText(f);
+  });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !csModal.hidden) { e.preventDefault(); e.stopPropagation(); csClose(); } }, true);
+  window.__customShortcuts = { get list() { return customList; }, match: customMatch };
 
   // Initial content
   { const saved = loadMachine(); applyMachine(saved.type, saved.multi, { silent: true }); }
