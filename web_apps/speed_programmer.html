@@ -182,6 +182,9 @@
   #toast.show { opacity: 1; }
 
 
+  .hist-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .chip:disabled { opacity: .35; cursor: default; pointer-events: none; }
+  @media (max-width: 860px) { .hist-row { display: flex; } }
   /* ===== step shaft panel (lathe only) ===== */
   body:not([data-machine="lathe"]) #shaft-panel { display: none; }
   #shaft-svg { width: 100%; height: auto; display: block; border-radius: 9px; background: var(--s-bg); border: 1px solid var(--s-line); }
@@ -343,6 +346,13 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
       <div class="side-group">
         <div class="side-label">Units</div>
         <span id="units-badge">UNITS ?</span>
+      </div>
+      <div class="side-group">
+        <div class="side-label">History</div>
+        <div class="hist-row">
+          <button class="chip" type="button" id="undo-btn" title="Undo (Ctrl+Z)" aria-label="Undo (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button>
+          <button class="chip" type="button" id="redo-btn" title="Redo (Ctrl+Y)" aria-label="Redo (Ctrl+Y)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>Redo</button>
+        </div>
       </div>
       <div class="side-group">
         <div class="side-label">Semicolons</div>
@@ -1493,7 +1503,7 @@ G42 turn to X1.2 Z-1. at .005`
     { title: 'Pick your machine', spot: () => document.getElementById('machine-toggle').parentElement,
       text: () => '<p><b>Mill</b> and <b>Lathe</b> each know their own phrases and G-codes. Switch any time.</p><p>On a mill, <b>Multiaxis</b> adds A, B and C moves. On a lathe, a <b>Step shaft</b> builder appears below.</p>' },
     { title: 'Type a phrase, press Enter', spot: () => document.getElementById('editor-wrap'), where: 'below', demo: true,
-      text: () => '<p>Watch: it types <code>safety line inch</code> and presses <b>Enter</b>. The phrase becomes the real G-code line.</p><p>Then a move: <code>' + (isLathe() ? 'rapid to x2.2 z.1' : 'rapid to x1 y1 z.1') + '</code>.</p><p>Press <b>Tab</b> while you type to see suggestions.</p>' },
+      text: () => '<p>Watch: it types <code>safety line inch</code> and presses <b>Enter</b>. The phrase becomes the real G-code line.</p><p>Then a move: <code>' + (isLathe() ? 'rapid to x2.2 z.1' : 'rapid to x1 y1 z.1') + '</code>.</p><p>Press <b>Tab</b> while you type to see suggestions. Made a mistake? <b>Ctrl+Z</b> undoes and <b>Ctrl+Y</b> redoes.</p>' },
     { title: 'Units are picked up for you', spot: () => document.getElementById('units-badge'),
       text: () => '<p>This badge reads the program. <b>G20</b> shows inch, <b>G21</b> shows metric, and numbers are written to match.</p>' },
     { title: 'Semicolons', spot: () => document.getElementById('auto-semicolon-btn').parentElement,
@@ -1638,11 +1648,75 @@ G42 turn to X1.2 Z-1. at .005`
   }, true);
   addEventListener('resize', () => { if (gdOn) { const st = gdSteps()[gdStep]; gdPlace(st.spot ? st.spot() : null, st.where); } });
 
+  // ============================================================
+  // UNDO / REDO: the editor's own undo cannot follow the conversions and buttons that rewrite the text, so every state is kept here.
+  // A state is saved when typing pauses, just before Enter converts a line, and before any click, so one undo takes back one thing.
+  // ============================================================
+  const undoBtn = document.getElementById('undo-btn'), redoBtn = document.getElementById('redo-btn');
+  const HIST_MAX = 400;
+  let hist = [], histAt = -1;
+  const histState = () => ({ v: editor.value, a: editor.selectionStart, b: editor.selectionEnd });
+  function histButtons() {
+    undoBtn.disabled = histAt <= 0;
+    redoBtn.disabled = histAt >= hist.length - 1;
+  }
+  // saves the editor as a new step if the text changed (anything that was undone and not redone is dropped)
+  function histCheck() {
+    if (typeof gdOn !== 'undefined' && gdOn) return;
+    if (histAt >= 0 && hist[histAt].v === editor.value) { hist[histAt].a = editor.selectionStart; hist[histAt].b = editor.selectionEnd; return; }
+    hist.length = histAt + 1;
+    hist.push(histState());
+    if (hist.length > HIST_MAX) hist.shift();
+    histAt = hist.length - 1;
+    histButtons();
+  }
+  const doUndo = () => { histCheck(); if (histAt > 0) { histAt--; histApply('Undo'); } };
+  const doRedo = () => { histCheck(); if (histAt < hist.length - 1) { histAt++; histApply('Redo'); } };
+  function histApply(label) {
+    const st = hist[histAt], top = editor.scrollTop;
+    editor.value = st.v;
+    editor.setSelectionRange(st.a, st.b);
+    editor.scrollTop = top;
+    hideAutocomplete();
+    updateLineNumbers();
+    updateUnitsBadge();
+    histButtons();
+    showStatus(label);
+  }
+  undoBtn.addEventListener('click', () => { doUndo(); editor.focus(); });
+  redoBtn.addEventListener('click', () => { doRedo(); editor.focus(); });
+  // keyboard: Ctrl/Cmd+Z undoes; Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z redoes (left alone inside the other text boxes, which keep their own)
+  document.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k !== 'z' && k !== 'y') return;
+    if (typeof gdOn !== 'undefined' && gdOn) return;
+    const t = e.target;
+    if (t !== editor && t && t.closest && t.closest('input, textarea, select, [contenteditable]')) return;
+    e.preventDefault();
+    if (k === 'y' || (k === 'z' && e.shiftKey)) doRedo(); else doUndo();
+  }, true);
+  // the browser's own undo (Edit menu, a touch keyboard) goes through the same history
+  editor.addEventListener('beforeinput', (e) => {
+    if (e.inputType === 'historyUndo') { e.preventDefault(); doUndo(); }
+    else if (e.inputType === 'historyRedo') { e.preventDefault(); doRedo(); }
+  });
+  // one step per pause in typing, one before each Enter / Tab conversion, one before any click
+  let histTimer = 0;
+  editor.addEventListener('input', () => { clearTimeout(histTimer); histTimer = setTimeout(histCheck, 450); });
+  editor.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === 'Tab') { clearTimeout(histTimer); histCheck(); setTimeout(histCheck, 0); }
+  }, true);
+  document.addEventListener('pointerdown', () => { clearTimeout(histTimer); histCheck(); }, true);
+  setInterval(histCheck, 600);   // anything else that rewrites the text (a button, a sample) is caught here
+  window.__history = { get length() { return hist.length; }, get at() { return histAt; }, undo: doUndo, redo: doRedo };
+
   // Initial content
   { const saved = loadMachine(); applyMachine(saved.type, saved.multi, { silent: true }); }
   editor.value = SAMPLE[GcodeConverter.getMachine().type];
 
   updateLineNumbers();
+  histCheck();
 </script>
 
 <script>
