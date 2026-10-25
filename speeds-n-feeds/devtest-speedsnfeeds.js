@@ -1,5 +1,5 @@
 /* =====================================================================
-   Dev-tool adapter for "Speeds & Feeds" (speedsnfeeds.html). Loaded together with devtest.js the first time the backtick key is pressed
+   Dev-tool adapter for "Speeds & Feeds" (speeds-n-feeds/index.html). Loaded together with devtest.js the first time the backtick key is pressed
    (or when the page is opened with ?dev=quick|standard|thorough|problems). It tells the generic tester what this page is and adds the
    checks that only make sense here:
      - an independent re-calculation of every number the page shows (RPM = SFM x 3.82 / D, IPM = RPM x flutes x FPT, the stepover and
