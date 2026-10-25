@@ -1361,39 +1361,41 @@ G42 turn to X1.2 Z-1. at .005`
     return { pts: out, total: z };
   }
 
+  // drawn the way a lathe is seen from the front: the chuck on the left, the finished face (Z0) on the right, Z going negative toward the chuck
   function renderShaftPicture(P, T) {
-    const W = 196, H = 132, x0 = 14, x1 = 156, yc = 94, hmax = 54;
+    const W = 196, H = 132, xc = 4, cw = 30, xl = 34, xf = 176, yc = 94, hmax = 54;
     let h = '';
     if (!P.ok) {
       shaftSvg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" style="fill:#f3a6a3;font-size:9px">Fix the numbers to see the shaft</text>`;
       return;
     }
-    const sx = (x1 - x0) / T.total, sy = hmax / (P.stock / 2);
-    h += `<rect class="sh-chuck" x="${x1}" y="${yc - hmax - 6}" width="30" height="${hmax + 6}" rx="3"/>`;
-    h += `<text x="${x1 + 15}" y="${yc - hmax / 2}" text-anchor="middle" style="font-size:7px;letter-spacing:.08em">CHUCK</text>`;
-    h += `<rect class="sh-stock" x="${x0}" y="${yc - hmax}" width="${x1 - x0}" height="${hmax}"/>`;
-    let d = `M${x0},${yc}`; let xa = x0;
-    T.pts.forEach((p, i) => {
-      const xb = x0 + (-p.z1) * sx, y = yc - (p.x / 2) * sy;
+    const sx = (xf - xl) / T.total, sy = hmax / (P.stock / 2);
+    const xz = (z) => xf + z * sx;   // z is zero or negative, so the part runs left from the face
+    h += `<rect class="sh-chuck" x="${xc}" y="${yc - hmax - 6}" width="${cw}" height="${hmax + 6}" rx="3"/>`;
+    h += `<text x="${xc + cw / 2}" y="${yc - hmax / 2}" text-anchor="middle" style="font-size:7px;letter-spacing:.08em">CHUCK</text>`;
+    h += `<rect class="sh-stock" x="${xl}" y="${yc - hmax}" width="${xf - xl}" height="${hmax}"/>`;
+    let d = `M${xf},${yc}`; let xa = xf;
+    T.pts.forEach((p) => {
+      const xb = xz(p.z1), y = yc - (p.x / 2) * sy;
       d += ` L${xa.toFixed(1)},${y.toFixed(1)} L${xb.toFixed(1)},${y.toFixed(1)}`; xa = xb;
     });
     d += ` L${xa.toFixed(1)},${yc} Z`;
     h += `<path class="sh-prof" d="${d}"/>`;
-    h += `<line class="sh-cl" x1="${x0 - 8}" y1="${yc}" x2="${x1 + 30}" y2="${yc}"/>`;
-    let prev = x0;
-    T.pts.forEach((p, i) => {
-      const xb = x0 + (-p.z1) * sx, y = yc - (p.x / 2) * sy, mid = (prev + xb) / 2;
+    h += `<line class="sh-cl" x1="${xc}" y1="${yc}" x2="${xf + 12}" y2="${yc}"/>`;
+    let prev = xf;
+    T.pts.forEach((p) => {
+      const xb = xz(p.z1), y = yc - (p.x / 2) * sy, mid = (prev + xb) / 2;
       h += `<circle class="sh-badge" cx="${mid.toFixed(1)}" cy="${(y - 9).toFixed(1)}" r="6.2"/><text class="sh-bnum" x="${mid.toFixed(1)}" y="${(y - 6.2).toFixed(1)}">${p.n}</text>`;
       prev = xb;
     });
     // Z marks under the centerline: the face (Z0) and the end of every step
-    const marks = [{ x: x0, z: 0 }].concat(T.pts.map(p => ({ x: x0 + (-p.z1) * sx, z: p.z1 })));
+    const marks = [{ x: xf, z: 0 }].concat(T.pts.map(p => ({ x: xz(p.z1), z: p.z1 })));
     marks.forEach((m, i) => {
       const ty = yc + 4, ly = yc + 14 + (i % 2) * 10;
       h += `<line class="sh-tick" x1="${m.x.toFixed(1)}" y1="${yc}" x2="${m.x.toFixed(1)}" y2="${ty + (i % 2) * 8}"/>`;
-      h += `<text class="sh-z" x="${Math.min(Math.max(m.x, 16), W - 22).toFixed(1)}" y="${ly}">Z${gnum(m.z, shaft.units)}</text>`;
+      h += `<text class="sh-z" x="${Math.min(Math.max(m.x, 16), W - 14).toFixed(1)}" y="${ly}">Z${gnum(m.z, shaft.units)}</text>`;
     });
-    h += `<text x="${x0}" y="12" style="font-size:8px">Z0 = finished face</text>`;
+    h += `<text x="${W - 4}" y="12" text-anchor="end" style="font-size:8px">Z0 = finished face</text>`;
     shaftSvg.innerHTML = h;
   }
 
