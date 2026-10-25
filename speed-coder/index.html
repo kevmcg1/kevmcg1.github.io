@@ -220,6 +220,69 @@
   .chip.primary:disabled { opacity: .4; cursor: default; filter: none; }
   @media (max-width: 860px) { #shaft-panel { flex: 1 1 100%; } #shaft-svg { max-width: 360px; } }
 
+  #shaft-svg .sh-hi { fill: color-mix(in srgb, var(--s-accent, #5b93ea) 16%, transparent); stroke: var(--s-accent, #5b93ea); stroke-width: 1; stroke-dasharray: 2 2; }
+  #wz-svg .sh-hi { fill: rgba(91,147,234,.16); stroke: #5b93ea; stroke-width: 1; stroke-dasharray: 2 2; }
+  #shaft-svg .sh-badge.on, #wz-svg .sh-badge.on { fill: #e8c547; }
+  /* ===== step shaft wizard ===== */
+  #wz-modal { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(4,5,7,.78); font-family: 'Inter', system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
+  #wz-modal[hidden] { display: none; }
+  .wz-card { width: min(760px, 100%); max-height: min(92vh, 700px); display: flex; flex-direction: column; border-radius: 14px; background: #16181b; border: 1px solid #2b2e33; box-shadow: 0 20px 50px rgba(0,0,0,.6); color: #ececee; }
+  .wz-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 6px; }
+  .wz-head h3 { margin: 0; font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: .08em; }
+  .wz-head h3 i { font-style: normal; color: #e8c547; opacity: .85; }
+  .wz-head button { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3d4147; background: transparent; color: #8a8f97; font-size: 15px; line-height: 1; cursor: pointer; text-transform: none; font-style: normal; }
+  .wz-head button:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  #wz-dots { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 20px 10px; }
+  .wz-dot { padding: 3px 10px; border-radius: 999px; border: 1px solid #3d4147; font-size: 11.5px; font-weight: 600; color: #8a8f97; }
+  .wz-dot.done { color: #8fe0b0; border-color: color-mix(in srgb, #5fcf8a 45%, transparent); }
+  .wz-dot.on { color: #5b93ea; border-color: #5b93ea; background: color-mix(in srgb, #5b93ea 12%, transparent); }
+  .wz-main { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 250px 1fr; gap: 18px; padding: 6px 20px 8px; }
+  .wz-pic { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  #wz-svg { width: 100%; height: auto; display: block; border-radius: 9px; background: #0d0e10; border: 1px solid #222428; }
+  #wz-svg text { font: 600 8px 'Inter', system-ui, sans-serif; fill: #8a8f97; }
+  #wz-svg .sh-prof { fill: rgba(91,147,234,.16); stroke: #5b93ea; stroke-width: 1.6; stroke-linejoin: round; }
+  #wz-svg .sh-stock { fill: none; stroke: #5a5f67; stroke-width: 1; stroke-dasharray: 3 3; }
+  #wz-svg .sh-chuck { fill: #1b1d20; stroke: #3a3e45; stroke-width: 1; }
+  #wz-svg .sh-cl { stroke: #5a5f67; stroke-width: 1; stroke-dasharray: 8 2 2 2; }
+  #wz-svg .sh-tick { stroke: #5a5f67; stroke-width: 1; }
+  #wz-svg .sh-badge { fill: #5b93ea; }
+  #wz-svg .sh-bnum { fill: #0b1320; font-weight: 800; font-size: 8px; text-anchor: middle; }
+  #wz-svg .sh-z { text-anchor: middle; fill: #aab3c0; }
+  #wz-modal .shaft-pts { display: block; padding: 8px 10px; border-radius: 9px; background: #1b1d20; border: 1px solid #222428; font: 500 11px/1.5 ui-monospace, 'DM Mono', Consolas, monospace; color: #9ec0f7; white-space: pre; overflow-x: auto; }
+  #wz-modal .shaft-pts b { color: #8a8f97; font-weight: 600; }
+  .wz-form { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .wz-h { margin: 4px 0 0; font-size: 16px; font-weight: 600; }
+  .wz-sub { margin: -6px 0 0; font-size: 12.5px; line-height: 1.5; color: #8a8f97; }
+  .wz-note { margin: 0; font-size: 12.5px; color: #8a8f97; }
+  .wz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+  .wz-form label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8a8f97; }
+  .wz-form input[type=text] { height: 38px; padding: 0 10px; border-radius: 9px; border: 1px solid #222428; background: #0d0e10; color: #ececee; font: 600 15px ui-monospace, 'DM Mono', Consolas, monospace; outline: none; user-select: text; -webkit-user-select: text; text-transform: none; letter-spacing: normal; transition: border-color .2s ease, box-shadow .2s ease; }
+  .wz-form input[type=text]:focus { border-color: #5b93ea; box-shadow: 0 0 0 3px rgba(91,147,234,.22); }
+  .wz-form input.bad { border-color: #f04a45; }
+  .wz-corner { margin: 0; padding: 10px 12px 12px; border: 1px solid #222428; border-radius: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .wz-corner legend { padding: 0 6px; font-size: 13px; font-weight: 600; }
+  .wz-corner legend small { font-weight: 400; font-size: 11.5px; color: #8a8f97; margin-left: 4px; }
+  .wz-seg { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: #0d0e10; border: 1px solid #222428; }
+  .wz-seg button { flex: 1; height: 30px; border-radius: 7px; border: 1px solid transparent; background: transparent; color: #8a8f97; font: 600 12.5px 'Inter', system-ui, sans-serif; text-transform: none; font-style: normal; letter-spacing: normal; cursor: pointer; transition: color .2s ease, background-color .2s ease, border-color .2s ease; }
+  .wz-seg button:hover { color: #ececee; background: rgba(255,255,255,.05); }
+  .wz-seg button[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, rgba(91,147,234,.2), rgba(91,147,234,.08)); border-color: rgba(91,147,234,.42); }
+  .wz-count { display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8a8f97; }
+  .wz-count div { display: flex; align-items: center; gap: 10px; height: 38px; }
+  .wz-count b { min-width: 22px; text-align: center; font: 700 16px ui-monospace, 'DM Mono', Consolas, monospace; color: #ececee; }
+  .wz-count button { width: 34px; height: 34px; padding: 0; border-radius: 9px; border: 1px solid #3d4147; background: transparent; color: #cfd3d9; font-size: 18px; line-height: 1; cursor: pointer; text-transform: none; font-style: normal; }
+  .wz-count button:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  .wz-count button:disabled { opacity: .35; cursor: default; }
+  #wz-msg { min-height: 20px; padding: 0 20px; font-size: 12.5px; line-height: 1.4; color: #f3a6a3; }
+  .wz-foot { display: flex; gap: 8px; align-items: center; padding: 10px 20px 16px; border-top: 1px solid #222428; }
+  .wz-foot .sp { flex: 1; }
+  .wz-foot button { height: 34px; padding: 0 16px; border-radius: 9px; border: 1px solid #3d4147; background: transparent; color: #cfd3d9; font: 600 13px 'Inter', system-ui, sans-serif; text-transform: none; font-style: normal; letter-spacing: normal; cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+  .wz-foot button:hover { color: #fff; border-color: #8a8f97; background: rgba(255,255,255,.06); }
+  .wz-foot button:disabled { opacity: .35; cursor: default; pointer-events: none; }
+  .wz-foot button[hidden] { display: none; }
+  .wz-foot .go { color: #07111f; border-color: color-mix(in srgb, #5b93ea 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, #5b93ea 80%, #fff), #5b93ea); }
+  .wz-foot .go:hover { color: #07111f; filter: brightness(1.08); background: linear-gradient(180deg, color-mix(in srgb, #5b93ea 80%, #fff), #5b93ea); }
+  @media (max-width: 700px) { .wz-main { grid-template-columns: 1fr; } .wz-grid { grid-template-columns: 1fr; } }
+
   /* ===== "How do I use it?" button and walkthrough ===== */
   .guide-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--s-accent) 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 80%, #fff), var(--s-accent)); color: #07111f; font: 700 13.5px/1.2 'Inter', system-ui, sans-serif; letter-spacing: .01em; cursor: pointer; box-shadow: 0 6px 18px color-mix(in srgb, var(--s-accent) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.4); transition: transform .15s ease, filter .15s ease, box-shadow .15s ease; margin-top: -6px; }
   .guide-btn:hover { transform: translateY(-1px); filter: brightness(1.08); color: #07111f; background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 80%, #fff), var(--s-accent)); }
@@ -371,6 +434,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
       <div class="side-group" id="shaft-panel">
         <div class="side-label">Step shaft</div>
         <svg id="shaft-svg" viewBox="0 0 196 132" role="img" aria-label="Side view of the stepped shaft with its steps numbered"></svg>
+        <button class="chip" type="button" id="shaft-wizard" title="Step by step: diameter, length, chamfers and radii"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L17 7M14 4l1-2 1 2 2 1-2 1-1 2-1-2-2-1zM19 11l.7-1.3.6 1.3 1.3.7-1.3.6-.7 1.4-.6-1.4-1.4-.6z"/></svg>Step wizard</button>
         <div class="shaft-units" role="group" aria-label="Units">
           <button type="button" id="shaft-in" aria-pressed="true">Inch</button>
           <button type="button" id="shaft-mm" aria-pressed="false">Metric</button>
@@ -461,6 +525,18 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     <div class="fix-head"><h3 id="fix-title">Fix the profile</h3><p>The roughing cycle can only cut a profile whose X and Z keep going one way. The lines below show what changes: a value that turns back is kept at the last good value, which closes up the groove or undercut.</p></div>
     <div class="fix-body" id="fix-body"></div>
     <div class="fix-foot"><button type="button" id="fix-cancel">Cancel</button><button type="button" id="fix-apply">Apply fix</button></div>
+  </div>
+</div>
+<div id="wz-modal" hidden>
+  <div class="wz-card" role="dialog" aria-modal="true" aria-labelledby="wz-title">
+    <div class="wz-head"><h3 id="wz-title"><i aria-hidden="true">[</i> STEP SHAFT WIZARD <i aria-hidden="true">]</i></h3><button type="button" id="wz-x" aria-label="Close the wizard" title="Close (Esc)">&times;</button></div>
+    <div id="wz-dots"></div>
+    <div class="wz-main">
+      <div class="wz-pic"><svg id="wz-svg" viewBox="0 0 196 132" role="img" aria-label="Side view of the shaft"></svg><div class="shaft-pts" id="wz-pts"></div></div>
+      <div class="wz-form" id="wz-form"></div>
+    </div>
+    <div id="wz-msg" role="status"></div>
+    <div class="wz-foot"><button type="button" id="wz-back">Back</button><span class="sp"></span><button type="button" id="wz-next" class="go">Next</button><button type="button" id="wz-save" hidden>Save steps</button><button type="button" id="wz-prog" class="go" hidden>Save and auto program</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -1315,7 +1391,8 @@ G42 turn to X1.2 Z-1. at .005`
   window.__samplePrograms = SAMPLE;
 
   // ============================================================
-  // STEP SHAFT (lathe only): a picture and coordinates for a stepped shaft, and an Auto program button that writes the whole program
+  // STEP SHAFT (lathe only): a picture and coordinates for a stepped shaft, a wizard for each step's diameter, length and corners
+  // (45 degree chamfers or radii), and an Auto program button that writes the whole program
   // ============================================================
   const shaftSvg = document.getElementById('shaft-svg');
   const shaftStepsEl = document.getElementById('shaft-steps');
@@ -1330,7 +1407,11 @@ G42 turn to X1.2 Z-1. at .005`
     metric: { stock: '50', steps: [['25', '38'], ['38', '25'], ['44', '12']] }
   };
   const SHAFT_MAX_STEPS = 6;
-  const shaft = { units: 'inch', stock: SHAFT_DEFAULT.inch.stock, steps: SHAFT_DEFAULT.inch.steps.map(r => ({ d: r[0], l: r[1] })) };
+  // a step: its diameter (d) and length (l), the corner at its face-side edge (oT none / chamfer / radius, size oS) and the inside corner where
+  // it steps up to the next size (iT none / radius / chamfer, size iS). Every value is kept as the text that was typed.
+  const newStep = (d, l) => ({ d, l, oT: 'none', oS: '', iT: 'none', iS: '' });
+  const shaft = { units: 'inch', stock: SHAFT_DEFAULT.inch.stock, steps: SHAFT_DEFAULT.inch.steps.map(r => newStep(r[0], r[1])) };
+  const cornerDefault = (units, type) => units === 'metric' ? (type === 'chamfer' ? '.5' : '1') : (type === 'chamfer' ? '.03' : '.06');
 
   // a number the way G-code writes it: no leading zero, a trailing point on whole numbers (.5, -.06, 2.)
   function gnum(v, units) {
@@ -1340,20 +1421,44 @@ G42 turn to X1.2 Z-1. at .005`
     if (t.startsWith('0.')) t = t.slice(1); else if (t.startsWith('-0.')) t = '-' + t.slice(2);
     return t;
   }
-  function shaftParse() {
-    const num = (s) => { const t = String(s).trim().replace(/^\./, '0.'); return /^\d*\.?\d+$/.test(t) || /^\d+\.$/.test(t) ? parseFloat(t) : NaN; };
-    const stock = num(shaft.stock);
-    const steps = shaft.steps.map(r => ({ d: num(r.d), l: num(r.l) }));
-    const bad = { stock: !(stock > 0), d: steps.map(r => !(r.d > 0)), l: steps.map(r => !(r.l > 0)) };
-    let msg = '';
-    if (bad.stock || bad.d.some(Boolean) || bad.l.some(Boolean)) msg = 'Every diameter and length needs a number above zero.';
-    else {
-      for (let i = 0; i < steps.length && !msg; i++) {
-        if (steps[i].d > stock + 1e-9) { bad.d[i] = true; msg = 'Step ' + (i + 1) + ' is bigger than the stock.'; }
-        else if (i > 0 && steps[i].d < steps[i - 1].d - 1e-9) { bad.d[i] = true; msg = 'Each step must be the same size or bigger than the one before it (the roughing cycle needs a profile that keeps growing).'; }
-      }
+  const shaftNum = (s) => { const t = String(s).trim().replace(/^\./, '0.'); return /^\d*\.?\d+$/.test(t) || /^\d+\.$/.test(t) ? parseFloat(t) : NaN; };
+
+  // reads a shaft (the page's, or the wizard's copy) into numbers, and collects every problem with the step it belongs to (-1 = the stock)
+  function shaftParse(st) {
+    st = st || shaft;
+    const stock = shaftNum(st.stock);
+    const steps = st.steps.map((r, i) => {
+      const last = i === st.steps.length - 1;
+      const oT = r.oT || 'none', iT = last ? 'none' : (r.iT || 'none');
+      return { d: shaftNum(r.d), l: shaftNum(r.l), o: { t: oT, s: oT === 'none' ? 0 : shaftNum(r.oS) }, i: { t: iT, s: iT === 'none' ? 0 : shaftNum(r.iS) } };
+    });
+    const n = steps.length;
+    const bad = { stock: !(stock > 0), d: steps.map(r => !(r.d > 0)), l: steps.map(r => !(r.l > 0)), oS: steps.map(r => r.o.t !== 'none' && !(r.o.s > 0)), iS: steps.map(r => r.i.t !== 'none' && !(r.i.s > 0)) };
+    const errs = [];
+    const E = (step, field, msg) => errs.push({ step, field, msg });
+    if (bad.stock) E(-1, 'stock', 'Give the stock a diameter above zero.');
+    steps.forEach((r, i) => {
+      const w = 'Step ' + (i + 1);
+      if (bad.d[i]) E(i, 'd', w + ' needs a diameter above zero.');
+      if (bad.l[i]) E(i, 'l', w + ' needs a length above zero.');
+      if (bad.oS[i]) E(i, 'oS', w + ' needs a size for its edge (above zero).');
+      if (bad.iS[i]) E(i, 'iS', w + ' needs a size for its inside corner (above zero).');
+    });
+    if (!errs.length) {
+      const eps = 1e-9;
+      steps.forEach((r, i) => {
+        const w = 'Step ' + (i + 1);
+        if (r.d > stock + eps) { bad.d[i] = true; E(i, 'd', w + ' is bigger than the stock.'); }
+        else if (i > 0 && r.d < steps[i - 1].d - eps) { bad.d[i] = true; E(i, 'd', w + ' must be the same size or bigger than the step before it (the roughing cycle needs a profile that keeps growing).'); }
+        if (r.o.s + r.i.s > r.l + eps) { bad.l[i] = true; E(i, 'l', w + ' is too short for its corners (they need ' + gnum(r.o.s + r.i.s, st.units) + ' of its length).'); }
+        if (i === 0 && r.o.s > r.d / 2 + eps) { bad.oS[i] = true; E(i, 'oS', w + ': the edge size cannot be more than half the diameter.'); }
+        if (i > 0) {
+          const rise = (r.d - steps[i - 1].d) / 2, need = r.o.s + steps[i - 1].i.s;
+          if (need > rise + eps) { bad.oS[i] = true; E(i, 'oS', w + ': the corners on the shoulder need ' + gnum(need, st.units) + ' but it only rises ' + gnum(rise, st.units) + '.'); }
+        }
+      });
     }
-    return { stock, steps, bad, msg, ok: !msg };
+    return { stock, steps, bad, errs, msg: errs.length ? errs[0].msg : '', ok: !errs.length, units: st.units };
   }
   function shaftPoints(P) {
     let z = 0; const out = [];
@@ -1361,42 +1466,91 @@ G42 turn to X1.2 Z-1. at .005`
     return { pts: out, total: z };
   }
 
-  // drawn the way a lathe is seen from the front: the chuck on the left, the finished face (Z0) on the right, Z going negative toward the chuck
-  function renderShaftPicture(P, T) {
+  // the outline as a list of moves from the finished face toward the chuck: S start, L straight line, A arc (G03 round an outside corner, G02 into an inside corner)
+  function shaftOps(P, T) {
+    const n = P.steps.length, st = P.steps, ops = [];
+    const so = (i) => (st[i].o.t === 'none' ? 0 : st[i].o.s), si = (i) => (i < n - 1 && st[i].i.t !== 'none' ? st[i].i.s : 0);
+    let cx = st[0].d - 2 * so(0), cz = 0;
+    ops.push({ t: 'S', x: cx, z: cz });
+    const line = (x, z) => { if (Math.abs(x - cx) > 1e-9 || Math.abs(z - cz) > 1e-9) { ops.push({ t: 'L', x, z }); cx = x; cz = z; } };
+    for (let i = 0; i < n; i++) {
+      const d = st[i].d, zs = T.pts[i].z0, ze = T.pts[i].z1, s = so(i), c = si(i);
+      if (i > 0) line(d - 2 * s, zs);
+      if (s > 0) {
+        if (st[i].o.t === 'chamfer') line(d, zs - s);
+        else { ops.push({ t: 'A', code: 'G03', x: d, z: zs - s, r: s, c: { z: zs - s, r: d / 2 - s }, a0: 0, a1: 90 }); cx = d; cz = zs - s; }
+      }
+      line(d, ze + c);
+      if (c > 0) {
+        if (st[i].i.t === 'chamfer') line(d + 2 * c, ze);
+        else { ops.push({ t: 'A', code: 'G02', x: d + 2 * c, z: ze, r: c, c: { z: ze + c, r: d / 2 + c }, a0: -90, a1: -180 }); cx = d + 2 * c; cz = ze; }
+      }
+    }
+    return ops;
+  }
+  // the same outline as points (x diameter, z), arcs sampled
+  function shaftPolyline(ops) {
+    const pts = [];
+    ops.forEach((o) => {
+      if (o.t !== 'A') { pts.push([o.x, o.z]); return; }
+      for (let k = 1; k <= 8; k++) {
+        const a = (o.a0 + (o.a1 - o.a0) * k / 8) * Math.PI / 180;
+        pts.push([2 * (o.c.r + o.r * Math.sin(a)), o.c.z + o.r * Math.cos(a)]);
+      }
+    });
+    return pts;
+  }
+
+  // drawn the way a lathe is seen from the front: the chuck on the left, the finished face (Z0) on the right, Z going negative toward the chuck.
+  // hi = the step to light up (the wizard), or -1
+  function renderShaftPicture(svg, P, T, hi) {
     const W = 196, H = 132, xc = 4, cw = 30, xl = 34, xf = 176, yc = 94, hmax = 54;
     let h = '';
     if (!P.ok) {
-      shaftSvg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" style="fill:#f3a6a3;font-size:9px">Fix the numbers to see the shaft</text>`;
+      svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" style="fill:#f3a6a3;font-size:9px">Fix the numbers to see the shaft</text>`;
       return;
     }
     const sx = (xf - xl) / T.total, sy = hmax / (P.stock / 2);
-    const xz = (z) => xf + z * sx;   // z is zero or negative, so the part runs left from the face
+    const X = (z) => xf + z * sx, Y = (x) => yc - (x / 2) * sy;
     h += `<rect class="sh-chuck" x="${xc}" y="${yc - hmax - 6}" width="${cw}" height="${hmax + 6}" rx="3"/>`;
     h += `<text x="${xc + cw / 2}" y="${yc - hmax / 2}" text-anchor="middle" style="font-size:7px;letter-spacing:.08em">CHUCK</text>`;
     h += `<rect class="sh-stock" x="${xl}" y="${yc - hmax}" width="${xf - xl}" height="${hmax}"/>`;
-    let d = `M${xf},${yc}`; let xa = xf;
-    T.pts.forEach((p) => {
-      const xb = xz(p.z1), y = yc - (p.x / 2) * sy;
-      d += ` L${xa.toFixed(1)},${y.toFixed(1)} L${xb.toFixed(1)},${y.toFixed(1)}`; xa = xb;
-    });
-    d += ` L${xa.toFixed(1)},${yc} Z`;
+    if (hi >= 0 && hi < T.pts.length) {
+      const p = T.pts[hi];
+      h += `<rect class="sh-hi" x="${X(p.z1).toFixed(1)}" y="${yc - hmax - 3}" width="${(X(p.z0) - X(p.z1)).toFixed(1)}" height="${hmax + 3}"/>`;
+    }
+    const ops = shaftOps(P, T), poly = shaftPolyline(ops);
+    let d = `M${xf},${yc}`;
+    poly.forEach((q) => { d += ` L${X(q[1]).toFixed(1)},${Y(q[0]).toFixed(1)}`; });
+    const last = poly[poly.length - 1];
+    d += ` L${X(last[1]).toFixed(1)},${yc} Z`;
     h += `<path class="sh-prof" d="${d}"/>`;
     h += `<line class="sh-cl" x1="${xc}" y1="${yc}" x2="${xf + 12}" y2="${yc}"/>`;
     let prev = xf;
     T.pts.forEach((p) => {
-      const xb = xz(p.z1), y = yc - (p.x / 2) * sy, mid = (prev + xb) / 2;
-      h += `<circle class="sh-badge" cx="${mid.toFixed(1)}" cy="${(y - 9).toFixed(1)}" r="6.2"/><text class="sh-bnum" x="${mid.toFixed(1)}" y="${(y - 6.2).toFixed(1)}">${p.n}</text>`;
+      const xb = X(p.z1), y = Y(p.x), mid = (prev + xb) / 2;
+      h += `<circle class="sh-badge${p.n - 1 === hi ? ' on' : ''}" cx="${mid.toFixed(1)}" cy="${(y - 9).toFixed(1)}" r="6.2"/><text class="sh-bnum" x="${mid.toFixed(1)}" y="${(y - 6.2).toFixed(1)}">${p.n}</text>`;
       prev = xb;
     });
-    // Z marks under the centerline: the face (Z0) and the end of every step
-    const marks = [{ x: xf, z: 0 }].concat(T.pts.map(p => ({ x: xz(p.z1), z: p.z1 })));
+    const marks = [{ x: xf, z: 0 }].concat(T.pts.map(p => ({ x: X(p.z1), z: p.z1 })));
     marks.forEach((m, i) => {
       const ty = yc + 4, ly = yc + 14 + (i % 2) * 10;
       h += `<line class="sh-tick" x1="${m.x.toFixed(1)}" y1="${yc}" x2="${m.x.toFixed(1)}" y2="${ty + (i % 2) * 8}"/>`;
-      h += `<text class="sh-z" x="${Math.min(Math.max(m.x, 16), W - 14).toFixed(1)}" y="${ly}">Z${gnum(m.z, shaft.units)}</text>`;
+      h += `<text class="sh-z" x="${Math.min(Math.max(m.x, 16), W - 14).toFixed(1)}" y="${ly}">Z${gnum(m.z, P.units)}</text>`;
     });
     h += `<text x="${W - 4}" y="12" text-anchor="end" style="font-size:8px">Z0 = finished face</text>`;
-    shaftSvg.innerHTML = h;
+    svg.innerHTML = h;
+  }
+
+  // the list of each step's X and Z, with its corners
+  function shaftListHtml(P, T) {
+    const u = P.units, cn = (c) => (c.t === 'none' ? '' : (c.t === 'chamfer' ? 'C' : 'R') + gnum(c.s, u));
+    let t = `<b>Stock</b>  X${gnum(P.stock, u)}\n`;
+    T.pts.forEach((p, i) => {
+      const o = cn(P.steps[i].o), c = cn(P.steps[i].i);
+      t += `<b>${p.n}</b>  X${gnum(p.x, u)}  Z${gnum(p.z0, u)} to Z${gnum(p.z1, u)}` + (o || c ? `\n   <b>${[o && 'edge ' + o, c && 'corner ' + c].filter(Boolean).join('  ')}</b>` : '') + '\n';
+    });
+    return t.trimEnd();
   }
 
   function renderShaft() {
@@ -1428,34 +1582,40 @@ G42 turn to X1.2 Z-1. at .005`
     shaftAddBtn.disabled = shaft.steps.length >= SHAFT_MAX_STEPS;
     shaftMsgEl.textContent = P.msg;
     shaftGoBtn.disabled = !P.ok;
-    if (!P.ok) { shaftPtsEl.textContent = ''; renderShaftPicture(P, null); return; }
+    if (!P.ok) { shaftPtsEl.textContent = ''; renderShaftPicture(shaftSvg, P, null, -1); return; }
     const T = shaftPoints(P);
-    renderShaftPicture(P, T);
-    const u = shaft.units;
-    let t = `<b>Stock</b>  X${gnum(P.stock, u)}\n`;
-    T.pts.forEach(p => { t += `<b>${p.n}</b>  X${gnum(p.x, u)}  Z${gnum(p.z0, u)} to Z${gnum(p.z1, u)}\n`; });
-    shaftPtsEl.innerHTML = t.trimEnd();
+    renderShaftPicture(shaftSvg, P, T, -1);
+    shaftPtsEl.innerHTML = shaftListHtml(P, T);
   }
 
-  // the whole program for the shaft as it is drawn, in the same G-code the converter writes for the matching phrases
-  function shaftProgram() {
-    const P = shaftParse(), T = shaftPoints(P), u = shaft.units, m = u === 'metric';
+  // the whole program for a shaft as it is drawn, in the same G-code the converter writes for the matching phrases
+  function shaftProgram(st) {
+    st = st || shaft;
+    const P = shaftParse(st), T = shaftPoints(P), u = st.units, m = u === 'metric';
     const f = (v) => gnum(v, u);
     const clr = m ? 2 : .1, app = m ? 2.5 : .1, over = m ? -1.5 : -.06;
     const css = m ? 180 : 600, cssMax = 3000, fin = m ? 220 : 800, finMax = 3500;
     const feedR = m ? .25 : .01, feedF = m ? .12 : .005, feedFace = m ? .2 : .008;
     const doc = m ? 2.5 : .1, ret = m ? .5 : .02, allowU = m ? .5 : .02, allowW = m ? .1 : .005;
     const xs = P.stock + clr;
+    const ops = shaftOps(P, T);
     const L = [];
     L.push('%', 'O0001 (STEP SHAFT)', '(DATE: ' + new Date().toLocaleDateString() + ')', '(STOCK DIA ' + f(P.stock) + ' - ' + (m ? 'MM' : 'INCH') + ')', '(MACHINE: ST-20)', '');
     L.push('(SETUP)', m ? 'G00 G18 G21 G40 G80 G99' : 'G00 G18 G20 G40 G80 G99', 'G28 U0.', 'G28 W0.', '');
     L.push('(OP 1 - FACE AND ROUGH TURN)', 'T0101', 'G54', 'G96 S' + css + ' M03', 'G50 S' + cssMax, 'M08');
     L.push('G00 X' + f(xs) + ' Z' + f(app), 'G01 Z0. F' + f(feedFace), 'G01 X' + f(over) + ' F' + f(feedFace), 'G00 Z' + f(app), 'G00 X' + f(xs));
     L.push('G71 U' + f(doc) + ' R' + f(ret), 'G71 P100 Q200 U' + f(allowU) + ' W' + f(allowW) + ' F' + f(feedR));
-    L.push('N100 G00 X' + f(T.pts[0].x));
-    T.pts.forEach((p, i) => {
-      if (i > 0) L.push('X' + f(p.x));
-      L.push('G01 Z' + f(p.z1) + (i === 0 ? ' F' + f(feedF) : ''));
+    // the profile: N100 is the approach (X only), then every move toward the chuck; the first cut carries the finishing feed
+    L.push('N100 G00 X' + f(ops[0].x));
+    let px = ops[0].x, pz = 0, modal = 'G00', feedGiven = false;
+    if (P.steps[0].o.t !== 'none' && P.steps[0].o.s > 0) { L.push('G01 Z0. F' + f(feedF)); modal = 'G01'; feedGiven = true; }   // a corner on the face edge starts at the face
+    ops.slice(1).forEach((o) => {
+      const fw = feedGiven ? '' : ' F' + f(feedF); feedGiven = true;
+      if (o.t === 'A') { L.push(o.code + ' X' + f(o.x) + ' Z' + f(o.z) + ' R' + f(o.r) + fw); modal = o.code; px = o.x; pz = o.z; return; }
+      // a straight move: X alone, Z alone or both; G01 is said again after an arc
+      const dx = Math.abs(o.x - px) > 1e-9, dz = Math.abs(o.z - pz) > 1e-9;
+      L.push((modal !== 'G01' ? 'G01 ' : '') + (dx ? 'X' + f(o.x) : '') + (dx && dz ? ' ' : '') + (dz ? 'Z' + f(o.z) : '') + fw);
+      modal = 'G01'; px = o.x; pz = o.z;
     });
     L.push('N200 X' + f(xs), '');
     L.push('(OP 2 - FINISH)', 'T0202', 'G96 S' + fin + ' M03', 'G50 S' + finMax);
@@ -1479,20 +1639,29 @@ G42 turn to X1.2 Z-1. at .005`
     showStatus('Step shaft programmed (Ctrl+Z undoes it)');
   }
 
-  function shaftUnits(u) {
-    if (u === shaft.units) return;
-    const cur = JSON.stringify({ stock: shaft.stock, steps: shaft.steps.map(r => [r.d, r.l]) });
-    const def = SHAFT_DEFAULT[shaft.units];
-    if (cur === JSON.stringify({ stock: def.stock, steps: def.steps })) {
-      const n = SHAFT_DEFAULT[u]; shaft.stock = n.stock; shaft.steps = n.steps.map(r => ({ d: r[0], l: r[1] }));
+  // converts a shaft (the page's or the wizard's copy) to the other unit: the untouched defaults swap to the other unit's defaults, anything else is converted
+  function shaftConvert(st, u) {
+    if (u === st.units) return;
+    const cur = JSON.stringify({ stock: st.stock, steps: st.steps.map(r => [r.d, r.l, r.oT, r.iT]) });
+    const def = SHAFT_DEFAULT[st.units];
+    if (cur === JSON.stringify({ stock: def.stock, steps: def.steps.map(r => [r[0], r[1], 'none', 'none']) })) {
+      const n = SHAFT_DEFAULT[u]; st.stock = n.stock; st.steps = n.steps.map(r => newStep(r[0], r[1]));
     } else {
       const k = u === 'metric' ? 25.4 : 1 / 25.4, dp = u === 'metric' ? 100 : 10000;
-      const conv = (s) => { const v = parseFloat(String(s).replace(/^\./, '0.')); return isNaN(v) ? s : String(Math.round(v * k * dp) / dp); };
-      shaft.stock = conv(shaft.stock); shaft.steps = shaft.steps.map(r => ({ d: conv(r.d), l: conv(r.l) }));
+      const conv = (s) => { const v = shaftNum(s); return isNaN(v) ? s : String(Math.round(v * k * dp) / dp); };
+      st.stock = conv(st.stock);
+      st.steps = st.steps.map(r => ({ d: conv(r.d), l: conv(r.l), oT: r.oT, oS: r.oT === 'none' ? '' : conv(r.oS), iT: r.iT, iS: r.iT === 'none' ? '' : conv(r.iS) }));
     }
-    shaft.units = u;
-    shaftStepsEl.innerHTML = '';
-    renderShaft();
+    st.units = u;
+  }
+  function shaftUnits(u) { shaftConvert(shaft, u); shaftStepsEl.innerHTML = ''; renderShaft(); }
+  // a new step after the last: a little bigger, the same length
+  function shaftNextStep(st) {
+    const last = st.steps[st.steps.length - 1];
+    const bump = (v, add) => { const n = shaftNum(v); return isNaN(n) ? v : String(Math.round((n + add) * 10000) / 10000); };
+    const stk = shaftNum(st.stock);
+    let d = bump(last.d, st.units === 'metric' ? 3 : .125); if (!isNaN(stk) && parseFloat(d) > stk) d = String(stk);
+    return newStep(d, last.l);
   }
 
   shaftStepsEl.addEventListener('input', (e) => {
@@ -1506,17 +1675,124 @@ G42 turn to X1.2 Z-1. at .005`
   shaftStockEl.addEventListener('input', () => { shaft.stock = shaftStockEl.value; renderShaft(); });
   shaftAddBtn.addEventListener('click', () => {
     if (shaft.steps.length >= SHAFT_MAX_STEPS) return;
-    const last = shaft.steps[shaft.steps.length - 1];
-    const bump = (v, add) => { const n = parseFloat(String(v).replace(/^\./, '0.')); return isNaN(n) ? v : String(Math.round((n + add) * 10000) / 10000); };
-    const stk = parseFloat(String(shaft.stock).replace(/^\./, '0.'));
-    let d = bump(last.d, shaft.units === 'metric' ? 3 : .125); if (!isNaN(stk) && parseFloat(d) > stk) d = String(stk);
-    shaft.steps.push({ d, l: last.l }); shaftStepsEl.innerHTML = ''; renderShaft();
+    shaft.steps.push(shaftNextStep(shaft)); shaftStepsEl.innerHTML = ''; renderShaft();
   });
   shaftUnitBtns.inch.addEventListener('click', () => shaftUnits('inch'));
   shaftUnitBtns.metric.addEventListener('click', () => shaftUnits('metric'));
   shaftGoBtn.addEventListener('click', shaftWrite);
+
+  // ---------- the wizard: one page for the stock, one for each step (diameter, length and its two corners), then a review ----------
+  const wzModal = document.getElementById('wz-modal'), wzForm = document.getElementById('wz-form'), wzDots = document.getElementById('wz-dots');
+  const wzSvg = document.getElementById('wz-svg'), wzPts = document.getElementById('wz-pts'), wzMsg = document.getElementById('wz-msg');
+  const wzBack = document.getElementById('wz-back'), wzNext = document.getElementById('wz-next'), wzSave = document.getElementById('wz-save'), wzProg = document.getElementById('wz-prog');
+  let wz = null, wzPage = 0;
+  const wzClone = () => JSON.parse(JSON.stringify({ units: shaft.units, stock: shaft.stock, steps: shaft.steps }));
+  const wzPages = () => wz.steps.length + 2;   // stock, each step, review
+
+  function wzCorner(kind, r, u) {
+    const t = kind === 'o' ? r.oT : r.iT, size = kind === 'o' ? r.oS : r.iS;
+    const opts = kind === 'o' ? [['none', 'None'], ['chamfer', 'Chamfer'], ['radius', 'Radius']] : [['none', 'None'], ['radius', 'Radius'], ['chamfer', 'Chamfer']];
+    const title = kind === 'o' ? 'Outer edge' : 'Inside corner';
+    const sub = kind === 'o' ? 'the sharp edge on the face side of this step' : 'where this step meets the shoulder up to the next one';
+    return `<fieldset class="wz-corner"><legend>${title} <small>${sub}</small></legend>
+      <div class="wz-seg" role="group" aria-label="${title}">${opts.map(o => `<button type="button" data-seg="${kind}" data-v="${o[0]}" aria-pressed="${t === o[0]}">${o[1]}</button>`).join('')}</div>
+      ${t === 'none' ? '' : `<label class="wz-size">${t === 'chamfer' ? 'Chamfer size (45&deg;, each leg)' : 'Radius'}<input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-f="${kind}S" value="${size}"></label>`}
+    </fieldset>`;
+  }
+  function wzRenderPage() {
+    const n = wz.steps.length, u = wz.units;
+    // dots
+    let dots = '';
+    for (let p = 0; p < wzPages(); p++) dots += `<span class="wz-dot${p === wzPage ? ' on' : p < wzPage ? ' done' : ''}">${p === 0 ? 'Stock' : p === n + 1 ? 'Review' : p}</span>`;
+    wzDots.innerHTML = dots;
+    let h = '';
+    if (wzPage === 0) {
+      h = `<h4 class="wz-h">The stock</h4><p class="wz-sub">What the bar measures before any cutting.</p>
+        <div class="wz-seg" role="group" aria-label="Units"><button type="button" data-units="inch" aria-pressed="${u === 'inch'}">Inch</button><button type="button" data-units="metric" aria-pressed="${u === 'metric'}">Metric</button></div>
+        <div class="wz-grid"><label>Stock diameter<input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-f="stock" value="${wz.stock}"></label>
+        <div class="wz-count"><span>Number of steps</span><div><button type="button" data-count="-1" aria-label="One fewer step" ${n <= 1 ? 'disabled' : ''}>&minus;</button><b>${n}</b><button type="button" data-count="1" aria-label="One more step" ${n >= SHAFT_MAX_STEPS ? 'disabled' : ''}>+</button></div></div></div>`;
+    } else if (wzPage <= n) {
+      const i = wzPage - 1, r = wz.steps[i], last = i === n - 1;
+      h = `<h4 class="wz-h">Step ${i + 1} of ${n}</h4><p class="wz-sub">${i === 0 ? 'The step at the finished face (Z0).' : 'Moving toward the chuck, each step is the same size or bigger.'}</p>
+        <div class="wz-grid"><label>Diameter (X)<input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-f="d" value="${r.d}"></label>
+        <label>Length (Z)<input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-f="l" value="${r.l}"></label></div>
+        ${wzCorner('o', r, u)}${last ? '<p class="wz-note">This is the last step, so it has no shoulder to round or chamfer on the chuck side.</p>' : wzCorner('i', r, u)}`;
+    } else {
+      h = `<h4 class="wz-h">Review</h4><p class="wz-sub">Check the shaft and its coordinates. Save the steps, or save them and write the program.</p>`;
+    }
+    wzForm.innerHTML = h;
+    wzUpdate();
+  }
+  // the picture, the coordinates, the problems for this page, and the buttons
+  function wzUpdate() {
+    const P = shaftParse(wz), n = wz.steps.length;
+    const T = P.ok ? shaftPoints(P) : null;
+    renderShaftPicture(wzSvg, P, T, wzPage >= 1 && wzPage <= n ? wzPage - 1 : -1);
+    wzPts.innerHTML = P.ok ? shaftListHtml(P, T) : '';
+    const here = wzPage === 0 ? P.errs.filter(e => e.step === -1) : wzPage <= n ? P.errs.filter(e => e.step === wzPage - 1) : P.errs;
+    wzMsg.textContent = here.length ? here[0].msg : '';
+    wzForm.querySelectorAll('input[data-f]').forEach((inp) => {
+      const f = inp.dataset.f, i = wzPage - 1;
+      const bad = f === 'stock' ? P.bad.stock : f === 'd' ? P.bad.d[i] : f === 'l' ? P.bad.l[i] : f === 'oS' ? P.bad.oS[i] : P.bad.iS[i];
+      inp.classList.toggle('bad', !!bad);
+    });
+    const finalPage = wzPage === wzPages() - 1;
+    wzBack.disabled = wzPage === 0;
+    wzNext.hidden = finalPage; wzSave.hidden = !finalPage; wzProg.hidden = !finalPage;
+    wzNext.disabled = !!here.length;
+    wzSave.disabled = wzProg.disabled = !P.ok;
+  }
+  function wzOpen() {
+    wz = wzClone(); wzPage = 0;
+    wzModal.hidden = false;
+    wzRenderPage();
+    const f = wzForm.querySelector('input'); if (f) f.focus({ preventScroll: true });
+  }
+  const wzClose = () => { wzModal.hidden = true; wz = null; };
+  function wzCommit(program) {
+    const P = shaftParse(wz); if (!P.ok) return;
+    shaft.units = wz.units; shaft.stock = wz.stock; shaft.steps = wz.steps.map(r => Object.assign({}, r));
+    wzClose();
+    shaftStepsEl.innerHTML = '';
+    renderShaft();
+    if (program) shaftWrite(); else showStatus('Step shaft saved');
+  }
+  wzForm.addEventListener('input', (e) => {
+    const inp = e.target.closest('input[data-f]'); if (!inp) return;
+    const f = inp.dataset.f;
+    if (f === 'stock') wz.stock = inp.value; else wz.steps[wzPage - 1][f] = inp.value;
+    wzUpdate();
+  });
+  wzForm.addEventListener('click', (e) => {
+    const sg = e.target.closest('[data-seg]');
+    if (sg) {
+      const r = wz.steps[wzPage - 1], k = sg.dataset.seg, v = sg.dataset.v;
+      r[k + 'T'] = v; r[k + 'S'] = v === 'none' ? '' : (r[k + 'S'] || cornerDefault(wz.units, v));
+      wzRenderPage(); const f = wzForm.querySelector(`[data-f="${k}S"]`); if (f) f.focus({ preventScroll: true }); return;
+    }
+    const un = e.target.closest('[data-units]');
+    if (un) { shaftConvert(wz, un.dataset.units); wzRenderPage(); return; }
+    const ct = e.target.closest('[data-count]');
+    if (ct) {
+      if (+ct.dataset.count > 0 && wz.steps.length < SHAFT_MAX_STEPS) wz.steps.push(shaftNextStep(wz));
+      else if (+ct.dataset.count < 0 && wz.steps.length > 1) wz.steps.pop();
+      wzRenderPage();
+    }
+  });
+  wzBack.addEventListener('click', () => { if (wzPage > 0) { wzPage--; wzRenderPage(); } });
+  wzNext.addEventListener('click', () => { if (!wzNext.disabled && wzPage < wzPages() - 1) { wzPage++; wzRenderPage(); const f = wzForm.querySelector('input'); if (f) f.focus({ preventScroll: true }); } });
+  wzSave.addEventListener('click', () => wzCommit(false));
+  wzProg.addEventListener('click', () => wzCommit(true));
+  document.getElementById('wz-x').addEventListener('click', wzClose);
+  wzModal.addEventListener('click', (e) => { if (e.target === wzModal) wzClose(); });
+  addEventListener('keydown', (e) => {
+    if (wzModal.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); wzClose(); }
+    else if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-f]')) { e.preventDefault(); if (!wzNext.hidden) wzNext.click(); }
+  }, true);
+  document.getElementById('shaft-wizard').addEventListener('click', wzOpen);
   renderShaft();
-  window.__shaft = { shaft, shaftProgram, shaftParse };
+  window.__shaft = { shaft, shaftProgram, shaftParse, shaftOps };
 
   // ============================================================
   // "HOW DO I USE IT?": a guided walkthrough, in the spirit of Shop Tool Sim's. Everything but one spot is dimmed, a card says what to do
@@ -1567,7 +1843,7 @@ G42 turn to X1.2 Z-1. at .005`
     { title: 'The cheat sheet', spot: () => document.getElementById('cheat-sheet-modal'), where: 'left', demo: true,
       text: () => '<p>Every phrase and code, with what it turns into. Watch it search for <code>coolant</code>.</p><p>The chips filter by type, and the <b>Cheat Sheet</b> button hides or shows this panel.</p>' },
     { title: 'Step shaft', spot: () => document.getElementById('shaft-panel'), only: 'lathe', where: 'right',
-      text: () => '<p>Set the <b>diameter</b> and <b>length</b> of each step. The picture and the <b>X / Z coordinates</b> update as you type.</p><p>Press <b>Auto program</b> and the whole program is written for you.</p>' },
+      text: () => '<p>Set the <b>diameter</b> and <b>length</b> of each step. The picture and the <b>X / Z coordinates</b> update as you type.</p><p>The <b>Step wizard</b> walks you through each step, with a chamfer or radius if you want one. <b>Auto program</b> then writes the whole program.</p>' },
     { title: 'There is your program', spot: () => document.getElementById('editor-wrap'), only: 'lathe', where: 'below', demo: true,
       text: () => '<p>Watch the step shaft program being written: facing, rough turn, finish pass and the end block. <b>Ctrl+Z</b> undoes it.</p>' },
     { title: 'You are ready', spot: null,
