@@ -33,31 +33,109 @@
   }
   html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); overflow: hidden; }
   #app { display: flex; flex-direction: column; height: 100vh; }
-  #workspace { flex: 1; display: flex; min-height: 0; }
-  /* left sidebar: every control that used to sit in the top bar */
-  #left-sidebar {
-    width: 208px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; gap: 14px; padding: 14px 12px; overflow-y: auto; user-select: none;
-  }
+  /* ===== SIDEBARS: styled like Shop Tool Sim (neutral dark panels, soft chips, accent-tinted selection, round checkboxes) ===== */
+  #workspace { --s-bg:#0d0e10; --s-bar:#08090a; --s-line:#222428; --s-ink:#ececee; --s-muted:#8a8f97; --s-raise:#1b1d20; --s-accent:#5b93ea; --s-accent-ink:#0b1320; --s-gold:#e8c547;
+    flex: 1; display: flex; min-height: 0; }
+  #left-sidebar, #cheat-sheet-modal { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-style: normal; background: var(--s-bar); color: var(--s-ink); text-transform: none; }
+  #left-sidebar button, #cheat-sheet-modal button { font-family: inherit; font-style: normal; text-transform: none; }
+  #left-sidebar ::-webkit-scrollbar, #cheat-sheet-modal ::-webkit-scrollbar { width: 10px; height: 10px; }
+  #left-sidebar ::-webkit-scrollbar-track, #cheat-sheet-modal ::-webkit-scrollbar-track { background: transparent; }
+  #left-sidebar ::-webkit-scrollbar-thumb, #cheat-sheet-modal ::-webkit-scrollbar-thumb { background: #2c2f34; background-clip: padding-box; border: 3px solid transparent; border-radius: 999px; min-height: 40px; }
+  #left-sidebar ::-webkit-scrollbar-thumb:hover, #cheat-sheet-modal ::-webkit-scrollbar-thumb:hover { background-color: #41454c; }
+
+  /* left sidebar */
+  #left-sidebar { width: 224px; flex-shrink: 0; border-right: 1px solid var(--s-line); display: flex; flex-direction: column; gap: 18px; padding: 16px 14px; overflow-y: auto; user-select: none; -webkit-user-select: none; }
+  .brand { display: flex; align-items: center; gap: .3em; font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 24px; line-height: 1; letter-spacing: .08em; white-space: nowrap; color: #e4e6ea; padding: 2px 2px 0; }
+  .brand i { font-style: normal; color: var(--s-gold); opacity: .85; }
   .side-group { display: flex; flex-direction: column; gap: 6px; }
-  .side-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-style: italic; color: var(--text-dim); border-bottom: 1px solid var(--border); padding-bottom: 3px; margin-bottom: 2px; }
-  #left-sidebar button { width: 100%; text-align: center; }
-  .logo { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--accent); text-transform: uppercase; font-style: italic; }
-  #units-badge { text-align: center; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 1px; transition: all 0.3s; text-transform: uppercase; font-style: italic; }
-  #units-badge.inch { border-color: #e5c07b; color: #e5c07b; }
-  #units-badge.metric { border-color: #56b6c2; color: #56b6c2; }
-  /* Mill / Lathe: exactly one is always on (a radio group) */
-  #machine-toggle { display: flex; border: 1px solid var(--accent); border-radius: 4px; overflow: hidden; }
-  #machine-toggle button { flex: 1; border: 0; border-radius: 0; background: transparent; padding: 5px 8px; font-weight: 700; letter-spacing: 1.5px; }
-  #machine-toggle button + button { border-left: 1px solid var(--accent); }
-  #machine-toggle button[aria-checked="true"] { background: var(--accent); color: var(--bg); }
-  #machine-toggle button[aria-checked="false"]:hover { background: var(--accent-dim); color: var(--text); }
-  #multiaxis-wrap { display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; font-style: italic; color: var(--text-dim); cursor: pointer; }
+  .side-label { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--s-muted); padding: 0 2px 2px; }
+  /* chips: soft, rounded, a tinted fill when on */
+  .chip { position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 36px; padding: 0 12px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--s-muted); font-size: 13px; font-weight: 600; letter-spacing: .01em; white-space: nowrap; cursor: pointer; transition: color .22s ease, background-color .22s ease, border-color .22s ease, box-shadow .22s ease; }
+  .chip svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .chip:hover { color: var(--s-ink); background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.07); }
+  .chip:active { transform: translateY(1px); }
+  .chip:focus-visible, #machine-toggle button:focus-visible, #cheat-search:focus-visible { outline: 2px solid var(--s-accent); outline-offset: 2px; }
+  .chip.auto-btn-active, .chip[aria-expanded="true"], #machine-toggle button[aria-checked="true"] {
+    color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--s-accent) 20%, transparent), color-mix(in srgb, var(--s-accent) 8%, transparent));
+    border-color: color-mix(in srgb, var(--s-accent) 42%, transparent); box-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
+  /* mill / lathe: two soft tabs in a recessed track */
+  #machine-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 11px; background: var(--s-bg); border: 1px solid var(--s-line); }
+  #machine-toggle button { height: 32px; padding: 0 6px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--s-muted); font-size: 13px; font-weight: 600; letter-spacing: .01em; cursor: pointer; transition: color .22s ease, background-color .22s ease, border-color .22s ease; }
+  #machine-toggle button + button { border-left: 1px solid transparent; }
+  #machine-toggle button[aria-checked="false"]:hover { color: var(--s-ink); background: rgba(255,255,255,.05); }
+  /* multiaxis: a round check beside its label */
+  #multiaxis-wrap { display: flex; align-items: center; gap: 10px; padding: 6px 4px 2px; font-size: 13px; font-weight: 500; color: var(--s-muted); cursor: pointer; text-transform: none; font-style: normal; transition: color .2s ease; }
   #multiaxis-wrap[hidden] { display: none; }
-  #multiaxis-wrap input { accent-color: var(--accent); margin: 0; cursor: pointer; }
-  #multiaxis-wrap:has(input:checked) { color: var(--accent); }
-  #status-pill { margin-top: auto; text-align: center; font-size: 11px; padding: 2px 10px; border-radius: 20px; background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
-  #status-pill.show { opacity: 1; }
+  #multiaxis-wrap:hover, #multiaxis-wrap:has(input:checked) { color: var(--s-ink); }
+  #multiaxis-wrap input { appearance: none; -webkit-appearance: none; position: relative; display: inline-grid; place-content: center; flex: none; width: 18px; height: 18px; margin: 0; padding: 0; border: 2px solid #5a5f67; border-radius: 50%; cursor: pointer;
+    background: radial-gradient(circle closest-side, var(--s-accent) 98%, transparent 100%) center/0% 0% no-repeat; background-origin: border-box;
+    transition: background-size .3s cubic-bezier(.3,1.35,.5,1), border-color .2s ease, box-shadow .28s ease, transform .16s cubic-bezier(.3,1.5,.5,1); }
+  #multiaxis-wrap input::after { content: ""; width: 9px; height: 5px; margin-top: -2px; border: solid var(--s-accent-ink); border-width: 0 0 2.5px 2.5px; border-radius: 1px; transform: rotate(-45deg) scale(0); opacity: 0; transition: transform .32s cubic-bezier(.3,1.6,.5,1) .05s, opacity .16s ease .05s; }
+  #multiaxis-wrap input:hover { border-color: var(--s-muted); box-shadow: 0 0 0 4px rgba(255,255,255,.06); }
+  #multiaxis-wrap input:active { transform: scale(.86); }
+  #multiaxis-wrap input:checked { background-size: 100% 100%; border-color: var(--s-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--s-accent) 20%, transparent); }
+  #multiaxis-wrap input:checked::after { transform: rotate(-45deg) scale(1); opacity: 1; }
+  #multiaxis-wrap input:focus-visible { outline: 2px solid var(--s-accent); outline-offset: 3px; }
+  /* units read-out: a raised card with a lit dot */
+  #units-badge { display: flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 9px; background: var(--s-raise); border: 1px solid var(--s-line); color: var(--s-muted); font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-style: normal; transition: color .3s ease, border-color .3s ease; }
+  #units-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .6; box-shadow: 0 0 0 0 currentColor; }
+  #units-badge.inch { color: #e8c547; border-color: color-mix(in srgb, #e8c547 40%, transparent); }
+  #units-badge.metric { color: #6fd0dc; border-color: color-mix(in srgb, #6fd0dc 40%, transparent); }
+  #units-badge.inch::before, #units-badge.metric::before { opacity: 1; box-shadow: 0 0 8px currentColor; }
+  .hint-row { margin-top: auto; padding: 10px 12px; border-radius: 9px; background: var(--s-raise); border: 1px solid var(--s-line); font-size: 12px; line-height: 1.45; color: var(--s-muted); }
+  #status-pill { align-self: stretch; text-align: center; font-size: 12px; font-weight: 600; padding: 7px 10px; border-radius: 9px; background: color-mix(in srgb, var(--s-accent) 14%, transparent); color: #bcd3fa; border: 1px solid color-mix(in srgb, var(--s-accent) 45%, transparent); opacity: 0; transform: translateY(4px); transition: opacity .3s ease, transform .3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #status-pill.show { opacity: 1; transform: none; }
+
+  /* right sidebar: the cheat sheet */
+  #cheat-sheet-modal { width: 336px; flex-shrink: 0; border-left: 1px solid var(--s-line); display: none; flex-direction: column; min-height: 0; }
+  #cheat-sheet-modal.visible { display: flex; }
+  .cheat-sheet-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .cheat-sheet-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 14px 10px; }
+  .cheat-title { font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 24px; line-height: 1; letter-spacing: .08em; color: #e4e6ea; }
+  .cheat-title i { font-style: normal; color: var(--s-gold); opacity: .85; }
+  .cheat-sheet-header button { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3d4147; background: transparent; color: var(--s-muted); font-size: 15px; line-height: 1; cursor: pointer; transition: background-color .22s ease, border-color .22s ease, color .22s ease; }
+  .cheat-sheet-header button:hover { color: #fff; border-color: var(--s-muted); background: rgba(255,255,255,.06); }
+  .cheat-search-wrap { padding: 0 14px 10px; }
+  .cheat-field { position: relative; }
+  .cheat-field svg { position: absolute; left: 11px; top: 50%; width: 15px; height: 15px; margin-top: -7.5px; fill: none; stroke: var(--s-muted); stroke-width: 1.9; stroke-linecap: round; pointer-events: none; }
+  #cheat-search { width: 100%; height: 38px; padding: 0 34px 0 34px; border-radius: 9px; border: 1px solid var(--s-line); background: var(--s-bg); color: var(--s-ink); font: 500 13px 'Inter', system-ui, sans-serif; outline: none; -webkit-appearance: none; appearance: none; transition: border-color .2s ease, box-shadow .2s ease; user-select: text; -webkit-user-select: text; }
+  #cheat-search::placeholder { color: #61666e; }
+  #cheat-search::-webkit-search-cancel-button { display: none; }
+  #cheat-search:focus { border-color: var(--s-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--s-accent) 22%, transparent); }
+  #cheat-clear { position: absolute; right: 6px; top: 50%; width: 26px; height: 26px; margin-top: -13px; padding: 0; display: none; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--s-muted); font-size: 14px; cursor: pointer; }
+  #cheat-clear.on { display: grid; }
+  #cheat-clear:hover { color: #fff; background: rgba(255,255,255,.08); }
+  /* category filter chips, like Shop Tool Sim's pill tabs */
+  #cheat-cats { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 14px 10px; }
+  #cheat-cats button { font-size: 12px; font-weight: 600; color: var(--s-muted); background: transparent; border: 1px solid #3d4147; border-radius: 999px; padding: 4px 10px; cursor: pointer; transition: background-color .22s ease, border-color .22s ease, color .22s ease; }
+  #cheat-cats button:hover { color: #fff; border-color: var(--s-muted); background: rgba(255,255,255,.06); }
+  #cheat-cats button[aria-pressed="true"] { color: var(--s-accent); border-color: var(--s-accent); background: color-mix(in srgb, var(--s-accent) 12%, transparent); }
+  #cheat-cats b { font-weight: 600; opacity: .6; margin-left: 4px; }
+  #cheat-count { padding: 0 16px 8px; font-size: 11.5px; color: var(--s-muted); border-bottom: 1px solid var(--s-line); }
+  .cheat-sheet-content { flex: 1; overflow-y: auto; padding: 4px 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .cheat-category { position: sticky; top: 0; z-index: 1; margin: 0 -10px; padding: 12px 20px 6px; background: var(--s-bar); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--s-muted); }
+  .cheat-item { display: flex; flex-direction: column; gap: 3px; padding: 9px 12px; border-radius: 9px; background: var(--s-raise); border: 1px solid var(--s-line); transition: border-color .2s ease, background-color .2s ease; }
+  .cheat-item:hover { border-color: #3a3e45; background: #202327; }
+  .cheat-item.quick-setup { border-color: color-mix(in srgb, var(--s-gold) 30%, transparent); }
+  .cheat-code { font: 600 12.5px ui-monospace, 'DM Mono', Consolas, monospace; color: #9ec0f7; word-break: break-word; min-width: 0; font-style: normal; }
+  .cheat-desc { font-size: 12px; line-height: 1.4; color: var(--s-muted); word-break: break-word; text-align: left; font-style: normal; }
+  .cheat-item.quick-setup .cheat-code::after { content: "QUICK"; margin-left: 8px; padding: 1px 6px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--s-gold) 55%, transparent); color: var(--s-gold); font: 800 8.5px/1.4 'Inter', sans-serif; letter-spacing: .09em; vertical-align: 1px; }
+  .cheat-empty { color: var(--s-muted); font-size: 12.5px; padding: 16px 6px; text-align: center; }
+  @media (max-width: 860px) {
+    #workspace { flex-direction: column; }
+    #left-sidebar { width: auto; flex-direction: row; flex-wrap: wrap; align-items: center; border-right: 0; border-bottom: 1px solid var(--s-line); padding: 8px 10px; gap: 8px 14px; max-height: 42%; }
+    .brand { font-size: 20px; }
+    .side-group { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .side-label { display: none; }
+    .chip { width: auto; height: 32px; padding: 0 12px; }
+    #machine-toggle { width: 160px; }
+    #units-badge { height: 32px; }
+    .hint-row { margin-top: 0; flex: 1 1 100%; }
+    #status-pill { align-self: center; }
+    #editor-wrap { min-height: 140px; }
+    #cheat-sheet-modal { width: auto; border-left: 0; border-top: 1px solid var(--s-line); max-height: 48%; }
+  }
+  @media (prefers-reduced-motion: reduce) { .chip, #machine-toggle button, #multiaxis-wrap input, #multiaxis-wrap input::after, #status-pill, .cheat-item, #cheat-search, #cheat-cats button { transition: none; } }
   button {
     background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent);
     font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer;
@@ -65,10 +143,6 @@
     transition: 0.2s;
   }
   button:hover { background: var(--accent); color: var(--bg); }
-  .auto-btn-active {
-    background: var(--accent); color: var(--bg); border-color: var(--accent);
-  }
-  .hint-row { font-size: 11px; color: var(--text-dim); font-style: italic; letter-spacing: 0.3px; line-height: 1.4; }
   #editor-wrap { flex: 1; display: flex; overflow: hidden; position: relative; }
   #line-numbers { width: 52px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 10px 12px 0; font-family: var(--font-mono); font-size: 13px; line-height: 22px; color: var(--text-dim); text-align: right; overflow: hidden; user-select: none; font-style: italic; }
   /* only the lines on screen (plus a margin) are drawn in the margin and the colour layer; a script moves them to line up with the text */
@@ -107,48 +181,6 @@
   #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-size: 12px; font-family: var(--font-mono); padding: 7px 16px; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.2s; white-space: nowrap; z-index: 200; font-style: italic; text-transform: uppercase; }
   #toast.show { opacity: 1; }
 
-  /* right sidebar: every cheat code and its translation, with a search bar */
-  #cheat-sheet-modal {
-    width: 320px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border);
-    display: none; flex-direction: column; min-height: 0;
-  }
-  #cheat-sheet-modal.visible { display: flex; }
-  .cheat-sheet-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-  .cheat-sheet-header {
-    padding: 10px 14px 0; display: flex; justify-content: space-between; align-items: center;
-    font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-style: italic; color: var(--accent);
-  }
-  .cheat-sheet-header button { background: none; border: none; color: var(--accent); font-size: 18px; cursor: pointer; line-height: 1; padding: 0 4px; }
-  .cheat-search-wrap { padding: 8px 14px 6px; border-bottom: 1px solid var(--border); }
-  #cheat-search {
-    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px;
-    padding: 6px 8px; font-size: 12px; font-family: var(--font-ui); outline: none;
-  }
-  #cheat-search:focus { border-color: var(--accent); }
-  #cheat-count { font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 4px; }
-  .cheat-sheet-content { flex: 1; overflow-y: auto; padding: 8px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
-  .cheat-category {
-    font-size: 11px; font-weight: bold; margin-top: 8px; padding: 5px 10px; background: var(--accent-dim);
-    border-radius: 4px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
-  }
-  .cheat-item {
-    background: var(--bg); border-radius: 6px; padding: 6px 10px; border-left: 3px solid var(--accent);
-    display: flex; flex-direction: column; gap: 2px; font-family: var(--font-mono); font-size: 12px;
-  }
-  .cheat-item.quick-setup { border-left-color: #e5c07b; background: #1e232c; }
-  .cheat-code { color: var(--syn-gcode); font-weight: 600; word-break: break-word; }
-  .cheat-desc { color: var(--text-dim); font-style: italic; word-break: break-word; }
-  .cheat-empty { color: var(--text-dim); font-style: italic; font-size: 12px; padding: 10px 2px; }
-  @media (max-width: 860px) {
-    #workspace { flex-direction: column; }
-    #left-sidebar { width: auto; flex-direction: row; flex-wrap: wrap; align-items: flex-end; border-right: 0; border-bottom: 1px solid var(--border); padding: 8px 10px; gap: 8px 12px; max-height: 40%; }
-    .side-group { flex-direction: row; flex-wrap: wrap; align-items: center; }
-    .side-label { display: none; }
-    #left-sidebar button { width: auto; }
-    #status-pill { margin-top: 0; }
-    #editor-wrap { min-height: 140px; }
-    #cheat-sheet-modal { width: auto; border-left: 0; border-top: 1px solid var(--border); max-height: 45%; }
-  }
 
   /* Debug modal */
   #debug-modal {
@@ -213,7 +245,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
 <div id="app">
   <div id="workspace">
     <aside id="left-sidebar" aria-label="Controls">
-      <span class="logo">SPEED CODER</span>
+      <div class="brand" aria-label="Speed Coder"><i aria-hidden="true">[</i> SPEED CODER <i aria-hidden="true">]</i></div>
       <div class="side-group">
         <div class="side-label">Machine</div>
         <div id="machine-toggle" role="radiogroup" aria-label="Machine type">
@@ -228,14 +260,14 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
       </div>
       <div class="side-group">
         <div class="side-label">Semicolons</div>
-        <button id="auto-semicolon-btn">Auto ; OFF</button>
-        <button id="add-semicolons-btn">Add ;</button>
-        <button id="remove-semicolons-btn">Remove ;</button>
+        <button class="chip" id="auto-semicolon-btn">Auto ; OFF</button>
+        <button class="chip" id="add-semicolons-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add ;</button>
+        <button class="chip" id="remove-semicolons-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>Remove ;</button>
       </div>
       <div class="side-group">
         <div class="side-label">Tools</div>
-        <button id="cheat-sheet-btn" aria-controls="cheat-sheet-modal" aria-expanded="true">Cheat Sheet</button>
-        <button id="debug-btn">Debug</button>
+        <button class="chip" id="cheat-sheet-btn" aria-controls="cheat-sheet-modal" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg>Cheat Sheet</button>
+        <button class="chip" id="debug-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h6v6a3 3 0 0 1-6 0zM9 7a3 3 0 0 1 6 0M5 12h4M15 12h4M6 6l3 3M18 6l-3 3M6 19l3-3M18 19l-3-3"/></svg>Debug</button>
       </div>
       <div class="hint-row">Type anything and press Enter to convert to G-code</div>
       <span id="status-pill">Converted</span>
@@ -251,13 +283,18 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     <aside id="cheat-sheet-modal" class="visible" aria-label="Cheat sheet">
       <div class="cheat-sheet-panel">
         <div class="cheat-sheet-header">
-          <span>Cheat Sheet</span>
-          <button id="close-cheat-sheet" aria-label="Hide the cheat sheet" title="Hide">&times;</button>
+          <span class="cheat-title"><i aria-hidden="true">[</i> CHEAT SHEET <i aria-hidden="true">]</i></span>
+          <button id="close-cheat-sheet" type="button" aria-label="Hide the cheat sheet" title="Hide">&times;</button>
         </div>
         <div class="cheat-search-wrap">
-          <input type="search" id="cheat-search" placeholder="Search codes and translations" aria-label="Search the cheat sheet" autocomplete="off" spellcheck="false">
-          <div id="cheat-count" aria-live="polite"></div>
+          <div class="cheat-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input type="search" id="cheat-search" placeholder="Search codes and translations" aria-label="Search the cheat sheet" autocomplete="off" spellcheck="false">
+            <button id="cheat-clear" type="button" aria-label="Clear the search" title="Clear">&times;</button>
+          </div>
         </div>
+        <div id="cheat-cats" role="group" aria-label="Filter by type"></div>
+        <div id="cheat-count" aria-live="polite"></div>
         <div class="cheat-sheet-content" id="cheat-sheet-content"></div>
       </div>
     </aside>
@@ -662,15 +699,26 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
 
   const cheatSearch = document.getElementById('cheat-search');
   const cheatCount = document.getElementById('cheat-count');
+  const cheatCats = document.getElementById('cheat-cats');
+  const cheatClear = document.getElementById('cheat-clear');
+  let cheatCat = '';   // '' = every type
 
-  // draws the whole cheat sheet, narrowed to what the search bar matches (code, translation or category)
+  // draws the whole cheat sheet, narrowed by the type chips and whatever the search bar matches (code, translation or type)
   function renderCheatSheet() {
     const items = GcodeConverter.getCheatSheetItems();
     const terms = cheatSearch.value.toLowerCase().split(/\s+/).filter(Boolean);
+    cheatClear.classList.toggle('on', cheatSearch.value !== '');
+    const counts = new Map();
+    for (const item of items) counts.set(item.category, (counts.get(item.category) || 0) + 1);
+    if (cheatCat && !counts.has(cheatCat)) cheatCat = '';
+    let chips = `<button type="button" data-cat="" aria-pressed="${cheatCat === ''}">All<b>${items.length}</b></button>`;
+    for (const [cat, n] of counts) chips += `<button type="button" data-cat="${escapeHtml(cat)}" aria-pressed="${cheatCat === cat}">${escapeHtml(cat)}<b>${n}</b></button>`;
+    cheatCats.innerHTML = chips;
     let html = '';
     let lastCategory = '';
     let shown = 0;
     for (const item of items) {
+      if (cheatCat && item.category !== cheatCat) continue;
       if (terms.length) {
         const hay = (item.code + ' ' + item.desc + ' ' + item.category).toLowerCase();
         if (!terms.every(t => hay.includes(t))) continue;
@@ -688,8 +736,15 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     }
     if (!shown) html = '<div class="cheat-empty">No codes match your search.</div>';
     cheatSheetContent.innerHTML = html;
-    cheatCount.textContent = terms.length ? shown + ' of ' + items.length + ' shown' : items.length + ' codes';
+    cheatCount.textContent = (terms.length || cheatCat) ? shown + ' of ' + items.length + ' shown' : items.length + ' codes';
   }
+  cheatCats.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-cat]');
+    if (!b) return;
+    cheatCat = b.dataset.cat;
+    renderCheatSheet();
+  });
+  cheatClear.addEventListener('click', () => { cheatSearch.value = ''; renderCheatSheet(); cheatSearch.focus(); });
 
   function escapeHtml(str) {
     return str.replace(/[&<>]/g, function(m) {
