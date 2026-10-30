@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <link rel="stylesheet" href="../fonts/fonts.css">
+<link rel="stylesheet" href="../fa/css/all.min.css">
 <link rel="preload" href="../fonts/roboto-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 
 <meta charset="UTF-8">
@@ -453,6 +454,88 @@
   .debug-output { color: var(--text-dim); font-style: italic; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .debug-row.ok .debug-output { color: var(--syn-gcode); }
   .debug-row.fail .debug-output { color: var(--accent); font-style: italic; }
+  /* ===== SYNTAX CHECK window: flat, dark, outlined buttons (engine in gcode-check.js) ===== */
+  #sc-modal { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(4,5,7,.78); font-family: 'Inter', system-ui, sans-serif; opacity: 0; transition: opacity .2s ease; }
+  #sc-modal.open { opacity: 1; }
+  #sc-modal[hidden] { display: none; }
+  #sc-modal button, #sc-modal input, #sc-modal textarea { font-family: inherit; }
+  #sc-modal button:hover, #sc-modal button:active, #sc-modal button:focus { background: transparent; }
+  #sc-modal i.fa-solid, #sc-modal i.fa-regular { color: #fff; font-style: normal; }
+  .sc-card { width: min(1040px, 100%); height: min(88vh, 820px); display: flex; flex-direction: column; border-radius: 14px; background: #16181b; border: 1px solid #2b2e33; box-shadow: 0 20px 50px rgba(0,0,0,.6); color: #ececee; transform: translateY(8px); transition: transform .2s ease; will-change: transform; }
+  #sc-modal.open .sc-card { transform: none; }
+  .sc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 4px; }
+  .sc-head h3 { margin: 0; font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: .08em; }
+  .sc-head h3 i { font-style: normal; color: #e8c547 !important; opacity: .85; }
+  .sc-x { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3d4147; background: transparent; color: #8a8f97; font-size: 15px; line-height: 1; cursor: pointer; transition: color .2s ease, border-color .2s ease; }
+  .sc-x:hover { color: #fff; border-color: #fff; }
+  .sc-intro { margin: 0; padding: 0 20px 10px; font-size: 12.5px; line-height: 1.5; color: #8a8f97; }
+  .sc-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 0 20px 12px; }
+  .sc-b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; padding: 0 14px; border-radius: 9px; border: 1px solid #3d4147; background: transparent; color: #cfd3d9; font-size: 13px; font-weight: 600; font-style: normal; text-transform: none; letter-spacing: normal; text-decoration: none; white-space: nowrap; cursor: pointer; transition: border-color .2s ease, color .2s ease, opacity .2s ease, transform .15s ease; -webkit-tap-highlight-color: transparent; }
+  .sc-b:hover { color: #fff; border-color: #fff; }
+  .sc-b:active { transform: scale(.97); }
+  .sc-b:focus-visible, .sc-x:focus-visible, .sc-field input:focus-visible, #sc-aq:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .sc-b.on { color: #fff; border-color: #fff; }
+  .sc-b[disabled] { opacity: .35; cursor: default; pointer-events: none; }
+  .sc-b.sm { min-height: 28px; padding: 0 10px; font-size: 12px; border-radius: 7px; }
+  .sc-seg { display: inline-flex; }
+  .sc-seg .sc-b { border-radius: 0; }
+  .sc-seg .sc-b:first-child { border-radius: 9px 0 0 9px; }
+  .sc-seg .sc-b:last-child { border-radius: 0 9px 9px 0; margin-left: -1px; }
+  .sc-seg .sc-b.on { position: relative; z-index: 1; }
+  .sc-field { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 10px; border-radius: 9px; border: 1px solid #3d4147; transition: border-color .2s ease; }
+  .sc-field:hover, .sc-field:focus-within { border-color: #fff; }
+  .sc-field label { font-size: 12px; color: #8a8f97; white-space: nowrap; }
+  .sc-field input { width: 64px; background: transparent; border: 0; outline: none; color: #ececee; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .sc-sp { flex: 1; }
+  .sc-sum { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sc-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #2b2e33; border-radius: 999px; padding: 2px 12px; font-size: 12px; color: #cfd3d9; font-variant-numeric: tabular-nums; }
+  .sc-hint { display: none; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin: 0 20px 12px; padding: 8px 12px; border-radius: 9px; border: 1px solid #2b2e33; font-size: 12.5px; color: #8a8f97; }
+  .sc-hint.show { display: flex; }
+  .sc-pane { flex: 1; min-height: 0; overflow-y: auto; padding: 0 20px 14px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #222428; padding-top: 14px; scroll-behavior: smooth; overscroll-behavior: contain; }
+  .sc-pane[hidden] { display: none; }
+  .sc-in { flex: none; width: 100%; min-height: 76px; max-height: 160px; resize: vertical; padding: 10px 12px; border-radius: 10px; border: 1px solid #3d4147; background: #0d0e10; color: #ececee; font-size: 14px; line-height: 1.5; outline: none; transition: border-color .2s ease; }
+  .sc-in:hover, .sc-in:focus { border-color: #fff; }
+  .sc-card2 { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 10px; border: 1px solid #222428; background: #0d0e10; transition: border-color .2s ease; }
+  .sc-card2:hover { border-color: #4a4f57; }
+  .sc-ch { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; font-size: 12px; color: #8a8f97; }
+  .sc-ch .sev { color: #ececee; font-weight: 600; }
+  .sc-ch .rid { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .sc-card2 h4 { margin: 0; font-size: 14px; font-weight: 600; color: #fff; }
+  .sc-card2 p { margin: 0; font-size: 13px; line-height: 1.5; color: #c4c8ce; }
+  .sc-tip { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.5; color: #8a8f97; }
+  .sc-tip i { margin-top: 3px; }
+  .sc-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sc-col { min-width: 0; border-radius: 8px; border: 1px solid #222428; overflow: hidden; }
+  .sc-lab { padding: 4px 10px; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8a8f97; border-bottom: 1px solid #222428; }
+  .sc-code { padding: 4px 0; overflow-x: auto; }
+  .sc-dl { display: flex; gap: 10px; padding: 0 10px; font: 500 12px/1.65 ui-monospace, 'DM Mono', Consolas, monospace; white-space: pre; font-variant-numeric: tabular-nums; }
+  .sc-dl .n { flex: none; min-width: 24px; text-align: right; color: #5a5f67; user-select: none; }
+  .sc-dl.chg { background: #16181b; box-shadow: inset 2px 0 0 #fff; }
+  .sc-dl.chg .t { color: #fff; }
+  .u-del, .u-add { text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-skip-ink: none; }
+  .u-del { text-decoration-color: #ff6b6b; } .u-add { text-decoration-color: #4ade80; }
+  .sc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sc-erow { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; }
+  .sc-tag { flex: none; margin-top: 1px; border: 1px solid #2b2e33; border-radius: 999px; padding: 0 8px; font-size: 11px; line-height: 18px; color: #8a8f97; }
+  .sc-erow b { font-weight: 600; color: #fff; }
+  .sc-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; flex: 1; padding: 32px; text-align: center; color: #8a8f97; font-size: 13px; }
+  .sc-empty i { font-size: 28px; }
+  .sc-foot { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 12px 20px 16px; border-top: 1px solid #222428; }
+  .sc-note { flex: 1; min-width: 200px; font-size: 11.5px; line-height: 1.5; color: #8a8f97; }
+  @media (max-width: 700px) {
+    #sc-modal { padding: 0; }
+    .sc-card { height: 100%; border-radius: 0; border: 0; }
+    .sc-diff { grid-template-columns: 1fr; }
+    .sc-b { min-height: 40px; } .sc-b.sm { min-height: 34px; }
+    .sc-field input { font-size: 16px; } .sc-in { font-size: 16px; }
+    .sc-intro { display: none; }
+    .sc-foot { padding-top: 10px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+    .sc-foot .sc-b { flex: 1; order: -1; }
+    .sc-note { flex-basis: 100%; font-size: 10.5px; }
+    .sc-pane, .sc-bar, .sc-head, .sc-foot, .sc-intro { padding-left: 14px; padding-right: 14px; }
+    .sc-hint { margin-left: 14px; margin-right: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #sc-modal, .sc-card, .sc-b, .sc-pane { transition: none !important; scroll-behavior: auto !important; } }
 </style>
 <style id="site-chrome">
 /* shared header and footer (same on every kevmcg1.github.io project): a strip linking back to the portfolio above the app, the license line below it */
@@ -518,6 +601,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
         <div class="side-label">Tools</div>
         <button class="chip" id="cheat-sheet-btn" aria-controls="cheat-sheet-modal" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg>Cheat Sheet</button>
         <button class="chip" type="button" id="my-shortcuts-btn" title="Make your own phrases that write a line of G-code or any text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>My shortcuts</button>
+        <button class="chip" type="button" id="syntax-check-btn" title="Check the program for syntax mistakes and look up Haas alarms"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Syntax Check</button>
         <button class="chip" id="debug-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h6v6a3 3 0 0 1-6 0zM9 7a3 3 0 0 1 6 0M5 12h4M15 12h4M6 6l3 3M18 6l-3 3M6 19l3-3M18 19l-3-3"/></svg>Debug</button>
       </div>
       <div class="hint-row">Type anything and press Enter to convert to G-code</div>
@@ -608,6 +692,32 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
     <div class="cs-foot"><button type="button" class="cs-btn" id="cs-export">Download my list</button><button type="button" class="cs-btn" id="cs-import">Load a list</button><input type="file" id="cs-file" accept=".json,application/json"><span class="sp"></span><button type="button" class="cs-btn" id="cs-done" onclick="document.getElementById('cs-x').click()">Done</button></div>
   </div>
 </div>
+<div id="sc-modal" hidden>
+  <div class="sc-card" role="dialog" aria-modal="true" aria-labelledby="sc-title">
+    <div class="sc-head"><h3 id="sc-title"><i aria-hidden="true">[</i> SYNTAX CHECK <i aria-hidden="true">]</i></h3><button type="button" class="sc-x" id="sc-x" aria-label="Close" title="Close (Esc)">&times;</button></div>
+    <p class="sc-intro">Checks the program in the editor against Haas rules for the machine you picked. Sizes are shown in inches with millimetres in parentheses.</p>
+    <div class="sc-bar">
+      <div class="sc-seg" role="tablist" aria-label="View">
+        <button type="button" class="sc-b on" id="sc-t-code" role="tab" aria-selected="true"><i class="fa-solid fa-list-check" aria-hidden="true"></i><span>Findings</span></button>
+        <button type="button" class="sc-b" id="sc-t-alarm" role="tab" aria-selected="false"><i class="fa-solid fa-bell" aria-hidden="true"></i><span>Alarms</span></button>
+      </div>
+      <div class="sc-field" id="sc-rpmf"><label for="sc-rpm">Max RPM</label><input id="sc-rpm" type="number" inputmode="numeric" min="100" step="100" value="8100"></div>
+      <div class="sc-sum" id="sc-sum"></div>
+    </div>
+    <div class="sc-hint" id="sc-hint"><span id="sc-hint-t"></span><button type="button" class="sc-b sm" id="sc-hint-b"><i class="fa-solid fa-right-left" aria-hidden="true"></i><span>Switch</span></button></div>
+    <div class="sc-pane" id="sc-code"></div>
+    <div class="sc-pane" id="sc-alarm" hidden>
+      <textarea class="sc-in" id="sc-aq" spellcheck="false" autocomplete="off" aria-label="Alarm number, message or log" placeholder="Type or paste any Haas alarm: 102, 1.9930, 9100.018, 20005, an alarm log, or words from the message (for example: cutter comp begin)"></textarea>
+      <div class="sc-acts"><button type="button" class="sc-b sm" id="sc-apaste"><i class="fa-regular fa-paste" aria-hidden="true"></i><span>Paste</span></button><button type="button" class="sc-b sm" id="sc-aclear"><i class="fa-solid fa-trash-can" aria-hidden="true"></i><span>Clear</span></button><span class="sc-sp"></span><span class="sc-note" id="sc-acount" style="flex:none;min-width:0"></span></div>
+      <div id="sc-ares" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+    <div class="sc-foot">
+      <span class="sc-note">Fix all only applies fixes that do not invent a number. Anything needing your feed, speed, depth or clearance stays a suggestion. Alarm names come from published Haas lists and can differ by control and software version. Always prove out on the control before cutting.</span>
+      <button type="button" class="sc-b" id="sc-fixall"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>Fix all</span></button>
+      <button type="button" class="sc-b" id="sc-close"><span>Close</span></button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 <div id="debug-modal">
   <div class="debug-panel">
@@ -623,6 +733,7 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
 </div>
 
 <script src="gcode-rules.js"></script>
+<script src="gcode-check.js"></script>
 <script>
   // ============================================================
   // UI CODE  (converter logic lives in gcode-rules.js)
@@ -2422,6 +2533,180 @@ G42 turn to X1.2 Z-1. at .005`
 
   updateLineNumbers();
   histCheck();
+</script>
+
+<script>
+/* ============================================================
+   SYNTAX CHECK: runs the Haas corrector (gcode-check.js) on the text in the editor and lists what it finds, with a before/after
+   preview for each fix. A fix is written into the editor like any other edit, so Undo / Ctrl+Z takes it back. The second tab looks up Haas alarms.
+   ============================================================ */
+(() => {
+  const G = window.GcodeCheck; if (!G) return;
+  const $ = (id) => document.getElementById(id);
+  const modal = $('sc-modal'), codePane = $('sc-code'), alarmPane = $('sc-alarm'), sumEl = $('sc-sum'), hintEl = $('sc-hint');
+  const rpmIn = $('sc-rpm'), aq = $('sc-aq'), ares = $('sc-ares'), openBtn = $('syntax-check-btn');
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ICON = { error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+  const LABEL = { error: 'Error', warning: 'Warning', info: 'Info' };
+  const KIND = { standard: 'Standard alarm', axis: 'Axis alarm', sub: 'Alarm with sub-alarm', info: 'Informational message' };
+  const SCOPE = { L: 'Lathe', M: 'Mill', '': 'Mill + Lathe' };
+  const MAX_CARDS = 150, RPM_KEY = 'speedcoder.maxrpm.v1';
+  const REV = {}; Object.keys(G.ALARM_MAP).forEach((id) => G.ALARM_MAP[id].forEach((n) => (REV[n] = REV[n] || []).push(id)));
+  const mach = () => GcodeConverter.getMachine().type;
+  let view = 'code', current = null, rpm = null, rpmTouched = false, closeTimer = 0, lastFocus = null, aTimer = 0, rTimer = 0;
+  try { const v = parseInt(localStorage.getItem(RPM_KEY), 10); if (v >= 100) { rpm = v; rpmTouched = true; } } catch (e) {}
+  const defRpm = () => (mach() === 'lathe' ? 4000 : 8100);
+
+  function diffCol(rows, cls) {
+    return rows.map((r) => {
+      const body = r.segs ? r.segs.map((s) => (s.d ? '<span class="' + cls + '">' + esc(s.t) + '</span>' : esc(s.t))).join('') : esc(r.t);
+      return '<div class="sc-dl' + (r.changed ? ' chg' : '') + '"><span class="n">' + r.n + '</span><span class="t">' + (body || ' ') + '</span></div>';
+    }).join('');
+  }
+  function run() {
+    const m = mach();
+    if (!rpmTouched) rpm = defRpm();
+    rpmIn.value = rpm;
+    current = G.analyze(editor.value, { machine: m, maxRpm: rpm });
+    renderCode();
+  }
+  function renderCode() {
+    const res = current, s = res.summary, m = mach();
+    sumEl.innerHTML = '<span class="sc-chip"><i class="fa-solid fa-circle-xmark"></i>' + s.error + ' error' + (s.error === 1 ? '' : 's') + '</span>' +
+      '<span class="sc-chip"><i class="fa-solid fa-triangle-exclamation"></i>' + s.warning + ' warning' + (s.warning === 1 ? '' : 's') + '</span>' +
+      '<span class="sc-chip"><i class="fa-solid fa-circle-info"></i>' + s.info + ' info</span>';
+    if (!res.issues.length) {
+      codePane.innerHTML = '<div class="sc-empty"><i class="fa-regular fa-circle-check"></i><div>' + (editor.value.trim() ? 'No issues found for the ' + m + ' rules.' : 'The editor is empty. Type or paste a program, then check it.') + '</div></div>';
+    } else {
+      const shown = res.issues.slice(0, MAX_CARDS);
+      codePane.innerHTML = shown.map((x, k) => {
+        let body = '';
+        if (x.fix) body = '<div class="sc-diff"><div class="sc-col"><div class="sc-lab">Before</div><div class="sc-code">' + diffCol(x.fix.preview.before, 'u-del') + '</div></div><div class="sc-col"><div class="sc-lab">After' + (x.fix.auto ? '' : ' (example)') + '</div><div class="sc-code">' + diffCol(x.fix.preview.after, 'u-add') + '</div></div></div>';
+        if (x.hint) body += '<div class="sc-tip"><i class="fa-regular fa-lightbulb"></i><span>' + esc(x.hint) + '</span></div>';
+        const act = x.fix ? (x.fix.auto
+          ? '<button class="sc-b" data-a="apply" data-k="' + k + '" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i><span>' + esc(x.fix.label) + '</span></button>'
+          : '<button class="sc-b" type="button" disabled><i class="fa-regular fa-pen-to-square"></i><span>Needs your value</span></button>') : '';
+        const rel = (x.alarms && x.alarms.length) ? '<div class="sc-acts">' + x.alarms.map((a) => '<button class="sc-b sm" data-a="alarm" data-n="' + a.num + '" type="button"><i class="fa-solid fa-bell"></i><span>Alarm ' + a.num + (a.text ? ' ' + esc(a.text.slice(0, 34)) + (a.text.length > 34 ? '...' : '') : '') + '</span></button>').join('') + '</div>' : '';
+        return '<article class="sc-card2"><div class="sc-ch"><i class="fa-solid ' + ICON[x.sev] + '"></i><span class="sev">' + LABEL[x.sev] + '</span><span>Line ' + x.line + '</span><span class="rid">' + x.id + '</span></div><h4>' + esc(x.title) + '</h4><p>' + esc(x.msg) + '</p>' + body +
+          '<div class="sc-acts"><button class="sc-b" data-a="go" data-k="' + k + '" type="button"><i class="fa-solid fa-location-crosshairs"></i><span>Go to line</span></button>' + act + '</div>' + rel + '</article>';
+      }).join('') + (res.issues.length > MAX_CARDS ? '<div class="sc-tip"><i class="fa-solid fa-circle-info"></i><span>Showing the first ' + MAX_CARDS + ' of ' + res.issues.length + ' findings. Fix these, then check again.</span></div>' : '');
+    }
+    $('sc-fixall').disabled = !res.issues.some((x) => x.fix && x.fix.auto);
+    const d = G.detectMachine(editor.value);
+    if (d && d !== m) { $('sc-hint-t').textContent = 'This looks like a ' + d + ' program, but ' + m + ' rules are selected.'; $('sc-hint-b').dataset.m = d; hintEl.classList.add('show'); }
+    else hintEl.classList.remove('show');
+  }
+  /* write text into the editor like a normal edit, so the history (Undo, Ctrl+Z) keeps both sides of the change */
+  function setEditorText(t) {
+    const top = editor.scrollTop;
+    histCheck();
+    editor.value = t;
+    editor.scrollTop = top;
+    updateLineNumbers();
+    histCheck();
+  }
+  function goLine(line) {
+    close();
+    const ls = editor.value.split('\n'); let pos = 0; for (let i = 0; i < line - 1 && i < ls.length; i++) pos += ls[i].length + 1;
+    editor.focus({ preventScroll: true });
+    editor.setSelectionRange(pos, pos + (ls[line - 1] || '').length);
+    editor.scrollTop = Math.max(0, (line - 1) * 22 - editor.clientHeight / 3);
+    updateLineNumbers();
+  }
+  codePane.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-a]'); if (!b || b.disabled) return;
+    if (b.dataset.a === 'alarm') { aq.value = b.dataset.n; setView('alarm'); return; }
+    const x = current.issues[+b.dataset.k]; if (!x) return;
+    if (b.dataset.a === 'go') goLine(x.line);
+    if (b.dataset.a === 'apply') { setEditorText(G.applyFix(editor.value, x.fix)); run(); showStatus('Fix applied (Ctrl+Z undoes it)'); }
+  });
+  $('sc-fixall').addEventListener('click', () => {
+    const r = G.fixAll(editor.value, { machine: mach(), maxRpm: rpm });
+    if (!r.applied) { showStatus('Nothing to fix automatically'); return; }
+    setEditorText(r.text); run(); showStatus(r.applied + ' fix' + (r.applied === 1 ? '' : 'es') + ' applied (Ctrl+Z undoes it)');
+  });
+  $('sc-hint-b').addEventListener('click', (e) => { applyMachine(e.currentTarget.dataset.m, false); run(); });
+  rpmIn.addEventListener('input', () => {
+    const v = parseInt(rpmIn.value, 10); if (!(v >= 100)) return;
+    rpm = v; rpmTouched = true; try { localStorage.setItem(RPM_KEY, String(v)); } catch (e) {}
+    clearTimeout(rTimer); rTimer = setTimeout(run, 160);
+  });
+
+  /* ----- alarm lookup ----- */
+  function runAlarms() {
+    const q = aq.value, rs = G.lookupAlarms(q, mach());
+    $('sc-acount').textContent = rs.length ? rs.length + (rs.length === 1 ? ' match' : ' matches') : '';
+    if (!q.trim()) { ares.innerHTML = '<div class="sc-empty"><i class="fa-solid fa-bell"></i><div>Enter any Haas alarm number, a message, or paste a whole alarm log.</div></div>'; return; }
+    if (!rs.length) { ares.innerHTML = '<div class="sc-empty"><i class="fa-regular fa-circle-question"></i><div>No alarm number or matching message found in that text.</div></div>'; return; }
+    ares.innerHTML = rs.map((r) => {
+      const ref = r.ref; let decode = '';
+      if (ref.kind === 'axis') decode = 'Axis alarm format: ' + ref.axis + ' is the axis number and ' + ref.num + ' is the alarm number' + (ref.axis === 1 ? ' (axis 1 is X in Haas’s own example, 1.9930).' : '. Axis numbers follow the control’s axis assignment.');
+      if (ref.kind === 'sub') decode = ref.num + ' is the alarm number and .' + ref.sub + ' is a sub-alarm code that adds detail for service.';
+      if (ref.kind === 'info') decode = 'The 20000 range holds informational messages. They usually appear at power-up in the alarm history and need no service action.';
+      const ents = r.entries.length
+        ? r.entries.map((e) => '<div class="sc-erow"><span class="sc-tag">' + SCOPE[e.scope] + '</span><b>' + esc(e.text) + '</b></div>').join('')
+        : (r.extra ? '<div class="sc-erow"><span class="sc-tag">Known</span><b>' + esc(r.extra) + '</b></div>' : '<div class="sc-erow"><span class="sc-tag">Not listed</span><b>This number is not in the bundled list.</b></div>');
+      const mine = current ? current.issues.filter((x) => x.alarms && x.alarms.some((a) => a.num === ref.num)) : [];
+      const here = mine.length ? '<div class="sc-tip"><i class="fa-solid fa-triangle-exclamation"></i><span>Your program has ' + mine.length + ' finding' + (mine.length > 1 ? 's' : '') + ' that can lead to this alarm (line ' + mine.map((x) => x.line).join(', ') + ').</span></div>' : '';
+      const rules = REV[ref.num] ? '<div class="sc-tip"><i class="fa-regular fa-lightbulb"></i><span>Checked in programs by rule ' + REV[ref.num].join(', ') + '.</span></div>' : '';
+      const link = r.url ? '<a class="sc-b sm" href="' + r.url + '" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>Haas page for ' + ref.num + '</span></a>' : '';
+      const help = '<a class="sc-b sm" href="' + G.ALARM_HELP_URL + '" target="_blank" rel="noopener"><i class="fa-regular fa-circle-question"></i><span>How Haas numbers alarms</span></a>';
+      const unknown = !r.known ? '<p>Haas adds alarms with new software, so a number missing here can still be real. Search it in the control’s Alarm Viewer or on the Haas service site.</p>' : '';
+      return '<article class="sc-card2"><div class="sc-ch"><i class="fa-solid fa-bell"></i><span class="sev">Alarm ' + esc(ref.raw) + '</span><span>' + KIND[ref.kind] + '</span><span class="rid">' + esc(r.category) + '</span></div>' +
+        ents + (r.note ? '<p>' + esc(r.note) + '</p>' : '') + (decode ? '<p>' + esc(decode) + '</p>' : '') + unknown + here + rules + '<div class="sc-acts">' + link + help + '</div></article>';
+    }).join('');
+  }
+  aq.addEventListener('input', () => { clearTimeout(aTimer); aTimer = setTimeout(runAlarms, 140); });
+  $('sc-aclear').addEventListener('click', () => { aq.value = ''; runAlarms(); aq.focus(); });
+  $('sc-apaste').addEventListener('click', async () => {
+    try { aq.value = await navigator.clipboard.readText(); runAlarms(); } catch (e) { showStatus('Paste with the keyboard instead'); aq.focus(); }
+  });
+
+  function setView(v) {
+    view = v;
+    const isCode = v === 'code';
+    codePane.hidden = !isCode; alarmPane.hidden = isCode;
+    $('sc-t-code').classList.toggle('on', isCode); $('sc-t-alarm').classList.toggle('on', !isCode);
+    $('sc-t-code').setAttribute('aria-selected', String(isCode)); $('sc-t-alarm').setAttribute('aria-selected', String(!isCode));
+    $('sc-rpmf').style.display = isCode ? '' : 'none'; sumEl.style.display = isCode ? '' : 'none';
+    $('sc-fixall').style.display = isCode ? '' : 'none';
+    if (!isCode) { hintEl.classList.remove('show'); runAlarms(); if (matchMedia('(hover:hover)').matches) aq.focus({ preventScroll: true }); }
+    else renderCode();
+  }
+  $('sc-t-code').addEventListener('click', () => setView('code'));
+  $('sc-t-alarm').addEventListener('click', () => setView('alarm'));
+
+  function open() {
+    clearTimeout(closeTimer);
+    lastFocus = document.activeElement;
+    modal.hidden = false;
+    run(); setView(view === 'alarm' && aq.value.trim() ? 'alarm' : 'code');
+    requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add('open')));
+    $('sc-close').focus({ preventScroll: true });
+  }
+  function close() {
+    if (modal.hidden) return;
+    modal.classList.remove('open');
+    closeTimer = setTimeout(() => { modal.hidden = true; }, 200);
+    if (lastFocus && lastFocus.focus && lastFocus !== editor) lastFocus.focus({ preventScroll: true });
+  }
+  openBtn.addEventListener('click', open);
+  $('sc-x').addEventListener('click', close);
+  $('sc-close').addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  addEventListener('keydown', (e) => {
+    if (modal.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
+    if (e.key === 'Tab') {   // keep focus inside the window
+      const f = [...modal.querySelectorAll('button:not([disabled]),input,textarea,a[href]')].filter((n) => n.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }, true);
+  window.__syntaxCheck = { open, close, run: () => G.analyze(editor.value, { machine: mach(), maxRpm: rpm || defRpm() }) };
+})();
 </script>
 
 <script>
