@@ -767,8 +767,26 @@ function build() {
   const errs = issues.filter((i) => i.sev === 'error'), warns = issues.filter((i) => i.sev === 'warn'), infos = issues.filter((i) => i.sev === 'info');
   return { dur, issues, errs, warns, infos, tot, hit, miss, rate, p50: p(0.5), p95: p(0.95), p99: p(0.99), fps: dts.length ? 1000 / (dts.reduce((a, b) => a + b, 0) / dts.length) : 0 };
 }
-function reportText() {
+/* The copied report: only what went wrong. No passed checks, no list of what was covered, no feature or action tables. */
+function problemsText(R) {
+  const L = ['# ' + APP + ': problems found by the automatic UX test', '', `Seed ${T.seed} · ${T.n} actions in ${fmtT(R.dur)} · ${T.endReason || (T.running ? 'still running' : 'stopped')}`, ''];
+  const slow = !T.turboUsed && R.fps && (R.p95 > 20 || R.fps < 55);
+  if (!R.issues.length && !slow) { L.push('No problems found.'); return L.join('\n'); }
+  L.push(`## ${R.errs.length} errors, ${R.warns.length} warnings, ${R.infos.length} notes (${T.fail} of ${T.n} actions had a problem)`);
+  if (slow) L.push('', `Smoothness problem: ${R.fps.toFixed(0)} fps average, frame time typical ${R.p50.toFixed(0)} ms, 95th ${R.p95.toFixed(0)} ms, 99th ${R.p99.toFixed(0)} ms; ${T.longtasks.length} long tasks`);
+  R.issues.forEach((i, k) => {
+    L.push('', `### ${k + 1}. [${i.sev.toUpperCase()}] ${i.kind}: ${i.msg}`, `- Seen ${i.count} time${i.count > 1 ? 's' : ''}, first at action #${i.first}, last at #${i.last}${i.actions.size ? ' · during: ' + [...i.actions].join(', ') : ''}${i.ctl.size ? ' · controls: ' + [...i.ctl].slice(0, 4).join(', ') : ''}`);
+    if (i.diag) L.push(`- Likely cause: ${i.diag}`);
+    if (i.state) L.push('- App state when it first happened: ' + i.state);
+    if (i.sample) L.push('- Sample: ' + i.sample.replace(/\s+/g, ' '));
+    if (i.stack) L.push('- Stack: ' + i.stack.split('\n').slice(0, 4).map((l) => l.trim()).join(' | '));
+    L.push(`- To reproduce (seed ${i.seed}), the last actions before it were:`, ...i.repro.slice(-8).map((r) => '    ' + r));
+  });
+  return L.join('\n');
+}
+function reportText(onlyBad) {
   const R = build(), L = [];
+  if (onlyBad) return problemsText(R);
   L.push('# ' + APP + ': automatic UX test report', '', `Seed ${T.seed} · ${T.n} actions (${T.sub} extra steps inside macros) in ${fmtT(R.dur)} · about ${R.rate.toFixed(1)} actions/s · ${T.endReason || (T.running ? 'still running' : 'stopped')}`, '');
   const verdict = R.errs.length ? 'NEEDS ATTENTION' : R.warns.length ? 'GOOD, WITH WARNINGS' : 'ALL CLEAR';
   L.push(`## Verdict: ${verdict}`, `- ${T.pass} of ${T.n} actions passed every check (${pct(T.pass, T.n)}%), ${T.fail} had a problem`, `- ${R.errs.length} errors, ${R.warns.length} warnings, ${R.infos.length} notes (distinct problems)`, `- Smoothness: ${R.fps.toFixed(0)} fps average, frame time typical ${R.p50.toFixed(0)} ms, 95th ${R.p95.toFixed(0)} ms, 99th ${R.p99.toFixed(0)} ms; ${T.longtasks.length} long tasks`, '');
@@ -842,7 +860,7 @@ function build_ui() {
     else if (a === 'pause') { T.paused = !T.paused; b.textContent = T.paused ? '▶ Resume' : '❚❚ Pause'; }
     else if (a === 'close') toggle(false);
     else if (a === 'min') el.style.height = el.style.height === '40px' ? '680px' : '40px';
-    else if (a === 'copy') { const t = reportText(); (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => msg('Report copied'), () => { tab = 'report'; ui(true); msg('Select and copy from the Report tab'); }); }
+    else if (a === 'copy') { const t = reportText(true); (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => msg('Problems copied'), () => { tab = 'report'; ui(true); msg('Select and copy from the Report tab'); }); }
     else if (a === 'md') download(APP.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-ux-report.md', reportText(), 'text/markdown');
     else if (a === 'json') download(APP.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-ux-report.json', reportJSON(), 'application/json');
     else if (a === 'clear') { if (!T.running) { resetStats(); ui(true); } else msg('Stop the test first'); }

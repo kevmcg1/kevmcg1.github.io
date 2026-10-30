@@ -212,7 +212,7 @@ function build() {
   ui = document.createElement('div'); ui.id = 'ds'; ui.hidden = true; ui.setAttribute('role', 'dialog'); ui.setAttribute('aria-label', 'Stress tester');
   ui.innerHTML = `<div class="h" id="ds-h"><span><i class="fa-solid fa-bolt"></i> Stress test <small>${RATE} tests/s</small></span><button type="button" id="ds-x" aria-label="Close (~)" title="Close (~)"><i class="fa-solid fa-xmark"></i></button></div>
 <div class="b">
- <div class="row"><button type="button" id="ds-go"><i class="fa-solid fa-play"></i><span>Start</span></button><button type="button" id="ds-reset"><i class="fa-solid fa-rotate-left"></i><span>Reset</span></button><button type="button" id="ds-copy"><i class="fa-regular fa-copy"></i><span>Copy report</span></button></div>
+ <div class="row"><button type="button" id="ds-go"><i class="fa-solid fa-play"></i><span>Start</span></button><button type="button" id="ds-reset"><i class="fa-solid fa-rotate-left"></i><span>Reset</span></button><button type="button" id="ds-copy"><i class="fa-regular fa-copy"></i><span>Copy problems</span></button></div>
  <div class="g"><div class="c"><b id="ds-st">idle</b><span>State</span></div><div class="c"><b id="ds-rate">0.0</b><span>Tests/s</span></div><div class="c"><b id="ds-n">0</b><span>Tests</span></div><div class="c"><b id="ds-ok" class="good">0</b><span>Passed</span></div>
  <div class="c"><b id="ds-bad">0</b><span>Failed</span></div><div class="c"><b id="ds-errs">0</b><span>Errors</span></div><div class="c"><b id="ds-skip">0</b><span>Skipped</span></div><div class="c"><b id="ds-time">0:00</b><span>Run time</span></div></div>
  <div class="row" style="align-items:center"><span class="v">Smoothness</span><span id="ds-grade" style="margin-left:auto" class="v">-</span></div>
@@ -263,18 +263,22 @@ function grade() {
   if (fps >= 40 && p95 <= 34) return { text: 'mostly smooth', cls: '' };
   return { text: 'janky', cls: 'bad' };
 }
-function report() {
+function report() {   // only what went wrong: no passed tests, no per-test table
   const gr = grade(), p95 = pct(F.dts, .95), sec = (S.on ? performance.now() - S.started : S.elapsed) / 1000;
-  const L = ['Speed Coder stress test', new Date().toISOString(), navigator.userAgent, '',
-    `Tests: ${S.tests} in ${sec.toFixed(1)} s (${(S.tests / Math.max(1, sec)).toFixed(1)}/s), passed ${S.pass}, failed ${S.fail}, skipped ${S.skipped}, script errors ${S.errors}, console errors ${S.consoleErrors}`,
-    `Smoothness: ${gr.text}. ${fpsNow().toFixed(0)} fps, p95 ${p95.toFixed(1)} ms, worst ${F.worst.toFixed(0)} ms, dropped ${F.drops}, long tasks ${F.long} (longest ${F.longMax.toFixed(0)} ms), slow tests ${S.slow}`, '', 'Per test:'];
-  Object.keys(S.perName).forEach((k) => { const r = S.perName[k]; if (r.n) L.push(`  ${k}: ${r.ok}/${r.n} passed, avg ${(r.ms / r.n).toFixed(0)} ms, max ${r.max.toFixed(0)} ms`); });
-  L.push('', 'Failures:'); S.fails.length ? S.fails.forEach((f) => L.push(`  [${f.t}] ${f.test}: ${f.msg}`)) : L.push('  none');
+  const slow = F.dts.length >= 30 && gr.cls === 'bad';
+  const L = ['Speed Coder stress test: problems', new Date().toISOString(), navigator.userAgent, '',
+    `${S.tests} tests in ${sec.toFixed(1)} s (${(S.tests / Math.max(1, sec)).toFixed(1)}/s)`];
+  if (!S.fail && !S.errors && !S.consoleErrors && !slow) { L.push('', 'No problems found.'); return L.join('\n'); }
+  L.push(`Failed ${S.fail}, script errors ${S.errors}, console errors ${S.consoleErrors}`);
+  if (slow) L.push('', `Smoothness problem: ${gr.text}. ${fpsNow().toFixed(0)} fps, p95 ${p95.toFixed(1)} ms, worst ${F.worst.toFixed(0)} ms, dropped ${F.drops}, long tasks ${F.long} (longest ${F.longMax.toFixed(0)} ms)`);
+  const bad = Object.keys(S.perName).filter((k) => S.perName[k].bad);
+  if (bad.length) { L.push('', 'Tests that failed:'); bad.forEach((k) => { const r = S.perName[k]; L.push(`  ${k}: ${r.bad} of ${r.n} failed`); }); }
+  if (S.fails.length) { L.push('', 'Failures:'); S.fails.forEach((f) => L.push(`  [${f.t}] ${f.test}: ${f.msg}`)); }
   return L.join('\n');
 }
 async function copyReport() {
   const t = report(); try { await navigator.clipboard.writeText(t); } catch (e) { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
-  const b = $('#ds-copy span'); b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy report'; }, 1200);
+  const b = $('#ds-copy span'); b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy problems'; }, 1200);
 }
 
 /* ---------------------------------------------------------------- run control */
