@@ -2741,6 +2741,26 @@ G42 turn to X1.2 Z-1. at .005`
 })();
 </script>
 
+<script>
+/* Stress tester: press the tilde key (~) anywhere on the page to open or close it. It runs 10 tests per second and measures how smooth the page stays.
+   devstress.js is loaded on first use, and nothing else opens it. */
+(() => {
+  let loading = false;
+  addEventListener('keydown', (e) => {
+    if (e.key !== '~' || !e.isTrusted || e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || (t.tagName === 'INPUT' && /^(text|number|search|email|url|tel|password)$/.test(t.type)))) return;   // (the editor is a textarea and G-code has no tilde)
+    e.preventDefault(); e.stopPropagation();
+    if (window.__devStress) { window.__devStress.toggle(); return; }
+    if (loading) return; loading = true;
+    const sc = document.createElement('script'); sc.src = 'devstress.js?v=1';
+    sc.onload = () => { loading = false; window.__devStress && window.__devStress.toggle(true); };
+    sc.onerror = () => { loading = false; console.warn('Could not load the stress tester (' + sc.src + ')'); };
+    document.head.appendChild(sc);
+  }, true);
+})();
+</script>
+
 <!-- alpha notice: shown every time this page opens -->
 <style>
 #alphaNotice{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);font-family:'Roboto','Segoe UI',system-ui,sans-serif}
