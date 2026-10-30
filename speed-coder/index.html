@@ -1619,11 +1619,14 @@ G42 turn to X1.2 Z-1. at .005`
   // reads a shaft (the page's, or the wizard's copy) into numbers, and collects every problem with the step it belongs to (-1 = the stock)
   function shaftParse(st) {
     st = st || shaft;
-    const stock = shaftNum(st.stock);
+    // every typed size is snapped to what the control can hold (.0001 in or .001 mm), so the corner arcs end exactly where their radius says
+    // and a size finer than that reads as zero (and is asked for again) instead of becoming an arc with no radius
+    const snapK = st.units === 'metric' ? 1000 : 10000, snap = (v) => (isNaN(v) ? v : Math.round(v * snapK) / snapK);
+    const stock = snap(shaftNum(st.stock));
     const steps = st.steps.map((r, i) => {
       const last = i === st.steps.length - 1;
       const oT = r.oT || 'none', iT = last ? 'none' : (r.iT || 'none');
-      return { d: shaftNum(r.d), l: shaftNum(r.l), o: { t: oT, s: oT === 'none' ? 0 : shaftNum(r.oS) }, i: { t: iT, s: iT === 'none' ? 0 : shaftNum(r.iS) } };
+      return { d: snap(shaftNum(r.d)), l: snap(shaftNum(r.l)), o: { t: oT, s: oT === 'none' ? 0 : snap(shaftNum(r.oS)) }, i: { t: iT, s: iT === 'none' ? 0 : snap(shaftNum(r.iS)) } };
     });
     const n = steps.length;
     const bad = { stock: !(stock > 0), d: steps.map(r => !(r.d > 0)), l: steps.map(r => !(r.l > 0)), oS: steps.map(r => r.o.t !== 'none' && !(r.o.s > 0)), iS: steps.map(r => r.i.t !== 'none' && !(r.i.s > 0)) };
@@ -1794,14 +1797,15 @@ G42 turn to X1.2 Z-1. at .005`
     const ops = shaftOps(P, T);
     const L = [];
     L.push('%', 'O0001 (STEP SHAFT)', '(DATE: ' + new Date().toLocaleDateString() + ')', '(STOCK DIA ' + f(P.stock) + ' - ' + (m ? 'MM' : 'INCH') + ')', '(MACHINE: ST-20)', '');
-    L.push('(SETUP)', m ? 'G00 G18 G21 G40 G80 G99' : 'G00 G18 G20 G40 G80 G99', 'G28 U0.', 'G28 W0.', '');
-    L.push('(OP 1 - FACE AND ROUGH TURN)', 'T0101', 'G54', 'G96 S' + css + ' M03', 'G50 S' + cssMax, 'M08');
+    L.push('(SETUP)', m ? 'G00 G18 G21 G40 G80 G97 G99' : 'G00 G18 G20 G40 G80 G97 G99', 'G28 U0.', 'G28 W0.', '');
+    L.push('(OP 1 - FACE AND ROUGH TURN)', 'T0101', 'G54', 'G50 S' + cssMax, 'G96 S' + css + ' M03', 'M08');   // the clamp is set before constant surface speed starts
     L.push('G00 X' + f(xs) + ' Z' + f(app), 'G01 Z0. F' + f(feedFace), 'G01 X' + f(over) + ' F' + f(feedFace), 'G00 Z' + f(app), 'G00 X' + f(xs));
     L.push('G71 U' + f(doc) + ' R' + f(ret), 'G71 P100 Q200 U' + f(allowU) + ' W' + f(allowW) + ' F' + f(feedR));
     // the profile: N100 is the approach (X only), then every move toward the chuck; the first cut carries the finishing feed
     L.push('N100 G00 X' + f(ops[0].x));
     let px = ops[0].x, pz = 0, modal = 'G00', feedGiven = false;
-    if (P.steps[0].o.t !== 'none' && P.steps[0].o.s > 0) { L.push('G01 Z0. F' + f(feedF)); modal = 'G01'; feedGiven = true; }   // a corner on the face edge starts at the face
+    const firstZonly = ops[1] && ops[1].t === 'L' && Math.abs(ops[1].x - ops[0].x) < 1e-9;
+    if ((P.steps[0].o.t !== 'none' && P.steps[0].o.s > 0) || !firstZonly) { L.push('G01 Z0. F' + f(feedF)); modal = 'G01'; feedGiven = true; }   // a corner on the face edge, or a first move that is an arc or slant, starts at the face (N100 only moves X, so the tool is still in front of it)
     ops.slice(1).forEach((o) => {
       const fw = feedGiven ? '' : ' F' + f(feedF); feedGiven = true;
       if (o.t === 'A') { L.push(o.code + ' X' + f(o.x) + ' Z' + f(o.z) + ' R' + f(o.r) + fw); modal = o.code; px = o.x; pz = o.z; return; }
@@ -1810,9 +1814,9 @@ G42 turn to X1.2 Z-1. at .005`
       L.push((modal !== 'G01' ? 'G01 ' : '') + (dx ? 'X' + f(o.x) : '') + (dx && dz ? ' ' : '') + (dz ? 'Z' + f(o.z) : '') + fw);
       modal = 'G01'; px = o.x; pz = o.z;
     });
-    L.push('N200 X' + f(xs), '');
-    L.push('(OP 2 - FINISH)', 'T0202', 'G96 S' + fin + ' M03', 'G50 S' + finMax);
-    L.push('G00 X' + f(xs) + ' Z' + f(app), 'G70 P100 Q200 F' + f(feedF), '');
+    L.push('N200 ' + (modal === 'G02' || modal === 'G03' ? 'G01 ' : '') + 'X' + f(xs), '');   // G01 again if the last move was an arc, or the arc stays active
+    L.push('(OP 2 - FINISH)', 'G28 U0.', 'G28 W0.', 'T0202', 'G50 S' + finMax, 'G96 S' + fin + ' M03');   // X and Z go home so the turret can index clear of the part
+    L.push('G00 X' + f(xs) + ' Z' + f(app), 'G70 P100 Q200', '');   // G70 takes its feed from the profile blocks, so no F here
     L.push('M05', 'M09', 'G28 U0.', 'G28 W0.', 'M30', '%');
     return L.join('\n');
   }
