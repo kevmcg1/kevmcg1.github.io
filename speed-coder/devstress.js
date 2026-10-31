@@ -76,6 +76,7 @@ const TESTS = [
     ed.value = before.replace(/\n?$/, '\n') + line; ed.setSelectionRange(ed.value.length, ed.value.length);
     ed.dispatchEvent(new Event('input', { bubbles: true })); pressEnter(ed);
     await nextFrame(); editorSane('Enter');
+    { const bad = newLinesAlarm(before, ed.value, line); if (bad) throw new Error('"' + line + '" wrote code that would alarm: ' + bad); }
     if (ed.value.length > 12000) ed.value = before;
     ed.dispatchEvent(new Event('input', { bubbles: true }));
   }],
@@ -215,6 +216,9 @@ function build() {
  <div class="row"><button type="button" id="ds-go"><i class="fa-solid fa-play"></i><span>Start</span></button><button type="button" id="ds-reset"><i class="fa-solid fa-rotate-left"></i><span>Reset</span></button><button type="button" id="ds-copy"><i class="fa-regular fa-copy"></i><span>Copy problems</span></button></div>
  <div class="g"><div class="c"><b id="ds-st">idle</b><span>State</span></div><div class="c"><b id="ds-rate">0.0</b><span>Tests/s</span></div><div class="c"><b id="ds-n">0</b><span>Tests</span></div><div class="c"><b id="ds-ok" class="good">0</b><span>Passed</span></div>
  <div class="c"><b id="ds-bad">0</b><span>Failed</span></div><div class="c"><b id="ds-errs">0</b><span>Errors</span></div><div class="c"><b id="ds-skip">0</b><span>Skipped</span></div><div class="c"><b id="ds-time">0:00</b><span>Run time</span></div></div>
+ <div class="row" style="align-items:center"><span class="v">Alarm check</span><span id="ds-av" style="margin-left:auto" class="v">-</span></div>
+ <div class="g"><div class="c"><b id="ds-ac">0</b><span>Edits checked</span></div><div class="c"><b id="ds-ae">0</b><span>Edits alarmed</span></div><div class="c"><b id="ds-ams">0</b><span>Check ms</span></div><div class="c"><b id="ds-al">0</b><span>Lines</span></div></div>
+ <ul id="ds-alog"><li><em>No alarm causes found in the editor</em></li></ul>
  <div class="row" style="align-items:center"><span class="v">Smoothness</span><span id="ds-grade" style="margin-left:auto" class="v">-</span></div>
  <canvas id="ds-cv" width="640" height="112" aria-label="Frame times"></canvas>
  <div class="g"><div class="c"><b id="ds-fps">0</b><span>FPS</span></div><div class="c"><b id="ds-p95">0</b><span>P95 ms</span></div><div class="c"><b id="ds-worst">0</b><span>Worst ms</span></div><div class="c"><b id="ds-drop">0</b><span>Dropped</span></div></div>
@@ -251,6 +255,10 @@ function paint() {
   set('ds-lt', F.long); set('ds-ltm', F.longMax.toFixed(0)); set('ds-slow', S.slow);
   set('ds-heap', performance.memory ? (performance.memory.usedJSHeapSize / 1048576).toFixed(0) : 'n/a');
   const gr = grade(); set('ds-grade', gr.text, 'v ' + gr.cls);
+  const av = alarmVerdict(); set('ds-av', av.text, 'v ' + av.cls); set('ds-ac', A.checks); set('ds-ae', A.alarmEdits, A.alarmEdits ? 'bad' : ''); set('ds-ams', A.ms.toFixed(1)); set('ds-al', A.lines);
+  const esc2 = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const cur = A.will.concat(A.may).slice(0, 6).map((x) => `<li><b>${x.sev === 'error' ? 'will alarm' : 'may alarm'}</b> line ${x.line}: ${esc2(alarmTitle(x))} <em>(alarm ${alarmNums(x)})</em></li>`).join('');
+  const atxt = cur || '<li><em>No alarm causes found in the editor</em></li>'; if (atxt !== paint.al) { paint.al = atxt; $('#ds-alog').innerHTML = atxt; }
   const txt = S.fails.map((f) => `<li><em>${f.t}</em> <b>${f.test}</b>: ${f.msg.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</li>`).join('') || '<li><em>None yet</em></li>';
   if (txt !== ltxt) { ltxt = txt; $('#ds-fails').innerHTML = txt; }
   $('#ds-per').innerHTML = Object.keys(S.perName).filter((k) => S.perName[k].n).map((k) => { const r = S.perName[k]; return `<span>${k}</span><span>${r.ok}/${r.n}</span><span>${(r.ms / r.n).toFixed(0)} ms</span>`; }).join('');
@@ -268,17 +276,68 @@ function report() {   // only what went wrong: no passed tests, no per-test tabl
   const slow = F.dts.length >= 30 && gr.cls === 'bad';
   const L = ['Speed Coder stress test: problems', new Date().toISOString(), navigator.userAgent, '',
     `${S.tests} tests in ${sec.toFixed(1)} s (${(S.tests / Math.max(1, sec)).toFixed(1)}/s)`];
-  if (!S.fail && !S.errors && !S.consoleErrors && !slow) { L.push('', 'No problems found.'); return L.join('\n'); }
+  const alarming = A.will.length || A.may.length || A.alarmEdits;
+  if (!S.fail && !S.errors && !S.consoleErrors && !slow && !alarming) { L.push('', 'No problems found.'); return L.join('\n'); }
   L.push(`Failed ${S.fail}, script errors ${S.errors}, console errors ${S.consoleErrors}`);
   if (slow) L.push('', `Smoothness problem: ${gr.text}. ${fpsNow().toFixed(0)} fps, p95 ${p95.toFixed(1)} ms, worst ${F.worst.toFixed(0)} ms, dropped ${F.drops}, long tasks ${F.long} (longest ${F.longMax.toFixed(0)} ms)`);
   const bad = Object.keys(S.perName).filter((k) => S.perName[k].bad);
   if (bad.length) { L.push('', 'Tests that failed:'); bad.forEach((k) => { const r = S.perName[k]; L.push(`  ${k}: ${r.bad} of ${r.n} failed`); }); }
   if (S.fails.length) { L.push('', 'Failures:'); S.fails.forEach((f) => L.push(`  [${f.t}] ${f.test}: ${f.msg}`)); }
+  if (A.will.length || A.may.length) { L.push('', `Alarm check: the editor ${A.will.length ? 'WILL' : 'MAY'} alarm (${A.checks} edits checked):`); A.will.concat(A.may).forEach((x) => L.push(`  ${x.sev === 'error' ? 'will alarm' : 'may alarm'} line ${x.line} ${x.id} ${x.title} (alarm ${alarmNums(x)})`)); }
+  if (A.log.length) { L.push('', `Edits that introduced an alarm cause (${A.alarmEdits} in all, newest first):`); A.log.forEach((e) => L.push(`  [${e.t}] ${e.by}: ${e.items.join('; ')}`)); }
   return L.join('\n');
 }
 async function copyReport() {
   const t = report(); try { await navigator.clipboard.writeText(t); } catch (e) { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
   const b = $('#ds-copy span'); b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy problems'; }, 1200);
+}
+
+/* ---------------------------------------------------------------- alarm watch
+   Runs the Haas rules (gcode-check.js) on the editor text after every change, whoever made it (typing, Enter, a fix, Undo, a program written by the wizard, the stress
+   tests). It reports whether the program would raise a Haas alarm: "will alarm" = an error that matches a documented alarm, "may alarm" = a warning that does.
+   It is a rules check, not the control itself, so a clear result means no known alarm cause was found. */
+const A = { on: false, text: null, poll: 0, dirtyAt: 0, pending: false, delay: 150, checks: 0, alarmEdits: 0, ms: 0, lines: 0, will: [], may: [], keys: new Set(), log: [], first: true };
+const CKC = window.GcodeCheck;
+function alarmScan(text) {
+  const m = GC.getMachine().type, t0 = performance.now();
+  const r = CKC.analyze(text, { machine: m, maxRpm: m === 'lathe' ? 4000 : 8100 });
+  const ms = performance.now() - t0, hits = r.issues.filter((x) => x.alarms && x.alarms.length && x.sev !== 'info');
+  return { ms, hits, will: hits.filter((x) => x.sev === 'error'), may: hits.filter((x) => x.sev === 'warning') };
+}
+const alarmNums = (x) => x.alarms.map((a) => a.num).join('/');
+const alarmTitle = (x) => {
+  const l = (A.text || '').split('\n')[x.line - 1] || '';
+  if (x.id === 'E-SYN-02' && /__/.test(l)) return 'Unfilled blank: fill in the ____ before running';
+  if (x.id === 'E-SYN-02' && /[a-z]{3,}/.test(l)) return 'Plain English, not converted yet: press Enter on this line';
+  return x.title;
+};
+function alarmRun() {
+  const text = A.text, s = alarmScan(text); A.ms = s.ms; A.lines = text.split('\n').length; A.checks++;
+  A.delay = Math.max(150, Math.min(2000, s.ms * 4));   // a big program is checked less often so typing stays smooth
+  const keys = new Set(s.hits.map((x) => x.line + '|' + x.id)), intro = s.hits.filter((x) => !A.keys.has(x.line + '|' + x.id));
+  if (!A.first && intro.length) {
+    A.alarmEdits++; A.log.unshift({ t: new Date().toLocaleTimeString(), by: S.on ? 'stress test' : 'edit', items: intro.slice(0, 4).map((x) => `line ${x.line} ${x.id} ${alarmTitle(x)} (alarm ${alarmNums(x)})`) });
+    if (A.log.length > 40) A.log.pop();
+  }
+  A.first = false; A.keys = keys; A.will = s.will; A.may = s.may;
+}
+function alarmTick() {
+  const ed = $('#editor'); if (!ed) return; const v = ed.value, now = performance.now();
+  if (v !== A.text || A.mach !== GC.getMachine().type) { A.text = v; A.mach = GC.getMachine().type; A.dirtyAt = now; A.pending = true; }
+  if (A.pending && now - A.dirtyAt >= A.delay) { A.pending = false; try { alarmRun(); } catch (e) { A.will = []; A.may = []; note('alarm check', e && e.message ? e.message : e); } }
+}
+function alarmWatch(on) {
+  if (on && !A.on) { A.on = true; A.text = null; A.first = true; A.keys = new Set(); A.poll = setInterval(alarmTick, 100); alarmTick(); }
+  else if (!on && A.on) { A.on = false; clearInterval(A.poll); }
+}
+const alarmVerdict = () => (A.will.length ? { text: 'WILL ALARM', cls: 'bad' } : A.may.length ? { text: 'MAY ALARM', cls: 'bad' } : A.checks ? { text: 'no alarm found', cls: 'good' } : { text: 'checking', cls: '' });
+/* the lines a test just wrote: do they alarm? (lines with an unfilled ____ blank are templates for the person to fill, so they are skipped) */
+function newLinesAlarm(before, after, typed) {
+  const L0 = before.replace(/\n$/, '').split('\n').length + 1, lines = after.split('\n'), mine = lines.slice(L0 - 1);
+  if (mine.some((l) => /__/.test(l))) return null;
+  if (mine.length && mine.every((l) => !l.trim() || l.trim() === String(typed).trim())) return null;   // the converter left the phrase as typed: nothing was written
+  const s = alarmScan(after), bad = s.will.filter((x) => x.line >= L0);
+  return bad.length ? bad.map((x) => `line ${x.line} "${(lines[x.line - 1] || '').trim()}" ${x.id} ${x.title} (alarm ${alarmNums(x)})`).join('; ') : null;
 }
 
 /* ---------------------------------------------------------------- run control */
@@ -314,12 +373,12 @@ async function stop() {
 function reset() {
   const was = S.on; if (was) { S.tests = S.pass = S.fail = S.slow = S.errors = S.consoleErrors = S.skipped = 0; S.started = performance.now(); S.elapsed = 0; }
   else { S.tests = S.pass = S.fail = S.slow = S.errors = S.consoleErrors = S.skipped = 0; S.elapsed = 0; }
-  S.perName = {}; S.fails = []; ltxt = ''; F.dts = []; F.total = F.drops = F.worst = F.long = F.longMax = F.sum = 0; paint();
+  A.alarmEdits = 0; A.log = []; A.checks = 0; S.perName = {}; S.fails = []; ltxt = ''; F.dts = []; F.total = F.drops = F.worst = F.long = F.longMax = F.sum = 0; paint();
 }
 function toggle(force) {
   if (!ui) build(); const show = typeof force === 'boolean' ? force : ui.hidden;
-  if (show) { ui.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => ui.classList.add('in'))); if (!window.__dsPaint) window.__dsPaint = setInterval(paint, 250); paint(); }
-  else { if (S.on) stop(); ui.classList.remove('in'); setTimeout(() => { if (!ui.classList.contains('in')) ui.hidden = true; }, 200); }
+  if (show) { ui.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => ui.classList.add('in'))); if (!window.__dsPaint) window.__dsPaint = setInterval(paint, 250); alarmWatch(true); paint(); }
+  else { if (S.on) stop(); alarmWatch(false); ui.classList.remove('in'); setTimeout(() => { if (!ui.classList.contains('in')) ui.hidden = true; }, 200); }
 }
-window.__devStress = { toggle, start, stop, reset, report, state: S, frames: F };
+window.__devStress = { toggle, start, stop, reset, report, state: S, frames: F, alarm: A, alarmScan };
 })();

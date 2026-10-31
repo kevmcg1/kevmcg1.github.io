@@ -2718,7 +2718,7 @@ G42 turn to X1.2 Z-1. at .005`
    (devtest-speedprogrammer.js) are loaded on first use. Open the page with ?dev=quick | standard | thorough | problems | stress | endless to start a run by itself. */
 (() => {
   let loading = false;
-  const FILES = ['devtest-speedprogrammer.js?v=3', '../web_apps/devtest.js?v=1'];
+  const FILES = ['devtest-speedprogrammer.js?v=3', '../web_apps/devtest.js?v=2'];
   const load = (done) => {
     if (loading) return; loading = true; let i = 0;
     const next = () => {
@@ -2757,7 +2757,7 @@ G42 turn to X1.2 Z-1. at .005`
     e.preventDefault(); e.stopPropagation();
     if (window.__devStress) { window.__devStress.toggle(); return; }
     if (loading) return; loading = true;
-    const sc = document.createElement('script'); sc.src = 'devstress.js?v=1';
+    const sc = document.createElement('script'); sc.src = 'devstress.js?v=5';
     sc.onload = () => { loading = false; window.__devStress && window.__devStress.toggle(true); };
     sc.onerror = () => { loading = false; console.warn('Could not load the stress tester (' + sc.src + ')'); };
     document.head.appendChild(sc);

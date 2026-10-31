@@ -2413,13 +2413,13 @@ function init() {
     e.preventDefault(); e.stopPropagation(); window.__devApi = api();
     if (window.DevTest) { window.DevTest.toggle(); return; }
     if (loading) return; loading = true;
-    const sc = document.createElement('script'); sc.src = 'devtest-reminders.js?v=1'; sc.onload = () => { loading = false; window.DevTest && window.DevTest.toggle(true); }; sc.onerror = () => { loading = false; toast('Could not load the dev tool (devtest.js)'); };
+    const sc = document.createElement('script'); sc.src = 'devtest-reminders.js?v=2'; sc.onload = () => { loading = false; window.DevTest && window.DevTest.toggle(true); }; sc.onerror = () => { loading = false; toast('Could not load the dev tool (devtest.js)'); };
     document.head.appendChild(sc);
   }, true);
   /* ?dev=quick | standard | thorough | problems | free opens the tester and starts that run by itself */
   const auto = /[?&]dev=(quick|standard|thorough|problems|free)\b/.exec(location.search);
   if (auto) setTimeout(() => {
-    window.__devApi = api(); const sc = document.createElement('script'); sc.src = 'devtest-reminders.js?v=1';
+    window.__devApi = api(); const sc = document.createElement('script'); sc.src = 'devtest-reminders.js?v=2';
     sc.onload = () => { window.DevTest.toggle(true); const m = document.getElementById('dtMode'); if (m) { m.value = auto[1]; m.onchange && m.onchange(); } const go = document.querySelector('#devtest [data-a=start]'); if (go) go.click(); };
     document.head.appendChild(sc);
   }, 2500);

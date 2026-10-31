@@ -784,9 +784,9 @@ function problemsText(R) {
   });
   return L.join('\n');
 }
-function reportText(onlyBad) {
+function reportText(full) {   // by default only what went wrong; reportText(true) is the whole report
   const R = build(), L = [];
-  if (onlyBad) return problemsText(R);
+  if (!full) return problemsText(R);
   L.push('# ' + APP + ': automatic UX test report', '', `Seed ${T.seed} · ${T.n} actions (${T.sub} extra steps inside macros) in ${fmtT(R.dur)} · about ${R.rate.toFixed(1)} actions/s · ${T.endReason || (T.running ? 'still running' : 'stopped')}`, '');
   const verdict = R.errs.length ? 'NEEDS ATTENTION' : R.warns.length ? 'GOOD, WITH WARNINGS' : 'ALL CLEAR';
   L.push(`## Verdict: ${verdict}`, `- ${T.pass} of ${T.n} actions passed every check (${pct(T.pass, T.n)}%), ${T.fail} had a problem`, `- ${R.errs.length} errors, ${R.warns.length} warnings, ${R.infos.length} notes (distinct problems)`, `- Smoothness: ${R.fps.toFixed(0)} fps average, frame time typical ${R.p50.toFixed(0)} ms, 95th ${R.p95.toFixed(0)} ms, 99th ${R.p99.toFixed(0)} ms; ${T.longtasks.length} long tasks`, '');
@@ -860,7 +860,7 @@ function build_ui() {
     else if (a === 'pause') { T.paused = !T.paused; b.textContent = T.paused ? '▶ Resume' : '❚❚ Pause'; }
     else if (a === 'close') toggle(false);
     else if (a === 'min') el.style.height = el.style.height === '40px' ? '680px' : '40px';
-    else if (a === 'copy') { const t = reportText(true); (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => msg('Problems copied'), () => { tab = 'report'; ui(true); msg('Select and copy from the Report tab'); }); }
+    else if (a === 'copy') { const t = reportText(); (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => msg('Problems copied'), () => { tab = 'report'; ui(true); msg('Select and copy from the Report tab'); }); }
     else if (a === 'md') download(APP.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-ux-report.md', reportText(), 'text/markdown');
     else if (a === 'json') download(APP.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-ux-report.json', reportJSON(), 'application/json');
     else if (a === 'clear') { if (!T.running) { resetStats(); ui(true); } else msg('Stop the test first'); }
