@@ -2718,7 +2718,7 @@ G42 turn to X1.2 Z-1. at .005`
    (devtest-speedprogrammer.js) are loaded on first use. Open the page with ?dev=quick | standard | thorough | problems | stress | endless to start a run by itself. */
 (() => {
   let loading = false;
-  const FILES = ['devtest-speedprogrammer.js?v=3', '../web_apps/devtest.js?v=2'];
+  const FILES = ['devtest-speedprogrammer.js?v=6', '../web_apps/devtest.js?v=2'];
   const load = (done) => {
     if (loading) return; loading = true; let i = 0;
     const next = () => {

@@ -279,6 +279,14 @@ const setMachineUI = async (K, type, multi) => {
   syncMachine();
 };
 
+/* the page's own overlays that sit on top of everything: the guided tour (it also types demo text into the editor), Syntax Check, My Shortcuts, the shaft wizard and the fix window */
+const closeTour = () => { try { if (typeof gdOn !== 'undefined' && gdOn) gdClose(); } catch (e) { /* ignore */ } };
+const closeWindows = () => {
+  try { if (window.__syntaxCheck) window.__syntaxCheck.close(); } catch (e) { /* ignore */ }
+  try { if (typeof csModal !== 'undefined' && !csModal.hidden) csClose(); } catch (e) { /* ignore */ }
+  try { if (typeof wzModal !== 'undefined' && !wzModal.hidden) wzClose(); } catch (e) { /* ignore */ }
+  try { if (typeof fixModal !== 'undefined' && !fixModal.hidden) fixClose(); } catch (e) { /* ignore */ }
+};
 window.__devApi = {
   name: 'Speed Programmer',
   covers: [
@@ -290,7 +298,7 @@ window.__devApi = {
     'the browser storage is backed up and restored, and the editor text you had is put back when the run ends',
   ],
   selectors: '.ac-item',
-  modal: '#cheat-sheet-modal.visible, #debug-modal.visible, #alphaNotice:not([hidden])',
+  modal: '#cheat-sheet-modal.visible, #debug-modal.visible, #alphaNotice:not([hidden]), #gd:not([hidden]), #sc-modal:not([hidden]), #cs-modal:not([hidden]), #wz-modal:not([hidden]), #fix-modal:not([hidden])',
   coverOk: '#autocomplete, #toast, #status-pill',
   computed: '#units-badge, #status-pill, .ac-code, .ac-desc, .cheat-code, .cheat-desc, #debug-summary, .debug-output, #toast',
   markup: [{ root: '#highlight', allowed: 'span, div' }, { root: '#autocomplete', allowed: 'div, span' }, { root: '#cheat-sheet-content', allowed: 'div, span' }, { root: '#debug-body', allowed: 'div, span' }, { root: '#line-numbers', allowed: 'div' }],
@@ -300,10 +308,10 @@ window.__devApi = {
   snapshot: () => { const s = { machine: machine(), value: editor.value, auto: autoSemicolon, a: editor.selectionStart, b: editor.selectionEnd, top: editor.scrollTop }; return s; },
   restore: (s) => { if (s.machine) applyMachine(s.machine.type, s.machine.multi, { silent: true }); hideAutocomplete(); cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); if (autoSemicolon !== s.auto) autoSemicolonBtn.click(); editor.value = s.value; updateLineNumbers(); editor.setSelectionRange(s.a, s.b); editor.scrollTop = s.top; statusPill.classList.remove('show'); },
   state: () => ({ machine: machine().type + (machine().multi ? ' + multiaxis' : ''), units: sel('#units-badge').textContent, 'auto ;': autoSemicolon, lines: editor.value.split('\n').length, 'cheat sheet': cheatSheetModal.classList.contains('visible'), debug: debugModal.classList.contains('visible'), autocomplete: acVisible, status: statusPill.textContent }),
-  heal: (K, force) => { if (force) { cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); } hideAutocomplete(); },
+  heal: (K, force) => { closeTour(); closeWindows(); if (force) { cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); closeWindows(); } hideAutocomplete(); },
   baseline: async (K) => {
     applyMachine('mill', false, { silent: true }); syncMachine();   // (every journey starts as a plain mill, the default)
-    cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); hideAutocomplete();
+    cheatSheetModal.classList.remove('visible'); debugModal.classList.remove('visible'); hideAutocomplete(); closeTour(); closeWindows();
     if (autoSemicolon) autoSemicolonBtn.click();
     editor.value = BASE.value; updateLineNumbers(); editor.setSelectionRange(editor.value.length, editor.value.length); statusPill.classList.remove('show');
   },
@@ -416,8 +424,11 @@ window.__devApi = {
     { id: 'panels', weight: 4, prior: 3, purpose: 'open the Cheat Sheet and the Debug self-test, check they are complete, and close them (X button, click outside)', expect: 'every cheat-sheet row is listed, the self-test has no failing row, and each popup closes',
       run: async (K) => {
         const which = K.chance(0.5) ? 'cheat' : 'debug', btn = which === 'cheat' ? sel('#cheat-sheet-btn') : sel('#debug-btn'), modal = which === 'cheat' ? cheatSheetModal : debugModal;
+        closeTour(); closeWindows();   // (a window left open by an earlier click would sit on top of the popup and take the clicks)
         await K.realClick(btn); K.check(`the ${which} popup opens`, modal.classList.contains('visible')) || K.find('state', 'error', `The ${which} popup did not open`, { where: which + ' open' });
         if (which === 'cheat') {
+          const srch = sel('#cheat-search'); if (srch && srch.value) { srch.value = ''; srch.dispatchEvent(new Event('input', { bubbles: true })); }   // (a search typed earlier filters the rows on purpose)
+          const allChip = sel('#cheat-cats button'); if (allChip && allChip.getAttribute('aria-pressed') === 'false') await K.realClick(allChip);
           const rows = all('.cheat-item', cheatSheetContent);
           K.check('the cheat sheet lists every phrase and code', rows.length === ITEMS.length) || K.find('oracle', 'error', `The cheat sheet shows ${rows.length} rows but the rules have ${ITEMS.length}`, { where: 'cheat count' });
           K.check('no cheat-sheet row is empty', rows.every((r) => r.querySelector('.cheat-code').textContent.trim() && r.querySelector('.cheat-desc').textContent.trim())) || K.find('state', 'warn', 'A cheat-sheet row has an empty code or description', { where: 'cheat empty' });
@@ -429,7 +440,8 @@ window.__devApi = {
         const way = K.ri(0, 2);
         if (way === 0) await K.realClick(which === 'cheat' ? closeCheatSheetBtn : closeDebugBtn); else if (way === 1) { const r = modal.getBoundingClientRect(); K.fire(modal, 'click', r.left + 3, r.top + 3); } else { K.key('Escape', {}, document.body); }
         const closed = !modal.classList.contains('visible');
-        if (way === 2 && !closed) { K.find('stuck-overlay', 'info', `Escape does not close the ${which} popup (only its X button or a click outside does)`, { where: which + ' escape' }); modal.classList.remove('visible'); }
+        if (way === 2 && !closed) { K.find('stuck-overlay', 'info', `Escape does not close the ${which} popup (only its X button${which === 'cheat' ? '' : ' or a click outside'} does)`, { where: which + ' escape' }); modal.classList.remove('visible'); }
+        else if (way === 1 && which === 'cheat' && !closed) { K.find('stuck-overlay', 'info', 'A click outside does not close the cheat sheet (it is a docked side panel: only its X button does)', { where: 'cheat outside click' }); modal.classList.remove('visible'); }
         else K.check(`the ${which} popup closes`, closed) || K.find('stuck-overlay', 'error', `The ${which} popup did not close`, { where: which + ' close ' + way });
         K.feature(which + ' popup opened and closed'); return `${which}, closed ${['with X', 'by clicking outside', 'with Escape'][way]}`;
       } },
