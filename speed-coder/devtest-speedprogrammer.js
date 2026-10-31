@@ -440,7 +440,7 @@ window.__devApi = {
         const way = K.ri(0, 2);
         if (way === 0) await K.realClick(which === 'cheat' ? closeCheatSheetBtn : closeDebugBtn); else if (way === 1) { const r = modal.getBoundingClientRect(); K.fire(modal, 'click', r.left + 3, r.top + 3); } else { K.key('Escape', {}, document.body); }
         const closed = !modal.classList.contains('visible');
-        if (way === 2 && !closed) { K.find('stuck-overlay', 'info', `Escape does not close the ${which} popup (only its X button${which === 'cheat' ? '' : ' or a click outside'} does)`, { where: which + ' escape' }); modal.classList.remove('visible'); }
+        if (way === 2 && !closed && which !== 'cheat') { K.find('stuck-overlay', 'info', `Escape does not close the ${which} popup (only its X button or a click outside does)`, { where: which + ' escape' }); modal.classList.remove('visible'); }   // (the cheat sheet must close on Escape: if it does not, the check below reports an error)
         else if (way === 1 && which === 'cheat' && !closed) { K.find('stuck-overlay', 'info', 'A click outside does not close the cheat sheet (it is a docked side panel: only its X button does)', { where: 'cheat outside click' }); modal.classList.remove('visible'); }
         else K.check(`the ${which} popup closes`, closed) || K.find('stuck-overlay', 'error', `The ${which} popup did not close`, { where: which + ' close ' + way });
         K.feature(which + ' popup opened and closed'); return `${which}, closed ${['with X', 'by clicking outside', 'with Escape'][way]}`;

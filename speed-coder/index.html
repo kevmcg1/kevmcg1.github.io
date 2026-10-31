@@ -1199,6 +1199,13 @@ body{display:flex;flex-direction:column}#app{flex:1 1 auto;min-height:0;height:a
   cheatSearch.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && cheatSearch.value) { cheatSearch.value = ''; renderCheatSheet(); e.stopPropagation(); }
   });
+  // Escape closes the cheat sheet. Anything that already used the key goes first: the autocomplete list (it calls preventDefault), the search box (its
+  // first Escape only clears the text, above) and the windows that sit on top of the page (they stop the key before it gets here).
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.defaultPrevented || !cheatSheetModal.classList.contains('visible')) return;
+    if (debugModal.classList.contains('visible')) return;   // the Debug popup closes first
+    setCheatSheet(false);
+  });
   // Escape closes the Debug popup
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') debugModal.classList.remove('visible');
@@ -2718,7 +2725,7 @@ G42 turn to X1.2 Z-1. at .005`
    (devtest-speedprogrammer.js) are loaded on first use. Open the page with ?dev=quick | standard | thorough | problems | stress | endless to start a run by itself. */
 (() => {
   let loading = false;
-  const FILES = ['devtest-speedprogrammer.js?v=6', '../web_apps/devtest.js?v=2'];
+  const FILES = ['devtest-speedprogrammer.js?v=7', '../web_apps/devtest.js?v=2'];
   const load = (done) => {
     if (loading) return; loading = true; let i = 0;
     const next = () => {
