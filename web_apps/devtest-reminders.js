@@ -1373,8 +1373,26 @@ function build() {
   const errs = issues.filter((i) => i.sev === 'error'), warns = issues.filter((i) => i.sev === 'warn'), infos = issues.filter((i) => i.sev === 'info');
   return { dur, issues, errs, warns, infos, tot, hit, miss, rate, p50: p(0.5), p95: p(0.95), p99: p(0.99), fps: dts.length ? 1000 / (dts.reduce((a, b) => a + b, 0) / dts.length) : 0 };
 }
-function reportText() {
+/* The copied report: only what went wrong. No passed checks, no list of what was covered, no feature or action tables. */
+function problemsText(R) {
+  const L = ['# Reminders: problems found by the automatic UX test', '', `Seed ${T.seed} · ${T.n} actions in ${fmtT(R.dur)} · ${T.endReason || (T.running ? 'still running' : 'stopped')}`, ''];
+  const slow = !T.turboUsed && R.fps && (R.p95 > 20 || R.fps < 55);
+  if (!R.issues.length && !slow) { L.push('No problems found.'); return L.join('\n'); }
+  L.push(`## ${R.errs.length} errors, ${R.warns.length} warnings, ${R.infos.length} notes (${T.fail} of ${T.n} actions had a problem)`);
+  if (slow) L.push('', `Smoothness problem: ${R.fps.toFixed(0)} fps average, frame time typical ${R.p50.toFixed(0)} ms, 95th ${R.p95.toFixed(0)} ms, 99th ${R.p99.toFixed(0)} ms; ${T.longtasks.length} long tasks`);
+  R.issues.forEach((i, k) => {
+    L.push('', `### ${k + 1}. [${i.sev.toUpperCase()}] ${i.kind}: ${i.msg}`, `- Seen ${i.count} time${i.count > 1 ? 's' : ''}, first at action #${i.first}, last at #${i.last}${i.actions.size ? ' · during: ' + [...i.actions].join(', ') : ''}${i.ctl.size ? ' · controls: ' + [...i.ctl].slice(0, 4).join(', ') : ''}`);
+    if (i.diag) L.push(`- Likely cause: ${i.diag}`);
+    if (i.state) L.push('- App state when it first happened: ' + i.state);
+    if (i.sample) L.push('- Sample: ' + i.sample.replace(/\s+/g, ' '));
+    if (i.stack) L.push('- Stack: ' + i.stack.split('\n').slice(0, 4).map((l) => l.trim()).join(' | '));
+    L.push(`- To reproduce (seed ${i.seed}), the last actions before it were:`, ...i.repro.slice(-8).map((r) => '    ' + r));
+  });
+  return L.join('\n');
+}
+function reportText(full) {   // by default only what went wrong; reportText(true) is the whole report
   const R = build(), L = [];
+  if (!full) return problemsText(R);
   L.push('# Reminders: automatic UX test report', '', `Seed ${T.seed} · ${T.n} actions (${T.sub} extra steps inside journeys) in ${fmtT(R.dur)} · about ${R.rate.toFixed(1)} actions/s · ${T.endReason || (T.running ? 'still running' : 'stopped')} · window ${innerWidth}x${innerHeight}`, '');
   L.push('## Your data', T.sandbox ? '- ' + T.sandbox : (T.running ? '- The run is working on a scratch copy kept in memory; your own reminders and settings are not touched and will be put back when it ends.' : '- No run has finished yet.'), '');
   const verdict = R.errs.length ? 'NEEDS ATTENTION' : R.warns.length ? 'GOOD, WITH WARNINGS' : 'ALL CLEAR';
