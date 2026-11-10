@@ -842,7 +842,7 @@
             const holeData = DATA.hole[cleaned[3]];
 
             const parts = [
-                { label: 'Shape',     val: shapeData   ? `${shapeData.desc} (${shapeData.angle})`    : `Unknown (${cleaned[0]})` },
+                { label: 'Shape',     val: shapeData   ? (shapeData.angle === '—' || shapeData.desc.includes(shapeData.angle) ? shapeData.desc : `${shapeData.desc} (${shapeData.angle})`) : `Unknown (${cleaned[0]})` },
                 { label: 'Relief',    val: reliefData  ? `${reliefData.desc} — ${reliefData.note}`   : `Unknown (${cleaned[1]})` },
                 { label: 'Tolerance', val: tolData     ? `${tolData.desc} · IC: ${tolData.ic}`        : `Unknown (${cleaned[2]})` },
                 { label: 'Type',      val: holeData    ? holeData.desc                                : `Unknown (${cleaned[3]})` }
