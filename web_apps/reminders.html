@@ -1259,11 +1259,11 @@ function parseNaturalLanguage(text) {
     d.setDate(d.getDate() + diff);
     setD(d);
   }
-  else if ((m = strip(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i))) {
+  else if ((m = strip(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4})\b)?/i))) {
     mo = months.indexOf(m[1].toLowerCase().slice(0,3));
     dd = parseInt(m[2]);
-    yy = now.getFullYear();
-    if (new Date(yy, mo, dd) < new Date(now.getFullYear(), now.getMonth(), now.getDate())) yy++;
+    yy = m[3] ? parseInt(m[3]) : now.getFullYear();   // an explicit year wins; without one, a date that has passed means next year
+    if (!m[3] && new Date(yy, mo, dd) < new Date(now.getFullYear(), now.getMonth(), now.getDate())) yy++;
     res.dateSet = true;
   }
   else if ((m = strip(/\bon\s+the\s+(\d{1,2})(?:st|nd|rd|th)\b/i))) {
@@ -1279,17 +1279,22 @@ function parseNaturalLanguage(text) {
 
   /* ---- TIME ---- */
   let hh = null, mi = null;
-  if ((m = strip(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i))) {
+  if ((m = strip(/\b(?:at\s+)?(1[0-2]|0?[1-9]|0)(?::([0-5]\d))?\s*(am|pm)\b/i))) {
     hh = parseInt(m[1]) % 12; if (m[3].toLowerCase() === 'pm') hh += 12;
     mi = m[2] ? parseInt(m[2]) : 0; res.timeSet = true;
-  } else if ((m = strip(/\bat\s+(\d{1,2}):(\d{2})\b/i))) {
+  } else if ((m = strip(/\bat\s+(2[0-3]|[01]?\d):([0-5]\d)\b/i))) {
     hh = parseInt(m[1]); mi = parseInt(m[2]); res.timeSet = true;
+    if (tonight && hh < 12) hh += 12;   // "tonight at 8:30" means the evening
   } else if (strip(/\b(noon|midday)\b/i)) { hh = 12; mi = 0; res.timeSet = true; }
   else if (strip(/\bmidnight\b/i)) { hh = 0; mi = 0; res.timeSet = true; }
   else if (strip(/\bmorning\b/i)) { hh = 9; mi = 0; res.timeSet = true; }
   else if (strip(/\bafternoon\b/i)) { hh = 15; mi = 0; res.timeSet = true; }
   else if (strip(/\bevening\b/i)) { hh = 19; mi = 0; res.timeSet = true; }
-  else if (tonight) { hh = 19; mi = 0; res.timeSet = true; }
+  else if (tonight) {
+    // "dinner tonight at 7": the bare hour is an evening hour, and it leaves the title with the rest of the date words
+    const bare = strip(/\bat\s+(1[0-2]|0?[1-9])(?::([0-5]\d))?\b/i);
+    hh = bare ? (parseInt(bare[1]) % 12) + 12 : 19; mi = bare && bare[2] ? parseInt(bare[2]) : 0; res.timeSet = true;
+  }
 
   /* ---- CHECKLIST ---- */
   // "make a list containing X, Y, Z" / "checklist of A and B" / "list: a, b"
